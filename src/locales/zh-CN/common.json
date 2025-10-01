@@ -41,6 +41,24 @@
   "chats": {
     "emptyTitle": "暂无会话",
     "emptyDescription": "请配置数据目录并刷新以导入已有的聊天记录。",
-    "configureButton": "去配置目录"
+    "configureButton": "去配置目录",
+    "untitled": "未命名会话",
+    "noPreview": "暂无预览内容。"
+  },
+  "providers": {
+    "claude": "Claude",
+    "codex": "Codex",
+    "gemini": "Gemini"
+  },
+  "detail": {
+    "sessionInfo": "会话信息",
+    "source": "来源",
+    "model": "模型",
+    "copy": "复制消息",
+    "copied": "已复制",
+    "metadata": {
+      "tokens": "令牌",
+      "toolCall": "工具调用"
+    }
   }
 }

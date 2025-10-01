@@ -1,10 +1,13 @@
 import { Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { providerBadgeClass } from "@/lib/provider-info";
 import { useChatStore, useFilteredSessions } from "@/store/chat-store";
 import type { ChatSession } from "@/types/chat";
+import type { AgentSource } from "@/types/chat";
 
 interface ChatListProps {
   onSelect?: (session: ChatSession) => void;
@@ -15,6 +18,12 @@ interface ChatListProps {
 
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString();
+}
+
+function ProviderBadge({ source }: { source: AgentSource }) {
+  const { t } = useTranslation();
+  const label = t(`providers.${source}`);
+  return <Badge className={providerBadgeClass[source]}>{label}</Badge>;
 }
 
 export function ChatList({
@@ -71,7 +80,7 @@ export function ChatList({
           return (
             <button
               key={session.id}
-              className="flex flex-col items-start gap-1 p-4 text-left transition hover:bg-accent data-[state=active]:bg-accent"
+              className="flex flex-col items-start gap-2 p-4 text-left transition hover:bg-accent data-[state=active]:bg-accent"
               type="button"
               onClick={() => {
                 setActiveSession(session.id);
@@ -79,14 +88,17 @@ export function ChatList({
               }}
               data-state={isActive ? "active" : undefined}
             >
-              <span className="text-sm font-semibold text-foreground">
-                {session.topic || "Untitled conversation"}
-              </span>
+              <div className="flex items-center gap-2">
+                <ProviderBadge source={session.source} />
+                <span className="text-sm font-semibold text-foreground">
+                  {session.topic || t("chats.untitled")}
+                </span>
+              </div>
               <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                {session.source} • {formatTimestamp(session.startedAt)}
+                {formatTimestamp(session.startedAt)}
               </span>
               <span className="line-clamp-2 text-xs text-muted-foreground">
-                {session.messages[0]?.content ?? "No preview available."}
+                {session.messages[0]?.content ?? t("chats.noPreview")}
               </span>
             </button>
           );

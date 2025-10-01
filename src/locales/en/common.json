@@ -41,6 +41,24 @@
   "chats": {
     "emptyTitle": "No conversations yet",
     "emptyDescription": "Add provider directories to import existing chat logs, then refresh.",
-    "configureButton": "Configure providers"
+    "configureButton": "Configure providers",
+    "untitled": "Untitled conversation",
+    "noPreview": "No preview available."
+  },
+  "providers": {
+    "claude": "Claude",
+    "codex": "Codex",
+    "gemini": "Gemini"
+  },
+  "detail": {
+    "sessionInfo": "Session info",
+    "source": "Source",
+    "model": "Model",
+    "copy": "Copy message",
+    "copied": "Copied!",
+    "metadata": {
+      "tokens": "Tokens",
+      "toolCall": "Tool call"
+    }
   }
 }

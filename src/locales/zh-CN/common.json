@@ -2,7 +2,9 @@
   "header": {
     "title": "智能对话浏览器",
     "subtitle": "统一查看 Claude、Codex 与 Gemini 的会话记录。",
-    "configureProviders": "配置数据目录"
+    "configureProviders": "配置数据目录",
+    "refresh": "刷新",
+    "refreshing": "正在刷新…"
   },
   "sidebar": {
     "filters": "筛选",
@@ -38,7 +40,7 @@
   },
   "chats": {
     "emptyTitle": "暂无会话",
-    "emptyDescription": "请配置数据目录以导入现有聊天记录。",
+    "emptyDescription": "请配置数据目录并刷新以导入已有的聊天记录。",
     "configureButton": "去配置目录"
   }
 }

@@ -9,13 +9,20 @@ import type { ChatSession } from "@/types/chat";
 interface ChatListProps {
   onSelect?: (session: ChatSession) => void;
   onConfigureProviders?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString();
 }
 
-export function ChatList({ onSelect, onConfigureProviders }: ChatListProps) {
+export function ChatList({
+  onSelect,
+  onConfigureProviders,
+  onRefresh,
+  isRefreshing = false,
+}: ChatListProps) {
   const sessions = useFilteredSessions();
   const activeSessionId = useChatStore((state) => state.activeSessionId);
   const setActiveSession = useChatStore((state) => state.setActiveSession);
@@ -31,15 +38,27 @@ export function ChatList({ onSelect, onConfigureProviders }: ChatListProps) {
             {t("chats.emptyDescription")}
           </p>
         </div>
-        {onConfigureProviders ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onConfigureProviders}
-          >
-            {t("chats.configureButton")}
-          </Button>
-        ) : null}
+        <div className="flex flex-col gap-2">
+          {onConfigureProviders ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onConfigureProviders}
+            >
+              {t("chats.configureButton")}
+            </Button>
+          ) : null}
+          {onRefresh ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? t("header.refreshing") : t("header.refresh")}
+            </Button>
+          ) : null}
+        </div>
       </div>
     );
   }

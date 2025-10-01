@@ -10,12 +10,16 @@ interface AppShellProps {
   sidebar: React.ReactNode;
   children: React.ReactNode;
   onConfigureProviders: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export function AppShell({
   sidebar,
   children,
   onConfigureProviders,
+  onRefresh,
+  isRefreshing = false,
 }: AppShellProps) {
   const { t } = useTranslation();
 
@@ -29,6 +33,16 @@ export function AppShell({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {onRefresh ? (
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? t("header.refreshing") : t("header.refresh")}
+            </Button>
+          ) : null}
           <Button
             variant="outline"
             type="button"

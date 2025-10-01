@@ -17,7 +17,7 @@
 - [x] Research browser API options for reading local directories (File System Access API, drag-and-drop, manual file upload) and document supported browsers (see `docs/browser-file-access.md`).
 - [x] Implement startup wizard/modal to let users input or pick directories per provider; persist choices (localStorage/zustand persist) — see `src/components/preferences/provider-setup-dialog.tsx`.
 - [x] Add validation and error messaging for invalid directories or empty histories — provider dialog warns about invalid characters and empty states prompt configuration.
-- [ ] Provide manual refresh/import controls to rescan directories.
+- [x] Provide manual refresh/import controls to rescan directories — header button and empty state trigger refresh via `loadSessionsFromProviders`.
 
 ### 3. Transcript Ingestion & Normalisation
 

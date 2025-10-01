@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ChatDetail } from "@/components/chats/chat-detail";
 import { ChatList } from "@/components/chats/chat-list";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
-import { sampleSessions } from "@/data/sampleSessions";
+import { loadSessionsFromProviders } from "@/lib/session-loader";
 import { useActiveSession, useChatStore } from "@/store/chat-store";
 import { usePreferencesStore } from "@/store/preferences-store";
 
@@ -14,13 +14,25 @@ export function App() {
   const setSessions = useChatStore((state) => state.setSessions);
   const activeSession = useActiveSession();
   const isSetupComplete = usePreferencesStore((state) => state.isSetupComplete);
+  const providerPaths = usePreferencesStore((state) => state.providerPaths);
   const [setupOpen, setSetupOpen] = useState(!isSetupComplete);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshSessions = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const imported = await loadSessionsFromProviders(providerPaths);
+      setSessions(imported);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [providerPaths, setSessions]);
 
   useEffect(() => {
     if (sessions.length === 0) {
-      setSessions(sampleSessions);
+      void refreshSessions();
     }
-  }, [sessions.length, setSessions]);
+  }, [sessions.length, refreshSessions]);
 
   useEffect(() => {
     if (!isSetupComplete) {
@@ -33,10 +45,20 @@ export function App() {
       <AppShell
         sidebar={<ChatSidebar />}
         onConfigureProviders={() => setSetupOpen(true)}
+        onRefresh={() => {
+          void refreshSessions();
+        }}
+        isRefreshing={isRefreshing}
       >
         <div className="flex h-full flex-col lg:flex-row">
           <div className="w-full border-b lg:w-80 lg:border-b-0 lg:border-r">
-            <ChatList onConfigureProviders={() => setSetupOpen(true)} />
+            <ChatList
+              onConfigureProviders={() => setSetupOpen(true)}
+              onRefresh={() => {
+                void refreshSessions();
+              }}
+              isRefreshing={isRefreshing}
+            />
           </div>
           <div className="flex-1">
             <ChatDetail session={activeSession} />

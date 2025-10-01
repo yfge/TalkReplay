@@ -2,7 +2,9 @@
   "header": {
     "title": "Agents Chat Viewer",
     "subtitle": "Inspect and compare Claude, Codex, and Gemini conversations.",
-    "configureProviders": "Configure providers"
+    "configureProviders": "Configure providers",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing\u2026"
   },
   "sidebar": {
     "filters": "Filters",
@@ -38,7 +40,7 @@
   },
   "chats": {
     "emptyTitle": "No conversations yet",
-    "emptyDescription": "Add provider directories to import existing chat logs.",
+    "emptyDescription": "Add provider directories to import existing chat logs, then refresh.",
     "configureButton": "Configure providers"
   }
 }

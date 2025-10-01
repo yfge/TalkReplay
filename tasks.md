@@ -14,7 +14,7 @@
 
 ### 2. Local Directory Configuration
 
-- [ ] Research browser API options for reading local directories (File System Access API, drag-and-drop, manual file upload) and document supported browsers.
+- [x] Research browser API options for reading local directories (File System Access API, drag-and-drop, manual file upload) and document supported browsers (see `docs/browser-file-access.md`).
 - [ ] Implement startup wizard/modal to let users input or pick directories per provider; persist choices (localStorage/zustand persist).
 - [ ] Add validation and error messaging for invalid directories or empty histories.
 - [ ] Provide manual refresh/import controls to rescan directories.

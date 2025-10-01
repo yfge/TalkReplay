@@ -56,3 +56,7 @@ VITE_GEMINI_ROOT=/path/to/gemini/logs
 ```
 
 These defaults are read by `getProviderPaths()` in `src/config/providerPaths.ts`.
+
+## Browser File Access
+
+See `docs/browser-file-access.md` for the comparison of supported mechanisms and fallbacks.

@@ -6,6 +6,7 @@ TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 C
 - **技术栈：** Next.js 14（App Router）、React、TypeScript、Tailwind CSS、shadcn/ui、Zustand、React Query
 - **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`），Gemini 规划中
 - **部署环境：** macOS、Windows、本地浏览器导入、Docker
+- **协作方式：** 按 vibe coding 最佳实践组织，配套 `agents_chat/` 日志、`tasks.md` 任务板以及 Husky 强制检查
 
 ## 核心能力
 
@@ -13,6 +14,16 @@ TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 C
 - 统一的消息/时间戳规范，便于关键词搜索、过滤、收藏和日期筛选
 - 左侧会话列表 + 右侧详情视图，支持星标、增量刷新签名、元数据展示
 - `agents_chat/` 记录每一轮 AI 协作，并通过 Husky hook 强制校验流程
+- 展示一套完整的 vibe coding 流程，便于在其它仓库复用
+
+## Vibe Coding 工作流
+
+TalkReplay 本身就是一个 vibe coding 标杆项目：
+
+- `agents_chat/` 目录使用时间戳 Markdown 归档每次与 AI 的对话、决策与自测命令，保证信息可追溯。
+- Husky `pre-commit` 钩子只有在新增记录并通过 `pnpm lint`、`pnpm test` 后才允许提交，确保质量闭环。
+- `tasks.md` 维护里程碑清单，让每一次增量提交都对齐既定计划。
+- `agents.md` 与 `docs/` 中的规范/文档，为团队协作提供统一准则。
 
 ## 界面预览
 
@@ -46,11 +57,11 @@ NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # 可选
 
 后端同样支持 `CLAUDE_ROOT`、`CODEX_ROOT`、`GEMINI_ROOT` 环境变量；归一化逻辑位于 `src/config/providerPaths.ts`。
 
-### 协作规范
+### 会话管线
 
-- 每次 AI 协作需新增 `agents_chat/` 记录，按时间戳命名并包含 Summary / Code Highlights / Self-Tests 等段落
-- Husky `pre-commit` 钩子会验证记录、执行 `pnpm lint` 与 `pnpm test`
-- Provider 适配器位于 `src/lib/providers/`，会话模型定义在 `src/types/chat.ts`
+- Provider 适配器存放在 `src/lib/providers/`，共享的会话模型定义在 `src/types/chat.ts`。
+- 增量导入基于文件签名，避免重复解析并在 UI 中呈现错误提醒。
+- `fixtures/` 目录提供与真实 Claude/Codex 目录结构一致的示例数据，便于离线演示。
 
 ## Docker 运行
 

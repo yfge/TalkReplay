@@ -6,6 +6,7 @@ TalkReplay is a vibe coding companion that turns your Claude and Codex transcrip
 - **Tech stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · Zustand · React Query
 - **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`) with Gemini planned
 - **Deployment targets:** macOS, Windows, Docker, optional browser-only imports
+- **Workflow:** Opinionated vibe-coding blueprint featuring timestamped `agents_chat/` logs, `tasks.md` milestones, and Husky-enforced quality gates
 
 ## Why TalkReplay?
 
@@ -16,6 +17,16 @@ Vibe coding thrives on fast feedback loops. TalkReplay preserves that energy by:
 - Providing a dual-pane explorer: session list on the left, detailed conversation on the right
 - Tracking starred sessions, keyword filters, date ranges, and incremental refresh signatures
 - Recording every collaboration round in `agents_chat/` and enforcing hooks for reproducibility
+- Demonstrating a vibe coding workflow end-to-end so you can mirror the structure in other projects
+
+## Vibe Coding Workflow
+
+TalkReplay doubles as a living reference implementation for vibe coding teams:
+
+- `agents_chat/` captures each AI pairing session using timestamped Markdown that logs prompts, decisions, code excerpts, and self-tests.
+- Husky `pre-commit` hook blocks commits unless a new log is staged and `pnpm lint` / `pnpm test` pass, preserving replayable histories.
+- `tasks.md` tracks milestone checklists so incremental commits stay aligned with the agreed plan.
+- Shared specs (`agents.md`, `docs/`) keep collaboration guardrails co-located with the codebase.
 
 ## Interface Preview
 
@@ -51,11 +62,11 @@ NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # optional
 
 Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
 
-### Agents & Transcripts
+### Transcript Pipeline
 
-- `agents_chat/` must contain a timestamped Markdown record for every AI-assisted change
-- Husky pre-commit hook ensures the latest record is staged, sections exist, and tests/linting pass
-- Transcript ingestion lives under `src/lib/providers/`; adapters share a unified message schema in `src/types/chat.ts`
+- Provider ingestion lives under `src/lib/providers/`; adapters share a unified message schema in `src/types/chat.ts`.
+- Incremental import signatures prevent reprocessing unchanged files while surfacing parser errors in the UI.
+- Sample data in `fixtures/` mirrors real directory layouts for Claude and Codex, enabling offline demos.
 
 ## Docker Workflow
 

@@ -1,3 +1,6 @@
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { POST as sessionDetailPost } from "@/app/api/sessions/detail/route";
@@ -49,6 +52,8 @@ interface SessionDetailResponse {
   error?: unknown;
 }
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const fixturesRoot = path.resolve(__dirname, "../../../../fixtures");
 describe("/api/sessions", () => {
   it("returns normalised summaries", async () => {
     const payload = {
@@ -141,5 +146,112 @@ describe("/api/sessions/detail", () => {
     const payload = (await response.json()) as SessionDetailResponse;
     expect(payload.session).toBeUndefined();
     expect(payload.error).toBeDefined();
+  });
+});
+
+describe("fixtures", () => {
+  it("parse tool and reasoning events from claude and codex fixtures", async () => {
+    const fs = await import("node:fs/promises");
+    const tempRoot = await fs.mkdtemp(path.join(tmpdir(), "session-fixture-"));
+    try {
+      const claudeSource = path.join(
+        fixturesRoot,
+        "claude/project-tool/tool-session.jsonl",
+      );
+      const claudeDir = path.join(tempRoot, "claude/project-tool");
+      await fs.mkdir(claudeDir, { recursive: true });
+      await fs.writeFile(
+        path.join(claudeDir, "tool-session.jsonl"),
+        await fs.readFile(claudeSource, "utf8"),
+        "utf8",
+      );
+
+      const codexSource = path.join(
+        fixturesRoot,
+        "codex/2025/01/01/tool-session.jsonl",
+      );
+      const codexDir = path.join(tempRoot, "codex/2025/01/01");
+      await fs.mkdir(codexDir, { recursive: true });
+      await fs.writeFile(
+        path.join(codexDir, "tool-session.jsonl"),
+        await fs.readFile(codexSource, "utf8"),
+        "utf8",
+      );
+
+      const paths = {
+        claude: path.join(tempRoot, "claude"),
+        codex: path.join(tempRoot, "codex"),
+      } as const;
+
+      const result = await callRoute<SessionsResponse>(
+        sessionsPost,
+        "http://localhost/api/sessions",
+        {
+          paths,
+          previousSignatures: {},
+        },
+      );
+
+      const claudeSummary = result.sessions.find(
+        (summary) =>
+          summary.source === "claude" &&
+          summary.topic === "Fixture: Claude tool session",
+      );
+      expect(claudeSummary).toBeDefined();
+
+      const claudeDetail = await callRoute<SessionDetailResponse>(
+        sessionDetailPost,
+        "http://localhost/api/sessions/detail",
+        {
+          id: claudeSummary!.id,
+          paths,
+        },
+      );
+
+      expect(
+        claudeDetail.session?.messages.some(
+          (message) => message.kind === "tool-call",
+        ),
+      ).toBe(true);
+      expect(
+        claudeDetail.session?.messages.some(
+          (message) => message.kind === "tool-result",
+        ),
+      ).toBe(true);
+
+      const codexSummary = result.sessions.find(
+        (summary) =>
+          summary.source === "codex" &&
+          summary.metadata?.summary === "Fixture: Codex tool session",
+      );
+      expect(codexSummary).toBeDefined();
+
+      const codexDetail = await callRoute<SessionDetailResponse>(
+        sessionDetailPost,
+        "http://localhost/api/sessions/detail",
+        {
+          id: codexSummary!.id,
+          paths,
+        },
+      );
+
+      expect(
+        codexDetail.session?.messages.some(
+          (message) => message.kind === "reasoning",
+        ),
+      ).toBe(true);
+      expect(
+        codexDetail.session?.messages.some(
+          (message) => message.kind === "tool-call",
+        ),
+      ).toBe(true);
+      expect(
+        codexDetail.session?.messages.some(
+          (message) => message.kind === "tool-result",
+        ),
+      ).toBe(true);
+    } finally {
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    }
   });
 });

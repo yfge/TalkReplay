@@ -1,0 +1,7 @@
+{"type":"session_meta","timestamp":"2025-01-01T00:00:00.000Z","payload":{"id":"codex-fixture","instructions":"Fixture: Codex tool session"}}
+{"type":"event_msg","timestamp":"2025-01-01T00:00:01.000Z","payload":{"type":"agent_reasoning","text":"**Preparing fixture tool call**"}}
+{"type":"response_item","timestamp":"2025-01-01T00:00:02.000Z","payload":{"type":"message","id":"msg-user","role":"user","content":[{"type":"input_text","text":"Check service status"}]}}
+{"type":"response_item","timestamp":"2025-01-01T00:00:03.000Z","payload":{"type":"reasoning","summary":[{"type":"summary_text","text":"Inspecting service health"}]}}
+{"type":"response_item","timestamp":"2025-01-01T00:00:04.000Z","payload":{"type":"function_call","id":"call-1","name":"service.status","arguments":"{\"service\":\"payments\"}"}}
+{"type":"response_item","timestamp":"2025-01-01T00:00:05.000Z","payload":{"type":"function_call_output","call_id":"call-1","output":"{\"status\":\"healthy\"}"}}
+{"type":"response_item","timestamp":"2025-01-01T00:00:06.000Z","payload":{"type":"message","id":"msg-assistant","role":"assistant","model":"gpt-5-codex-fixture","content":[{"type":"output_text","text":"Payments service is healthy."}],"usage":{"input_tokens":10,"output_tokens":12,"total_tokens":22}}}

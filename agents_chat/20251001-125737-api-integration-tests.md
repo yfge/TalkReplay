@@ -5,7 +5,7 @@
 
 ## Code Highlights
 
-- Added `src/app/api/__tests__/sessions-api.test.ts` which imports the route handlers and asserts schema expectations using the bundled sample transcripts.
+- Added `src/app/api/__tests__/sessions-api.test.ts` which imports the route handlers and asserts schema expectations using the bundled sample transcripts plus new Claude/Codex fixtures containing tool calls, tool results, and reasoning events. The tests copy fixture content into temporary directories so CI can run without relying on machine-specific provider paths, keeping the filesystem clean after execution.
 - Updated `tasks.md` to mark the integration coverage item complete.
 
 ## Self-Tests

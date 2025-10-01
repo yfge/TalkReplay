@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "智能对话浏览器",
-    "subtitle": "统一查看 Claude、Codex 与 Gemini 的会话记录。"
+    "subtitle": "统一查看 Claude、Codex 与 Gemini 的会话记录。",
+    "configureProviders": "配置数据目录"
   },
   "sidebar": {
     "filters": "筛选",
@@ -19,5 +20,19 @@
   },
   "themeToggle": {
     "label": "切换主题"
+  },
+  "providerSetup": {
+    "title": "配置各助手的本地目录",
+    "description": "填写 Claude、Codex、Gemini 聊天记录所在的本地文件夹，便于应用读取。",
+    "providerLabel": {
+      "claude": "Claude 目录",
+      "codex": "Codex 目录",
+      "gemini": "Gemini 目录"
+    },
+    "placeholder": "输入或粘贴本地目录路径",
+    "save": "保存",
+    "skip": "暂时跳过",
+    "notice": "稍后可以在顶部工具栏再次修改。",
+    "validation": "请至少提供一个目录，或选择跳过后再导入。"
   }
 }

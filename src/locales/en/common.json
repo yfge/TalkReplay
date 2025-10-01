@@ -1,7 +1,8 @@
 {
   "header": {
     "title": "Agents Chat Viewer",
-    "subtitle": "Inspect and compare Claude, Codex, and Gemini conversations."
+    "subtitle": "Inspect and compare Claude, Codex, and Gemini conversations.",
+    "configureProviders": "Configure providers"
   },
   "sidebar": {
     "filters": "Filters",
@@ -14,10 +15,24 @@
     "label": "Language",
     "option": {
       "en": "English",
-      "zh-CN": "中文"
+      "zh-CN": "\u4e2d\u6587"
     }
   },
   "themeToggle": {
     "label": "Toggle theme"
+  },
+  "providerSetup": {
+    "title": "Configure provider directories",
+    "description": "Provide local directories for each assistant so the app can load chat transcripts.",
+    "providerLabel": {
+      "claude": "Claude directory",
+      "codex": "Codex directory",
+      "gemini": "Gemini directory"
+    },
+    "placeholder": "Enter or paste a directory path",
+    "save": "Save",
+    "skip": "Skip for now",
+    "notice": "You can update these paths later from the header.",
+    "validation": "Provide at least one directory or continue without importing."
   }
 }

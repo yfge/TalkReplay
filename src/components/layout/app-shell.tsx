@@ -3,14 +3,20 @@ import { useTranslation } from "react-i18next";
 
 import { LocaleToggle } from "@/components/theme/locale-toggle";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
   sidebar: React.ReactNode;
   children: React.ReactNode;
+  onConfigureProviders: () => void;
 }
 
-export function AppShell({ sidebar, children }: AppShellProps) {
+export function AppShell({
+  sidebar,
+  children,
+  onConfigureProviders,
+}: AppShellProps) {
   const { t } = useTranslation();
 
   return (
@@ -23,6 +29,13 @@ export function AppShell({ sidebar, children }: AppShellProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={onConfigureProviders}
+          >
+            {t("header.configureProviders")}
+          </Button>
           <LocaleToggle />
           <ThemeToggle />
         </div>

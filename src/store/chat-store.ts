@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import type { AgentSource, ChatFilterState, ChatSession } from "@/types/chat";
+import { SUPPORTED_SOURCES } from "@/types/chat";
 
 interface ChatState {
   sessions: ChatSession[];
@@ -14,7 +15,7 @@ interface ChatState {
 }
 
 const defaultFilters: ChatFilterState = {
-  sources: ["claude", "codex"],
+  sources: [...SUPPORTED_SOURCES],
   query: "",
 };
 

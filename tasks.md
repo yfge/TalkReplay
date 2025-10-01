@@ -7,7 +7,7 @@
 ### 1. Foundations & Developer Experience
 
 - [x] Define environment configuration interface (e.g., `.env`, runtime config) for provider root paths; document in `README.md` (see `src/config/providerPaths.ts`).
-- [ ] Establish provider-agnostic transcript schema in `src/types` (extend existing models for Gemini, add metadata fields).
+- [x] Establish provider-agnostic transcript schema in `src/types` (extend existing models for Gemini, add metadata fields) — see `src/types/chat.ts`.
 - [ ] Expand sample data fixtures to cover Claude, Codex, Gemini edge cases (large files, missing metadata, code blocks).
 - [ ] Set up i18n framework (e.g., `react-i18next`) with initial locales (en, zh-CN); add locale switcher component.
 - [ ] Update lint/test/prettier configs to cover i18n files and new provider modules.

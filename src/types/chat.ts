@@ -1,10 +1,57 @@
-export type AgentSource = "claude" | "codex";
+export type AgentSource = "claude" | "codex" | "gemini";
+
+export const SUPPORTED_SOURCES: AgentSource[] = ["claude", "codex", "gemini"];
+
+export type ChatRole = "user" | "assistant" | "system" | "tool";
+
+export interface TokenUsage {
+  prompt?: number;
+  completion?: number;
+  total?: number;
+}
+
+export interface MessageAttachment {
+  type: "code" | "file" | "image" | "link";
+  name?: string;
+  uri?: string;
+  language?: string;
+  mimeType?: string;
+  text?: string;
+}
+
+export interface MessageMetadata {
+  attachments?: MessageAttachment[];
+  toolCallId?: string;
+  latencyMs?: number;
+  tokens?: TokenUsage;
+  raw?: unknown;
+}
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant" | "system" | "tool";
+  role: ChatRole;
   timestamp: string;
   content: string;
+  metadata?: MessageMetadata;
+}
+
+export interface ProviderDetails {
+  model?: string;
+  version?: string;
+  temperature?: number;
+  topP?: number;
+  extra?: Record<string, unknown>;
+}
+
+export interface SessionMetadata {
+  sourceFile?: string;
+  sourceDir?: string;
+  importedAt?: string;
+  tags?: string[];
+  summary?: string;
+  language?: string;
+  provider?: ProviderDetails;
+  extra?: Record<string, unknown>;
 }
 
 export interface ChatSession {
@@ -14,7 +61,7 @@ export interface ChatSession {
   startedAt: string;
   participants: string[];
   messages: ChatMessage[];
-  metadata?: Record<string, unknown>;
+  metadata?: SessionMetadata;
 }
 
 export interface ChatFilterState {

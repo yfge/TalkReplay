@@ -3,10 +3,12 @@ import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChatStore } from "@/store/chat-store";
 import type { AgentSource } from "@/types/chat";
+import { SUPPORTED_SOURCES } from "@/types/chat";
 
 const sourceLabels: Record<AgentSource, string> = {
   claude: "Claude",
   codex: "Codex",
+  gemini: "Gemini",
 };
 
 export function ChatSidebar() {
@@ -27,7 +29,7 @@ export function ChatSidebar() {
         </p>
       </div>
       <div className="flex flex-col gap-2">
-        {(["claude", "codex"] satisfies AgentSource[]).map((source) => {
+        {SUPPORTED_SOURCES.map((source) => {
           const active = filters.sources.includes(source);
           return (
             <Button

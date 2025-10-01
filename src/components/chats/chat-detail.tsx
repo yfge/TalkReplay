@@ -1,4 +1,4 @@
-import { Download, FileUp, Info } from "lucide-react";
+import { Download, FileUp, Info, Star, StarOff } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseFile } from "@/lib/parsers";
 import { providerBadgeClass } from "@/lib/provider-info";
-import { useChatStore } from "@/store/chat-store";
+import { useChatStore, useIsStarred } from "@/store/chat-store";
 import type { ChatSession } from "@/types/chat";
 
 const roleStyles: Record<string, string> = {
@@ -25,8 +25,10 @@ export function ChatDetail({ session }: ChatDetailProps) {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const sessions = useChatStore((state) => state.sessions);
   const setSessions = useChatStore((state) => state.setSessions);
+  const toggleStarred = useChatStore((state) => state.toggleStarred);
   const { t } = useTranslation();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const isStarred = useIsStarred(session?.id ?? "");
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -136,6 +138,19 @@ export function ChatDetail({ session }: ChatDetailProps) {
           {metadataSummary}
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={isStarred ? "default" : "ghost"}
+            onClick={() => toggleStarred(session.id)}
+            aria-label={isStarred ? t("detail.unstar") : t("detail.star")}
+            className="px-2"
+          >
+            {isStarred ? (
+              <Star className="size-4" />
+            ) : (
+              <StarOff className="size-4" />
+            )}
+          </Button>
           <input
             ref={fileInputRef}
             className="hidden"

@@ -11,7 +11,12 @@
     "filtersDescription": "选择需要展示的助手会话，并通过关键字快速定位。",
     "search": "检索",
     "searchPlaceholder": "搜索主题或消息内容…",
-    "tip": "提示：可在会话面板的工具栏导入新的聊天记录。"
+    "tip": "提示：可在会话面板的工具栏导入新的聊天记录。",
+    "starredOnly": "仅查看收藏",
+    "dateRange": "时间范围",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "clearDates": "清除日期"
   },
   "localeToggle": {
     "label": "语言",
@@ -59,6 +64,8 @@
     "metadata": {
       "tokens": "令牌",
       "toolCall": "工具调用"
-    }
+    },
+    "star": "收藏会话",
+    "unstar": "取消收藏"
   }
 }

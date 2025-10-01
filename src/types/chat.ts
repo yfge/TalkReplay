@@ -67,4 +67,7 @@ export interface ChatSession {
 export interface ChatFilterState {
   sources: AgentSource[];
   query: string;
+  showStarredOnly: boolean;
+  startDate?: string;
+  endDate?: string;
 }

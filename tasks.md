@@ -31,7 +31,7 @@
 
 ### 4. Conversation Explorer UI
 
-- [ ] Enhance chat list filtering (source toggles, search, date range, starred sessions).
+- [x] Enhance chat list filtering (source toggles, search, date range, starred sessions) — added starred toggle and date range in sidebar.
 - [x] Implement session detail view improvements (message grouping, inline code formatting, copy button, metadata panel).
 - [x] Add provider badges, icons, and color accents for visual distinction.
 - [ ] Support pagination/virtualisation for long conversation lists (e.g., `@tanstack/react-virtual`).

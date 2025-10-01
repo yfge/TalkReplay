@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { Clock, Star } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export function ChatList({
   const sessions = useFilteredSessions();
   const activeSessionId = useChatStore((state) => state.activeSessionId);
   const setActiveSession = useChatStore((state) => state.setActiveSession);
+  const starred = useChatStore((state) => state.starred);
   const { t } = useTranslation();
 
   if (sessions.length === 0) {
@@ -93,6 +94,12 @@ export function ChatList({
                 <span className="text-sm font-semibold text-foreground">
                   {session.topic || t("chats.untitled")}
                 </span>
+                {starred.has(session.id) ? (
+                  <Star
+                    className="size-4 fill-yellow-400 text-yellow-500"
+                    aria-hidden
+                  />
+                ) : null}
               </div>
               <span className="text-xs uppercase tracking-wide text-muted-foreground">
                 {formatTimestamp(session.startedAt)}

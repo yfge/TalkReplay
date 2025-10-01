@@ -11,7 +11,12 @@
     "filtersDescription": "Choose which agent conversations to display and narrow results by keywords.",
     "search": "Search",
     "searchPlaceholder": "Search topics or messages...",
-    "tip": "Tip: Import new logs via the toolbar within the conversation pane."
+    "tip": "Tip: Import new logs via the toolbar within the conversation pane.",
+    "starredOnly": "Starred only",
+    "dateRange": "Date range",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "clearDates": "Clear dates"
   },
   "localeToggle": {
     "label": "Language",
@@ -59,6 +64,8 @@
     "metadata": {
       "tokens": "Tokens",
       "toolCall": "Tool call"
-    }
+    },
+    "star": "Star conversation",
+    "unstar": "Unstar conversation"
   }
 }

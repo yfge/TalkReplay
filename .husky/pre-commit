@@ -44,5 +44,5 @@ for file in $STAGED_CHAT_FILES; do
 done
 
 pnpm lint
-pnpm test -- --runInBand
+pnpm exec vitest run
 pnpm format

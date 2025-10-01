@@ -5,6 +5,7 @@ A cross-platform web application for inspecting Claude and Codex chat transcript
 ## Quick Start
 
 ```sh
+# Requires pnpm 9+
 pnpm install
 pnpm dev
 ```
@@ -65,7 +66,7 @@ docker run \
 
 ### Using docker-compose
 
-`docker-compose.yml` provides the same container with convenient volume bindings. Override the host paths through environment variables when needed:
+`docker-compose.yml` provides the same container with convenient volume bindings. By default it mounts `${HOME}/.claude/projects` and `${HOME}/.codex/sessions`; override the host paths through environment variables when needed:
 
 ```bash
 CLAUDE_LOGS_PATH="$HOME/.claude/projects" \

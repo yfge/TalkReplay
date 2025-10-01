@@ -200,12 +200,14 @@ export const sampleSessions: ChatSession[] = [
     messages: [
       {
         id: "msg-8",
+        kind: "content",
         role: "user",
         timestamp: "2024-05-12T08:05:00.000Z",
         content: "This sample shows optional metadata omitted entirely.",
       },
       {
         id: "msg-9",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-05-12T08:05:02.000Z",
         content:

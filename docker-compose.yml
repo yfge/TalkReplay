@@ -12,6 +12,6 @@ services:
       CLAUDE_ROOT: /app/data/claude
       CODEX_ROOT: /app/data/codex
     volumes:
-      - ${CLAUDE_LOGS_PATH:-./fixtures/claude}:/app/data/claude:ro
-      - ${CODEX_LOGS_PATH:-./fixtures/codex}:/app/data/codex:ro
+      - ${CLAUDE_LOGS_PATH:-${HOME}/.claude/projects}:/app/data/claude:ro
+      - ${CODEX_LOGS_PATH:-${HOME}/.codex/sessions}:/app/data/codex:ro
     restart: unless-stopped

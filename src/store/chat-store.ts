@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import {
+  createJSONStorage,
+  persist,
+  type PersistOptions,
+} from "zustand/middleware";
 
 import { safeStateStorage } from "@/lib/safe-storage";
 import type {
@@ -99,8 +103,40 @@ function normalizeSessionSummaries(
   };
 }
 
+const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
+  name: "agents-chat-state",
+  version: 3,
+  storage: createJSONStorage(() => safeStateStorage),
+  partialize: (state) => ({
+    filters: state.filters,
+    activeSessionId: state.activeSessionId,
+    starred: Array.from(state.starred),
+  }),
+  merge: (persisted, current) => {
+    const incoming: ChatPersistedState = persisted ?? {};
+    const mergedFilters: ChatFilterState = {
+      ...current.filters,
+      ...(incoming.filters ?? {}),
+      showStarredOnly:
+        incoming.filters?.showStarredOnly ?? current.filters.showStarredOnly,
+    };
+
+    const activeSessionId = incoming.activeSessionId ?? current.activeSessionId;
+    const starred = new Set<string>(
+      incoming.starred ?? Array.from(current.starred),
+    );
+
+    return {
+      ...current,
+      filters: mergedFilters,
+      activeSessionId,
+      starred,
+    };
+  },
+};
+
 export const useChatStore = create<ChatState>()(
-  persist<ChatState, ChatPersistedState>(
+  persist(
     (set) => ({
       sessionSummaries: [],
       sessionDetails: {},
@@ -171,39 +207,7 @@ export const useChatStore = create<ChatState>()(
           },
         })),
     }),
-    {
-      name: "agents-chat-state",
-      version: 3,
-      storage: createJSONStorage(() => safeStateStorage),
-      partialize: (state) => ({
-        filters: state.filters,
-        activeSessionId: state.activeSessionId,
-        starred: Array.from(state.starred),
-      }),
-      merge: (persisted, current) => {
-        const incoming: ChatPersistedState = persisted ?? {};
-        const mergedFilters: ChatFilterState = {
-          ...current.filters,
-          ...(incoming.filters ?? {}),
-          showStarredOnly:
-            incoming.filters?.showStarredOnly ??
-            current.filters.showStarredOnly,
-        };
-
-        const activeSessionId =
-          incoming.activeSessionId ?? current.activeSessionId;
-        const starred = new Set<string>(
-          incoming.starred ?? Array.from(current.starred),
-        );
-
-        return {
-          ...current,
-          filters: mergedFilters,
-          activeSessionId,
-          starred,
-        };
-      },
-    },
+    chatStorePersistOptions,
   ),
 );
 

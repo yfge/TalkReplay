@@ -4,18 +4,19 @@ FROM node:18-alpine AS base
 WORKDIR /app
 ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN apk add --no-cache curl && corepack enable && corepack prepare pnpm@8 --activate
+ENV HUSKY=0
+RUN apk add --no-cache curl && corepack enable && corepack prepare pnpm@9 --activate
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 COPY . .
 RUN pnpm build
 
 FROM deps AS production-deps
-RUN pnpm prune --prod
+RUN pnpm prune --prod --ignore-scripts
 
 FROM node:18-alpine AS runner
 WORKDIR /app
@@ -25,8 +26,9 @@ ENV HOST=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV CLAUDE_ROOT=/app/data/claude
 ENV CODEX_ROOT=/app/data/codex
+ENV HUSKY=0
 
-RUN apk add --no-cache curl && corepack enable && corepack prepare pnpm@8 --activate
+RUN apk add --no-cache curl && corepack enable && corepack prepare pnpm@9 --activate
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 RUN mkdir -p /app/data/claude /app/data/codex && chown -R nextjs:nodejs /app
 

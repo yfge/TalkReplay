@@ -8,9 +8,9 @@ import { AppProviders } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Agents Chat Viewer",
+  title: "TalkReplay",
   description:
-    "Cross-platform viewer for Claude and Codex chat transcripts with filtering and analytics.",
+    "Vibe coding replay hub for Claude and Codex transcripts with filters, stats, and sharing tools.",
 };
 
 export default function RootLayout({

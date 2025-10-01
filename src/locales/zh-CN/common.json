@@ -1,7 +1,7 @@
 {
   "header": {
-    "title": "智能对话浏览器",
-    "subtitle": "统一查看 Claude、Codex 与 Gemini 的会话记录。",
+    "title": "TalkReplay",
+    "subtitle": "复盘与整理 Claude、Codex 的 vibe coding 对话。",
     "configureProviders": "配置数据目录",
     "refresh": "刷新",
     "refreshing": "正在刷新…"

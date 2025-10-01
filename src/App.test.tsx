@@ -24,6 +24,6 @@ describe("App", () => {
       </I18nextProvider>,
     );
 
-    expect(await screen.findByText(/Agents Chat Viewer/i)).toBeInTheDocument();
+    expect(await screen.findByText(/TalkReplay/i)).toBeInTheDocument();
   });
 });

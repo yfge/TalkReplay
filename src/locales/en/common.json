@@ -1,7 +1,7 @@
 {
   "header": {
-    "title": "Agents Chat Viewer",
-    "subtitle": "Inspect and compare Claude, Codex, and Gemini conversations.",
+    "title": "TalkReplay",
+    "subtitle": "Replay and curate your Claude and Codex vibe coding sessions.",
     "configureProviders": "Configure providers",
     "refresh": "Refresh",
     "refreshing": "Refreshing\u2026"

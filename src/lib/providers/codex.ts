@@ -1,4 +1,5 @@
 import type { Dirent } from "node:fs";
+import path from "node:path";
 
 import type { ProviderLoadResult } from "@/lib/providers/types";
 import type {
@@ -219,7 +220,6 @@ function buildCodexSession(
 
 async function collectCodexFiles(root: string): Promise<string[]> {
   const { readdir } = await import("node:fs/promises");
-  const path = await import("node:path");
   const results: string[] = [];
   const stack: string[] = [root];
 
@@ -249,6 +249,26 @@ async function collectCodexFiles(root: string): Promise<string[]> {
   return results;
 }
 
+function toPortableRelativePath(root: string, filePath: string): string {
+  const relative = path.relative(root, filePath);
+  const normalised = relative.split(path.sep).join("/");
+  return normalised.length > 0 ? normalised : path.basename(filePath);
+}
+
+function findPreviousSignature(
+  previousSignatures: Record<string, number>,
+  filePath: string,
+  relativePath: string,
+): number | undefined {
+  if (relativePath in previousSignatures) {
+    return previousSignatures[relativePath];
+  }
+  if (filePath in previousSignatures) {
+    return previousSignatures[filePath];
+  }
+  return undefined;
+}
+
 export async function loadCodexSessions(
   root: string,
   previousSignatures: Record<string, number>,
@@ -263,10 +283,11 @@ export async function loadCodexSessions(
 
   for (const filePath of files) {
     let mtimeMs = 0;
+    const relativePath = toPortableRelativePath(root, filePath);
     try {
       const stats = await fs.stat(filePath);
       mtimeMs = stats.mtimeMs;
-      signatures[filePath] = mtimeMs;
+      signatures[relativePath] = mtimeMs;
     } catch (error) {
       errors.push({
         provider: "codex",
@@ -280,7 +301,11 @@ export async function loadCodexSessions(
       continue;
     }
 
-    const previousSignature = previousSignatures[filePath];
+    const previousSignature = findPreviousSignature(
+      previousSignatures,
+      filePath,
+      relativePath,
+    );
     const cachedSession = previousSessions.get(filePath);
     if (previousSignature === mtimeMs && cachedSession) {
       sessions.push(cachedSession);
@@ -321,4 +346,19 @@ export function parseCodexSessionFromString(
   const lines = content.split(/\r?\n/).filter(Boolean);
   const entries = parseCodexLines(lines);
   return buildCodexSession(filePath, entries);
+}
+
+export async function loadCodexSessionFromFile(
+  filePath: string,
+): Promise<ChatSession | null> {
+  try {
+    const fs = await import("node:fs/promises");
+    const raw = await fs.readFile(filePath, "utf8");
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const entries = parseCodexLines(lines);
+    return buildCodexSession(filePath, entries);
+  } catch (error) {
+    console.error("Failed to load Codex session", error);
+    return null;
+  }
 }

@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseFile } from "@/lib/parsers";
 import { providerBadgeClass } from "@/lib/provider-info";
 import { useChatStore, useIsStarred } from "@/store/chat-store";
-import type { ChatSession } from "@/types/chat";
+import type { ChatSession, ChatSessionSummary } from "@/types/chat";
 
 const roleStyles: Record<string, string> = {
   user: "bg-secondary text-secondary-foreground",
@@ -19,12 +19,22 @@ const roleStyles: Record<string, string> = {
 
 interface ChatDetailProps {
   session: ChatSession | null;
+  isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
-export function ChatDetail({ session }: ChatDetailProps) {
+export function ChatDetail({
+  session,
+  isLoading,
+  error,
+  onRetry,
+}: ChatDetailProps) {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const sessions = useChatStore((state) => state.sessions);
-  const setSessions = useChatStore((state) => state.setSessions);
+  const appendSessionSummaries = useChatStore(
+    (state) => state.appendSessionSummaries,
+  );
+  const setSessionDetail = useChatStore((state) => state.setSessionDetail);
   const toggleStarred = useChatStore((state) => state.toggleStarred);
   const { t } = useTranslation();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -40,7 +50,22 @@ export function ChatDetail({ session }: ChatDetailProps) {
         ? "claude"
         : "codex";
       const parsed = await parseFile(file, source);
-      setSessions([...parsed, ...sessions]);
+      parsed.forEach((parsedSession) => {
+        setSessionDetail(parsedSession);
+      });
+
+      const summaries: ChatSessionSummary[] = parsed.map((parsedSession) => ({
+        id: parsedSession.id,
+        source: parsedSession.source,
+        topic: parsedSession.topic,
+        startedAt: parsedSession.startedAt,
+        participants: parsedSession.participants,
+        metadata: parsedSession.metadata,
+        preview: parsedSession.messages[0]?.content,
+        messageCount: parsedSession.messages.length,
+      }));
+
+      appendSessionSummaries(summaries);
     } catch (error) {
       console.error(error);
       window.alert(
@@ -103,9 +128,28 @@ export function ChatDetail({ session }: ChatDetailProps) {
 
   if (!session) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
-        <Info className="size-5" />
-        <p>{"Select a conversation to view its messages."}</p>
+      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
+        {isLoading ? (
+          <>
+            <Info className="size-5 animate-pulse" />
+            <p>{"Loading conversation..."}</p>
+          </>
+        ) : error ? (
+          <>
+            <Info className="size-5 text-destructive" />
+            <p className="text-destructive">{error}</p>
+            {onRetry ? (
+              <Button type="button" variant="outline" onClick={onRetry}>
+                {"Retry"}
+              </Button>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Info className="size-5" />
+            <p>{"Select a conversation to view its messages."}</p>
+          </>
+        )}
         <Button
           type="button"
           variant="default"

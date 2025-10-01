@@ -65,6 +65,17 @@ export interface ChatSession {
   metadata?: SessionMetadata;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  source: AgentSource;
+  topic: string;
+  startedAt: string;
+  participants: string[];
+  metadata?: SessionMetadata;
+  preview?: string;
+  messageCount: number;
+}
+
 export interface ChatFilterState {
   sources: AgentSource[];
   query: string;

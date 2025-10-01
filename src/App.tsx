@@ -8,19 +8,28 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { Button } from "@/components/ui/button";
-import { loadSessionsFromProviders } from "@/lib/session-loader/client";
+import {
+  fetchSessionDetail,
+  fetchSessionSummaries,
+} from "@/lib/session-loader/client";
 import { useActiveSession, useChatStore } from "@/store/chat-store";
 import { useImportStore } from "@/store/import-store";
 import { usePreferencesStore } from "@/store/preferences-store";
 
 export function App() {
-  const sessions = useChatStore((state) => state.sessions);
-  const setSessions = useChatStore((state) => state.setSessions);
+  const sessionSummaries = useChatStore((state) => state.sessionSummaries);
+  const setSessionSummaries = useChatStore(
+    (state) => state.setSessionSummaries,
+  );
+  const setSessionDetail = useChatStore((state) => state.setSessionDetail);
+  const activeSessionId = useChatStore((state) => state.activeSessionId);
   const activeSession = useActiveSession();
   const isSetupComplete = usePreferencesStore((state) => state.isSetupComplete);
   const providerPaths = usePreferencesStore((state) => state.providerPaths);
   const [setupOpen, setSetupOpen] = useState(!isSetupComplete);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const fileSignatures = useImportStore((state) => state.fileSignatures);
   const setImportResult = useImportStore((state) => state.setImportResult);
@@ -29,30 +38,81 @@ export function App() {
 
   const refreshSessions = useCallback(async () => {
     setIsRefreshing(true);
+    setDetailError(null);
     try {
-      const result = await loadSessionsFromProviders(
-        providerPaths,
-        fileSignatures,
-        sessions,
-      );
-      setSessions(result.sessions);
-      setImportResult(result);
+      const result = await fetchSessionSummaries({
+        paths: providerPaths,
+        previousSignatures: fileSignatures,
+      });
+      setSessionSummaries(result.sessions);
+      setImportResult({
+        signatures: result.signatures,
+        errors: result.errors,
+      });
     } finally {
       setIsRefreshing(false);
     }
-  }, [fileSignatures, providerPaths, sessions, setImportResult, setSessions]);
+  }, [fileSignatures, providerPaths, setImportResult, setSessionSummaries]);
 
   useEffect(() => {
-    if (sessions.length === 0) {
+    if (isSetupComplete && sessionSummaries.length === 0) {
       void refreshSessions();
     }
-  }, [sessions.length, refreshSessions]);
+  }, [isSetupComplete, sessionSummaries.length, refreshSessions]);
 
   useEffect(() => {
     if (!isSetupComplete) {
       setSetupOpen(true);
     }
   }, [isSetupComplete]);
+
+  useEffect(() => {
+    if (!isSetupComplete || !activeSessionId) {
+      return;
+    }
+    if (activeSession) {
+      return;
+    }
+
+    let cancelled = false;
+    setDetailLoadingId(activeSessionId);
+    setDetailError(null);
+
+    void fetchSessionDetail({ id: activeSessionId, paths: providerPaths })
+      .then((detail) => {
+        if (!cancelled && detail) {
+          setSessionDetail(detail);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setDetailError(
+            error instanceof Error ? error.message : "Unknown error",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setDetailLoadingId(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeSession,
+    activeSessionId,
+    isSetupComplete,
+    providerPaths,
+    setSessionDetail,
+  ]);
+
+  useEffect(() => {
+    if (activeSession) {
+      setDetailError(null);
+    }
+  }, [activeSession]);
 
   const errorBanner = useMemo(() => {
     if (importErrors.length === 0) {
@@ -93,8 +153,8 @@ export function App() {
         }}
         isRefreshing={isRefreshing}
       >
-        <div className="flex h-full flex-col lg:flex-row">
-          <div className="w-full border-b lg:w-80 lg:border-b-0 lg:border-r">
+        <div className="flex h-full min-h-0">
+          <div className="flex w-[22rem] flex-none flex-col border-r">
             <ChatList
               onConfigureProviders={() => setSetupOpen(true)}
               onRefresh={() => {
@@ -103,8 +163,39 @@ export function App() {
               isRefreshing={isRefreshing}
             />
           </div>
-          <div className="flex-1">
-            <ChatDetail session={activeSession} />
+          <div className="flex min-h-0 flex-1">
+            <ChatDetail
+              session={activeSession}
+              isLoading={
+                detailLoadingId !== null && detailLoadingId === activeSessionId
+              }
+              error={detailError}
+              onRetry={() => {
+                if (activeSessionId) {
+                  setDetailLoadingId(activeSessionId);
+                  setDetailError(null);
+                  void fetchSessionDetail({
+                    id: activeSessionId,
+                    paths: providerPaths,
+                  })
+                    .then((detail) => {
+                      if (detail) {
+                        setSessionDetail(detail);
+                      }
+                    })
+                    .catch((error: unknown) => {
+                      setDetailError(
+                        error instanceof Error
+                          ? error.message
+                          : "Unknown error",
+                      );
+                    })
+                    .finally(() => {
+                      setDetailLoadingId(null);
+                    });
+                }
+              }}
+            />
           </div>
         </div>
       </AppShell>

@@ -1,15 +1,24 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { safeStateStorage } from "@/lib/safe-storage";
 
-import type { AgentSource, ChatFilterState, ChatSession } from "@/types/chat";
+import type {
+  AgentSource,
+  ChatFilterState,
+  ChatSession,
+  ChatSessionSummary,
+} from "@/types/chat";
 import { SUPPORTED_SOURCES } from "@/types/chat";
 
 interface ChatState {
-  sessions: ChatSession[];
+  sessionSummaries: ChatSessionSummary[];
+  sessionDetails: Record<string, ChatSession>;
   filters: ChatFilterState;
   activeSessionId: string | null;
   starred: Set<string>;
-  setSessions: (sessions: ChatSession[]) => void;
+  setSessionSummaries: (sessions: ChatSessionSummary[]) => void;
+  appendSessionSummaries: (sessions: ChatSessionSummary[]) => void;
+  setSessionDetail: (session: ChatSession) => void;
   setActiveSession: (id: string | null) => void;
   toggleSource: (source: AgentSource) => void;
   setQuery: (query: string) => void;
@@ -28,9 +37,9 @@ const defaultFilters: ChatFilterState = {
 
 function pruneStarred(
   starred: Set<string>,
-  sessions: ChatSession[],
+  summaries: ChatSessionSummary[],
 ): Set<string> {
-  const existingIds = new Set(sessions.map((session) => session.id));
+  const existingIds = new Set(summaries.map((session) => session.id));
   const next = new Set<string>();
   starred.forEach((id) => {
     if (existingIds.has(id)) {
@@ -46,36 +55,75 @@ type ChatPersistedState = Partial<
   starred?: string[];
 };
 
+function normalizeSessionSummaries(
+  state: Pick<ChatState, "sessionDetails" | "activeSessionId" | "starred">,
+  sessions: ChatSessionSummary[],
+): Pick<
+  ChatState,
+  "sessionSummaries" | "sessionDetails" | "activeSessionId" | "starred"
+> {
+  const deduped = Array.from(
+    new Map(sessions.map((session) => [session.id, session])).values(),
+  );
+
+  const sorted = deduped.slice().sort((a, b) => {
+    const aTime = Date.parse(a.startedAt);
+    const bTime = Date.parse(b.startedAt);
+    if (Number.isNaN(aTime) && Number.isNaN(bTime)) {
+      return 0;
+    }
+    if (Number.isNaN(aTime)) {
+      return 1;
+    }
+    if (Number.isNaN(bTime)) {
+      return -1;
+    }
+    return bTime - aTime;
+  });
+
+  const summaryIds = new Set(sorted.map((item) => item.id));
+  const activeSessionId =
+    state.activeSessionId && summaryIds.has(state.activeSessionId)
+      ? state.activeSessionId
+      : (sorted[0]?.id ?? null);
+
+  const prunedDetails = Object.fromEntries(
+    Object.entries(state.sessionDetails).filter(([id]) => summaryIds.has(id)),
+  );
+
+  return {
+    sessionSummaries: sorted,
+    sessionDetails: prunedDetails,
+    activeSessionId,
+    starred: pruneStarred(state.starred, sorted),
+  };
+}
+
 export const useChatStore = create<ChatState>()(
   persist<ChatState, ChatPersistedState>(
     (set) => ({
-      sessions: [],
+      sessionSummaries: [],
+      sessionDetails: {},
       filters: defaultFilters,
       activeSessionId: null,
       starred: new Set<string>(),
-      setSessions: (sessions) =>
+      setSessionSummaries: (sessions) =>
+        set((state) => normalizeSessionSummaries(state, sessions)),
+      appendSessionSummaries: (sessions) =>
         set((state) => {
-          const sorted = [...sessions].sort((a, b) => {
-            const aTime = Date.parse(a.startedAt);
-            const bTime = Date.parse(b.startedAt);
-            if (Number.isNaN(aTime) && Number.isNaN(bTime)) {
-              return 0;
-            }
-            if (Number.isNaN(aTime)) {
-              return 1;
-            }
-            if (Number.isNaN(bTime)) {
-              return -1;
-            }
-            return bTime - aTime;
-          });
-
-          return {
-            sessions: sorted,
-            activeSessionId: sorted[0]?.id ?? null,
-            starred: pruneStarred(state.starred, sorted),
-          };
+          if (sessions.length === 0) {
+            return {};
+          }
+          const merged = [...state.sessionSummaries, ...sessions];
+          return normalizeSessionSummaries(state, merged);
         }),
+      setSessionDetail: (session) =>
+        set((state) => ({
+          sessionDetails: {
+            ...state.sessionDetails,
+            [session.id]: session,
+          },
+        })),
       setActiveSession: (id) => set(() => ({ activeSessionId: id })),
       toggleSource: (source) =>
         set((state) => {
@@ -125,7 +173,8 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "agents-chat-state",
-      version: 2,
+      version: 3,
+      storage: createJSONStorage(() => safeStateStorage),
       partialize: (state) => ({
         filters: state.filters,
         activeSessionId: state.activeSessionId,
@@ -158,7 +207,13 @@ export const useChatStore = create<ChatState>()(
   ),
 );
 
-export function useFilteredSessions(): ChatSession[] {
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  (
+    window as typeof window & { __CHAT_STORE__?: typeof useChatStore }
+  ).__CHAT_STORE__ = useChatStore;
+}
+
+export function useFilteredSessionSummaries(): ChatSessionSummary[] {
   return useChatStore((state) => {
     const normalizedQuery = state.filters.query.trim().toLowerCase();
     const start = state.filters.startDate
@@ -166,7 +221,7 @@ export function useFilteredSessions(): ChatSession[] {
       : null;
     const end = state.filters.endDate ? new Date(state.filters.endDate) : null;
 
-    return state.sessions.filter((session) => {
+    return state.sessionSummaries.filter((session) => {
       const matchesSource = state.filters.sources.includes(session.source);
       if (!matchesSource) {
         return false;
@@ -198,20 +253,25 @@ export function useFilteredSessions(): ChatSession[] {
       }
 
       const topicMatch = session.topic.toLowerCase().includes(normalizedQuery);
-      const messageMatch = session.messages.some((message) =>
-        message.content.toLowerCase().includes(normalizedQuery),
-      );
-      return topicMatch || messageMatch;
+      const summaryMatch = session.metadata?.summary
+        ?.toLowerCase()
+        .includes(normalizedQuery);
+      const previewMatch = session.preview
+        ?.toLowerCase()
+        .includes(normalizedQuery);
+
+      return topicMatch || summaryMatch || previewMatch;
     });
   });
 }
 
 export function useActiveSession(): ChatSession | null {
-  const { sessions, activeSessionId } = useChatStore((state) => ({
-    sessions: state.sessions,
-    activeSessionId: state.activeSessionId,
-  }));
-  return sessions.find((session) => session.id === activeSessionId) ?? null;
+  return useChatStore((state) => {
+    if (!state.activeSessionId) {
+      return null;
+    }
+    return state.sessionDetails[state.activeSessionId] ?? null;
+  });
 }
 
 export function useIsStarred(id: string): boolean {

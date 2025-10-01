@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { ProviderKey, ProviderPaths } from "@/config/providerPaths";
 import { getProviderPaths } from "@/config/providerPaths";
+import { safeStateStorage } from "@/lib/safe-storage";
 
 interface PreferencesState {
   providerPaths: ProviderPaths;
@@ -42,6 +43,7 @@ export const usePreferencesStore = create<PreferencesState>()(
     }),
     {
       name: "agents-preferences",
+      storage: createJSONStorage(() => safeStateStorage),
     },
   ),
 );

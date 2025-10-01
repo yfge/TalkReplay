@@ -5,12 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { providerBadgeClass } from "@/lib/provider-info";
-import { useChatStore, useFilteredSessions } from "@/store/chat-store";
-import type { ChatSession } from "@/types/chat";
-import type { AgentSource } from "@/types/chat";
+import { useChatStore, useFilteredSessionSummaries } from "@/store/chat-store";
+import type { AgentSource, ChatSessionSummary } from "@/types/chat";
 
 interface ChatListProps {
-  onSelect?: (session: ChatSession) => void;
+  onSelect?: (session: ChatSessionSummary) => void;
   onConfigureProviders?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
@@ -32,7 +31,7 @@ export function ChatList({
   onRefresh,
   isRefreshing = false,
 }: ChatListProps) {
-  const sessions = useFilteredSessions();
+  const sessions = useFilteredSessionSummaries();
   const activeSessionId = useChatStore((state) => state.activeSessionId);
   const setActiveSession = useChatStore((state) => state.setActiveSession);
   const starred = useChatStore((state) => state.starred);
@@ -105,7 +104,7 @@ export function ChatList({
                 {formatTimestamp(session.startedAt)}
               </span>
               <span className="line-clamp-2 text-xs text-muted-foreground">
-                {session.messages[0]?.content ?? t("chats.noPreview")}
+                {session.preview ?? t("chats.noPreview")}
               </span>
             </button>
           );

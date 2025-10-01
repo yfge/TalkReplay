@@ -29,6 +29,8 @@
 - [x] Support incremental import (only new/changed files) and surface parsing errors in UI notifications — see `src/lib/session-loader/server.ts`, `src/lib/session-loader/client.ts`, and the import error banner in `App`.
 - [x] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets — see `src/workers/parser.worker.ts`.
 - [x] Expose server-side loader via Next.js API route for lightweight backend (`src/app/api/sessions/route.ts`).
+- [x] Split session summary/detail flow with dedicated API route and cached detail store.
+- [ ] Add integration tests for session summary/detail endpoints and store wiring.
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).
 
 ### 4. Conversation Explorer UI

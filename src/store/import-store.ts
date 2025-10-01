@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
+import { safeStateStorage } from "@/lib/safe-storage";
 import type { ProviderImportError } from "@/types/providers";
 
 interface ImportResult {
@@ -24,7 +25,25 @@ export const useImportStore = create<ImportState>()(
       errors: [],
       setImportResult: ({ signatures, errors }) =>
         set((state) => ({
-          fileSignatures: { ...state.fileSignatures, ...signatures },
+          fileSignatures: {
+            ...Object.fromEntries(
+              Object.entries(state.fileSignatures).filter(([key]) => {
+                const separatorIndex = key.indexOf(":");
+                if (separatorIndex === -1) {
+                  return true;
+                }
+                const raw = key.slice(separatorIndex + 1);
+                if (raw.startsWith("/")) {
+                  return false;
+                }
+                if (/^[A-Za-z]:[\\/]/.test(raw)) {
+                  return false;
+                }
+                return true;
+              }),
+            ),
+            ...signatures,
+          },
           lastImportedAt: new Date().toISOString(),
           errors,
         })),
@@ -32,6 +51,7 @@ export const useImportStore = create<ImportState>()(
     }),
     {
       name: "agents-import-state",
+      storage: createJSONStorage(() => safeStateStorage),
     },
   ),
 );

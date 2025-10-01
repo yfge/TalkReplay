@@ -1,4 +1,5 @@
 import type { Dirent } from "node:fs";
+import path from "node:path";
 
 import type { ProviderLoadResult } from "@/lib/providers/types";
 import type {
@@ -211,7 +212,6 @@ function buildClaudeSession(
 
 async function collectClaudeFiles(root: string): Promise<string[]> {
   const { readdir } = await import("node:fs/promises");
-  const path = await import("node:path");
   const results: string[] = [];
 
   let entries: Dirent[] = [];
@@ -244,6 +244,26 @@ async function collectClaudeFiles(root: string): Promise<string[]> {
   return results;
 }
 
+function toPortableRelativePath(root: string, filePath: string): string {
+  const relative = path.relative(root, filePath);
+  const normalised = relative.split(path.sep).join("/");
+  return normalised.length > 0 ? normalised : path.basename(filePath);
+}
+
+function findPreviousSignature(
+  previousSignatures: Record<string, number>,
+  filePath: string,
+  relativePath: string,
+): number | undefined {
+  if (relativePath in previousSignatures) {
+    return previousSignatures[relativePath];
+  }
+  if (filePath in previousSignatures) {
+    return previousSignatures[filePath];
+  }
+  return undefined;
+}
+
 export async function loadClaudeSessions(
   root: string,
   previousSignatures: Record<string, number>,
@@ -258,10 +278,11 @@ export async function loadClaudeSessions(
 
   for (const filePath of files) {
     let mtimeMs = 0;
+    const relativePath = toPortableRelativePath(root, filePath);
     try {
       const stats = await fs.stat(filePath);
       mtimeMs = stats.mtimeMs;
-      signatures[filePath] = mtimeMs;
+      signatures[relativePath] = mtimeMs;
     } catch (error) {
       errors.push({
         provider: "claude",
@@ -275,7 +296,11 @@ export async function loadClaudeSessions(
       continue;
     }
 
-    const previousSignature = previousSignatures[filePath];
+    const previousSignature = findPreviousSignature(
+      previousSignatures,
+      filePath,
+      relativePath,
+    );
     const cachedSession = previousSessions.get(filePath);
     if (previousSignature === mtimeMs && cachedSession) {
       sessions.push(cachedSession);
@@ -316,4 +341,19 @@ export function parseClaudeSessionFromString(
   const lines = content.split(/\r?\n/).filter(Boolean);
   const entries = parseClaudeLines(lines);
   return buildClaudeSession(filePath, entries);
+}
+
+export async function loadClaudeSessionFromFile(
+  filePath: string,
+): Promise<ChatSession | null> {
+  try {
+    const fs = await import("node:fs/promises");
+    const raw = await fs.readFile(filePath, "utf8");
+    const lines = raw.split(/\r?\n/).filter(Boolean);
+    const entries = parseClaudeLines(lines);
+    return buildClaudeSession(filePath, entries);
+  } catch (error) {
+    console.error("Failed to load Claude session", error);
+    return null;
+  }
 }

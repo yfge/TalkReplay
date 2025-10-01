@@ -1,15 +1,24 @@
 import type { ProviderPaths } from "@/config/providerPaths";
-import type { ChatSession } from "@/types/chat";
+import type { ChatSession, ChatSessionSummary } from "@/types/chat";
 import type { ProviderImportError } from "@/types/providers";
 
-export interface LoadSessionsPayload {
+export interface LoadSessionSummariesPayload {
   paths: ProviderPaths;
   previousSignatures: Record<string, number>;
-  previousSessions: ChatSession[];
 }
 
-export interface LoadSessionsResult {
-  sessions: ChatSession[];
+export interface LoadSessionSummariesResult {
+  sessions: ChatSessionSummary[];
   signatures: Record<string, number>;
   errors: ProviderImportError[];
+}
+
+export interface LoadSessionDetailPayload {
+  id: string;
+  paths: ProviderPaths;
+}
+
+export interface LoadSessionDetailResult {
+  session?: ChatSession;
+  error?: ProviderImportError;
 }

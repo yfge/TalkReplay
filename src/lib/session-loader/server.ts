@@ -2,11 +2,10 @@ import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
 import type { ProviderPaths } from "@/config/providerPaths";
+import { encodeSessionId } from "@/lib/session-loader/ids";
 import { getSampleSessions } from "@/lib/session-loader/sample";
 import type { ChatSession } from "@/types/chat";
-import type { ProviderId } from "@/types/providers";
-
-import type { LoadSessionsResult } from "./types";
+import type { ProviderId, ProviderImportError } from "@/types/providers";
 
 function signatureKey(provider: ProviderId, filePath: string): string {
   return `${provider}:${filePath}`;
@@ -36,7 +35,7 @@ function expandHomePath(rawPath: string): string {
   return rawPath;
 }
 
-async function normalizeProviderRoot(
+export async function normalizeProviderRoot(
   rawPath?: string,
 ): Promise<{ path?: string; error?: string }> {
   if (!rawPath) {
@@ -68,19 +67,16 @@ async function normalizeProviderRoot(
 export async function loadSessionsOnServer(
   paths: ProviderPaths,
   previousSignatures: Record<string, number>,
-  previousSessions: ChatSession[],
-): Promise<LoadSessionsResult> {
+): Promise<{
+  sessions: ChatSession[];
+  signatures: Record<string, number>;
+  errors: ProviderImportError[];
+}> {
   const sessions: ChatSession[] = [];
   const signatures: Record<string, number> = {};
-  const errors: LoadSessionsResult["errors"] = [];
+  const errors: ProviderImportError[] = [];
 
   const previousByFile = new Map<string, ChatSession>();
-  for (const session of previousSessions) {
-    const filePath = session.metadata?.sourceFile;
-    if (filePath) {
-      previousByFile.set(filePath, session);
-    }
-  }
 
   const { path: claudeRoot, error: claudePathError } =
     await normalizeProviderRoot(paths.claude);
@@ -144,11 +140,81 @@ export async function loadSessionsOnServer(
     }
   }
 
-  const dedupedSessions = sessions.length > 0 ? sessions : getSampleSessions();
+  const usableSessions = sessions.length > 0 ? sessions : getSampleSessions();
 
   return {
-    sessions: dedupedSessions,
+    sessions: usableSessions,
     signatures,
     errors,
+  };
+}
+
+export async function loadSessionDetail(
+  paths: ProviderPaths,
+  filePath: string,
+): Promise<{ session?: ChatSession; error?: ProviderImportError }> {
+  const { path: claudeRoot } = await normalizeProviderRoot(paths.claude);
+  if (claudeRoot && filePath.startsWith(claudeRoot)) {
+    try {
+      const { loadClaudeSessionFromFile } = await import(
+        "@/lib/providers/claude"
+      );
+      const session = await loadClaudeSessionFromFile(filePath);
+      if (!session) {
+        return {
+          error: {
+            provider: "claude",
+            reason: "Session not found",
+          },
+        };
+      }
+      return { session: { ...session, id: encodeSessionId(filePath) } };
+    } catch (error) {
+      return {
+        error: {
+          provider: "claude",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Failed to load session detail",
+        },
+      };
+    }
+  }
+
+  const { path: codexRoot } = await normalizeProviderRoot(paths.codex);
+  if (codexRoot && filePath.startsWith(codexRoot)) {
+    try {
+      const { loadCodexSessionFromFile } = await import(
+        "@/lib/providers/codex"
+      );
+      const session = await loadCodexSessionFromFile(filePath);
+      if (!session) {
+        return {
+          error: {
+            provider: "codex",
+            reason: "Session not found",
+          },
+        };
+      }
+      return { session: { ...session, id: encodeSessionId(filePath) } };
+    } catch (error) {
+      return {
+        error: {
+          provider: "codex",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Failed to load session detail",
+        },
+      };
+    }
+  }
+
+  return {
+    error: {
+      provider: "claude",
+      reason: "Unknown provider for provided session path",
+    },
   };
 }

@@ -1,0 +1,14 @@
+node_modules
+.DS_Store
+dist
+coverage
+.env
+.env.local
+.vscode
+.idea
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+tailwind.config.js
+.pnpm-store
+src/**/*.js

@@ -1,0 +1,48 @@
+
+set -euo pipefail
+
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  BASE_REF=HEAD
+else
+  BASE_REF=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+STAGED_CHAT_FILES=$(git diff --cached --name-only --relative agents_chat)
+
+if [ -z "$STAGED_CHAT_FILES" ]; then
+  echo "\n[agents_chat] Missing updated record in agents_chat/." >&2
+  exit 1
+fi
+
+if [ -n "$(git diff --name-only agents_chat)" ]; then
+  echo "\n[agents_chat] Unstaged changes detected in agents_chat/. Stage them before committing." >&2
+  exit 1
+fi
+
+for file in $STAGED_CHAT_FILES; do
+  case "$file" in
+    agents_chat/*)
+      if ! printf '%s' "$file" | grep -Eq 'agents_chat/[0-9]{8}-[0-9]{6}-[a-z0-9-]+\.md$'; then
+        echo "\n[agents_chat] Invalid file name: $file" >&2
+        exit 1
+      fi
+      if ! grep -q '^## Summary' "$file"; then
+        echo "\n[agents_chat] Missing \"## Summary\" section in $file" >&2
+        exit 1
+      fi
+      if ! grep -q '^## Code Highlights' "$file"; then
+        echo "\n[agents_chat] Missing \"## Code Highlights\" section in $file" >&2
+        exit 1
+      fi
+      if ! grep -q '^## Self-Tests' "$file"; then
+        echo "\n[agents_chat] Missing \"## Self-Tests\" section in $file" >&2
+        exit 1
+      fi
+      ;;
+  esac
+
+done
+
+pnpm lint
+pnpm test -- --runInBand
+pnpm format

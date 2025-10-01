@@ -1,13 +1,21 @@
 import type { ProviderPaths } from "@/config/providerPaths";
-import type { ChatSession } from "@/types/chat";
+import { SUPPORTED_SOURCES, type ChatSession } from "@/types/chat";
 // eslint-disable-next-line import/order
 import { sampleSessions } from "@/data/sampleSessions";
+
+function filteredSampleSessions(): ChatSession[] {
+  const allowed = new Set<string>(SUPPORTED_SOURCES);
+  const filtered = sampleSessions.filter((session) =>
+    allowed.has(session.source),
+  );
+  return filtered.length > 0 ? filtered : sampleSessions;
+}
 
 export async function loadSessionsFromProviders(
   paths: ProviderPaths,
 ): Promise<ChatSession[]> {
   if (typeof window !== "undefined") {
-    return sampleSessions;
+    return filteredSampleSessions();
   }
 
   const sessions: ChatSession[] = [];
@@ -31,7 +39,7 @@ export async function loadSessionsFromProviders(
   }
 
   if (sessions.length === 0) {
-    return sampleSessions;
+    return filteredSampleSessions();
   }
 
   return sessions;

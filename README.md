@@ -1,60 +1,68 @@
-# Agents Chat Viewer
+# TalkReplay
 
-A cross-platform web application for inspecting Claude and Codex chat transcripts. Built with Next.js (App Router), React, TypeScript, Tailwind CSS, and shadcn/ui.
+TalkReplay is a vibe coding companion that turns your Claude and Codex transcripts into an interactive replay. It helps you revisit pairing sessions, capture insights, and share polished summaries with teammates.
 
-## Quick Start
+- **Languages:** [English](README.md) · [中文说明](README.zh.md)
+- **Tech stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · Zustand · React Query
+- **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`) with Gemini planned
+- **Deployment targets:** macOS, Windows, Docker, optional browser-only imports
 
-```sh
-# Requires pnpm 9+
-pnpm install
-pnpm dev
-```
+## Why TalkReplay?
 
-The dev server runs on [http://localhost:3000](http://localhost:3000).
+Vibe coding thrives on fast feedback loops. TalkReplay preserves that energy by:
 
-## Browser Support & Limitations
+- Ingesting local Claude/Codex sessions via pluggable adapters and a lightweight Node API
+- Normalising timestamps/messages with provider metadata for consistent search and filters
+- Providing a dual-pane explorer: session list on the left, detailed conversation on the right
+- Tracking starred sessions, keyword filters, date ranges, and incremental refresh signatures
+- Recording every collaboration round in `agents_chat/` and enforcing hooks for reproducibility
 
-- Chromium-based browsers (Chrome, Edge, Arc) provide the best experience with directory pickers and drag-and-drop ingestion.
-- Safari and Firefox currently require manual file selection; File System Access APIs are gated or unavailable.
-- When running without the Next.js server (e.g., static export), the UI falls back to bundled sample data because real provider directories are only accessible via the `/api/sessions` endpoint.
+## Interface Preview
 
-## Available Scripts
+| Session Explorer                                                   | Conversation Detail                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| ![TalkReplay session explorer](./docs/assets/session-explorer.png) | ![TalkReplay conversation detail](./docs/assets/conversation-detail.png) |
 
-- `pnpm dev` – start the Next.js development server
-- `pnpm build` – create an optimized production build
-- `pnpm start` – serve the production build locally
-- `pnpm lint` – run ESLint across the project
-- `pnpm test` – execute unit tests with Vitest
-- `pnpm typecheck` – run TypeScript in no-emit mode
-- `pnpm format` – validate formatting via Prettier
-
-## Project Structure
-
-```
-├── agents.md               # Specification for the project
-├── agents_chat/            # AI collaboration logs (see policy)
-├── src/                    # Application source code
-├── public/                 # Static assets
-├── next.config.mjs         # Next.js configuration and webpack aliases
-├── tailwind.config.ts      # Tailwind configuration with shadcn tokens
-├── vitest.config.ts        # Vitest configuration (React + alias support)
-└── src/app/                # Next.js App Router entrypoints
-```
-
-## agents_chat Policy
-
-- Add a new record for every AI-assisted change in `agents_chat/YYYYMMDD-HHMMSS-topic.md`.
-- Include summary, code highlights (paths), self-tests, and follow-up actions.
-- Hook scripts enforce the presence and structure of these records on each commit.
-
-## Docker
-
-The repository ships with a multi-stage `Dockerfile` and a `docker-compose.yml` to run the production build without installing Node.js locally.
-
-### Build & run with Docker
+## Getting Started (Local Dev)
 
 ```bash
-docker build -t agents-chat-viewer .
+pnpm install
+pnpm dev -- --port 3002
+```
+
+Key scripts:
+
+- `pnpm lint` – ESLint with Tailwind ordering
+- `pnpm test` – Vitest + React Testing Library
+- `pnpm build` – Next.js production build
+- `pnpm format:fix` – Prettier write mode
+
+The first run launches a provider setup dialog. Point Claude/Codex to your transcript roots or rely on environment defaults (see below). Configuration persists via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+
+## Provider Roots & Configuration
+
+Environment variables drive autodiscovery:
+
+```bash
+NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects
+NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions
+NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # optional
+```
+
+Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
+
+### Agents & Transcripts
+
+- `agents_chat/` must contain a timestamped Markdown record for every AI-assisted change
+- Husky pre-commit hook ensures the latest record is staged, sections exist, and tests/linting pass
+- Transcript ingestion lives under `src/lib/providers/`; adapters share a unified message schema in `src/types/chat.ts`
+
+## Docker Workflow
+
+Build and run the production bundle inside Docker:
+
+```bash
+docker build -t talk-replay .
 docker run \
   -p 3000:3000 \
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
@@ -63,12 +71,10 @@ docker run \
   -e CODEX_ROOT=/app/data/codex \
   -v "$HOME/.claude/projects":/app/data/claude:ro \
   -v "$HOME/.codex/sessions":/app/data/codex:ro \
-  agents-chat-viewer
+  talk-replay
 ```
 
-### Using docker-compose
-
-`docker-compose.yml` provides the same container with convenient volume bindings. By default it mounts `${HOME}/.claude/projects` and `${HOME}/.codex/sessions`; override the host paths through environment variables when needed. The compose file passes these mounts through `NEXT_PUBLIC_*` variables so the UI loads without an additional setup step:
+Or use docker-compose:
 
 ```bash
 CLAUDE_LOGS_PATH="$HOME/.claude/projects" \
@@ -77,24 +83,23 @@ APP_PORT=3000 \
 docker compose up --build
 ```
 
-The defaults point at your `${HOME}` transcripts; to start with bundled samples instead, set `CLAUDE_LOGS_PATH=./fixtures/claude` and `CODEX_LOGS_PATH=./fixtures/codex` before running the command. Map the variables to your real log directories to inspect live data.
+To demo bundled fixtures instead, set `CLAUDE_LOGS_PATH=./fixtures/claude` and `CODEX_LOGS_PATH=./fixtures/codex` before running compose. The container sets both runtime and `NEXT_PUBLIC_*` env variables so the UI skips manual setup.
+
+## Testing & Quality Gates
+
+- Husky pre-commit hook runs `pnpm lint`, `pnpm test`, and verifies `agents_chat` compliance
+- Vitest integration covers `/api/sessions` and `/api/sessions/detail`
+- Storybook is planned for core UI components; Playwright smoke tests are optional but recommended
+
+## Documentation & Roadmap
+
+- `tasks.md` – milestone tracking (Milestone 1 focuses on local replay, Milestone 2 on shared backend)
+- `docs/browser-file-access.md` – browser capabilities for local imports
+- `agents.md` – collaboration rules for vibe coding workflows
+- `README.zh.md` – Chinese overview for bilingual teams
+
+Future enhancements: Gemini support, virtualised lists, keyboard shortcuts, collaborative backend, and export tooling.
 
 ## License
 
 MIT
-
-## Environment Configuration
-
-Set optional provider root paths via `.env` file (mirrored in `process.env.NEXT_PUBLIC_*`):
-
-```bash
-NEXT_PUBLIC_CLAUDE_ROOT=/path/to/claude/logs
-NEXT_PUBLIC_CODEX_ROOT=/path/to/codex/logs
-NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs
-```
-
-These defaults are read by `getProviderPaths()` in `src/config/providerPaths.ts` and passed to the server-side loader exposed via `/api/sessions`.
-
-## Browser File Access
-
-See `docs/browser-file-access.md` for the comparison of supported mechanisms and fallbacks.

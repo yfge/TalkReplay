@@ -202,10 +202,11 @@ function buildCodexSession(
     sourceFile: filePath,
     summary: instructions ?? undefined,
     provider: providerModel ? { model: providerModel } : undefined,
+    extra: sessionId ? { sessionId } : undefined,
   };
 
   return {
-    id: sessionId ?? filePath,
+    id: filePath,
     source: "codex",
     topic: messages[0]?.content?.slice(0, 80) ?? "Codex session",
     startedAt:

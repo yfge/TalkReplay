@@ -54,11 +54,28 @@ export const useChatStore = create<ChatState>()(
       activeSessionId: null,
       starred: new Set<string>(),
       setSessions: (sessions) =>
-        set((state) => ({
-          sessions,
-          activeSessionId: sessions[0]?.id ?? null,
-          starred: pruneStarred(state.starred, sessions),
-        })),
+        set((state) => {
+          const sorted = [...sessions].sort((a, b) => {
+            const aTime = Date.parse(a.startedAt);
+            const bTime = Date.parse(b.startedAt);
+            if (Number.isNaN(aTime) && Number.isNaN(bTime)) {
+              return 0;
+            }
+            if (Number.isNaN(aTime)) {
+              return 1;
+            }
+            if (Number.isNaN(bTime)) {
+              return -1;
+            }
+            return bTime - aTime;
+          });
+
+          return {
+            sessions: sorted,
+            activeSessionId: sorted[0]?.id ?? null,
+            starred: pruneStarred(state.starred, sorted),
+          };
+        }),
       setActiveSession: (id) => set(() => ({ activeSessionId: id })),
       toggleSource: (source) =>
         set((state) => {

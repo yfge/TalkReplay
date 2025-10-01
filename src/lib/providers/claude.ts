@@ -194,10 +194,11 @@ function buildClaudeSession(
   const metadata: SessionMetadata = {
     sourceFile: filePath,
     provider: providerModel ? { model: providerModel } : undefined,
+    extra: sessionId ? { sessionId } : undefined,
   };
 
   return {
-    id: sessionId ?? filePath,
+    id: filePath,
     source: "claude",
     topic: topic ?? messages[0]?.content?.slice(0, 80) ?? "Claude session",
     startedAt:

@@ -28,6 +28,7 @@ module.exports = {
     "plugin:react-hooks/recommended",
     "plugin:import/typescript",
     "plugin:tailwindcss/recommended",
+    "plugin:@next/next/core-web-vitals",
     "prettier",
   ],
   settings: {

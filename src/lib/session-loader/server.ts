@@ -1,22 +1,9 @@
 import type { ProviderPaths } from "@/config/providerPaths";
-import { SUPPORTED_SOURCES, type ChatSession } from "@/types/chat";
-import type { ProviderImportError, ProviderId } from "@/types/providers";
-// eslint-disable-next-line import/order
-import { sampleSessions } from "@/data/sampleSessions";
+import { getSampleSessions } from "@/lib/session-loader/sample";
+import type { ChatSession } from "@/types/chat";
+import type { ProviderId } from "@/types/providers";
 
-export interface LoadSessionsResult {
-  sessions: ChatSession[];
-  signatures: Record<string, number>;
-  errors: ProviderImportError[];
-}
-
-function filteredSampleSessions(): ChatSession[] {
-  const allowed = new Set<string>(SUPPORTED_SOURCES);
-  const filtered = sampleSessions.filter((session) =>
-    allowed.has(session.source),
-  );
-  return filtered.length > 0 ? filtered : sampleSessions;
-}
+import type { LoadSessionsResult } from "./types";
 
 function signatureKey(provider: ProviderId, filePath: string): string {
   return `${provider}:${filePath}`;
@@ -36,22 +23,14 @@ function filterProviderSignatures(
   return result;
 }
 
-export async function loadSessionsFromProviders(
+export async function loadSessionsOnServer(
   paths: ProviderPaths,
   previousSignatures: Record<string, number>,
   previousSessions: ChatSession[],
 ): Promise<LoadSessionsResult> {
-  if (typeof window !== "undefined") {
-    return {
-      sessions: filteredSampleSessions(),
-      signatures: previousSignatures,
-      errors: [],
-    };
-  }
-
   const sessions: ChatSession[] = [];
   const signatures: Record<string, number> = {};
-  const errors: ProviderImportError[] = [];
+  const errors: LoadSessionsResult["errors"] = [];
 
   const previousByFile = new Map<string, ChatSession>();
   for (const session of previousSessions) {
@@ -61,7 +40,7 @@ export async function loadSessionsFromProviders(
     }
   }
 
-  const claudeRoot = paths.claudeRoot;
+  const claudeRoot = paths.claude;
   if (claudeRoot) {
     try {
       const { loadClaudeSessions } = await import("@/lib/providers/claude");
@@ -88,7 +67,7 @@ export async function loadSessionsFromProviders(
     }
   }
 
-  const codexRoot = paths.codexRoot;
+  const codexRoot = paths.codex;
   if (codexRoot) {
     try {
       const { loadCodexSessions } = await import("@/lib/providers/codex");
@@ -115,8 +94,7 @@ export async function loadSessionsFromProviders(
     }
   }
 
-  const dedupedSessions =
-    sessions.length > 0 ? sessions : filteredSampleSessions();
+  const dedupedSessions = sessions.length > 0 ? sessions : getSampleSessions();
 
   return {
     sessions: dedupedSessions,

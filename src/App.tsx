@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ChatDetail } from "@/components/chats/chat-detail";
@@ -6,7 +8,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { Button } from "@/components/ui/button";
-import { loadSessionsFromProviders } from "@/lib/session-loader";
+import { loadSessionsFromProviders } from "@/lib/session-loader/client";
 import { useActiveSession, useChatStore } from "@/store/chat-store";
 import { useImportStore } from "@/store/import-store";
 import { usePreferencesStore } from "@/store/preferences-store";

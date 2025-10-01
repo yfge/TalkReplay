@@ -15,7 +15,7 @@ interface PreferencesState {
 const initialPaths = getProviderPaths();
 
 export const usePreferencesStore = create<PreferencesState>()(
-  persist(
+  persist<PreferencesState>(
     (set) => ({
       providerPaths: initialPaths,
       isSetupComplete: Object.values(initialPaths).some(Boolean),

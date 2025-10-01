@@ -51,6 +51,7 @@ export interface SessionMetadata {
   summary?: string;
   language?: string;
   provider?: ProviderDetails;
+  format?: string;
   extra?: Record<string, unknown>;
 }
 

@@ -40,8 +40,14 @@ function pruneStarred(
   return next;
 }
 
+type ChatPersistedState = Partial<
+  Pick<ChatState, "sessions" | "filters" | "activeSessionId">
+> & {
+  starred?: string[];
+};
+
 export const useChatStore = create<ChatState>()(
-  persist(
+  persist<ChatState, ChatPersistedState>(
     (set) => ({
       sessions: [],
       filters: defaultFilters,
@@ -110,20 +116,28 @@ export const useChatStore = create<ChatState>()(
         starred: Array.from(state.starred),
       }),
       merge: (persisted, current) => {
-        const incoming = persisted as Partial<ChatState> & {
-          starred?: string[];
+        const incoming: ChatPersistedState = persisted ?? {};
+        const mergedFilters: ChatFilterState = {
+          ...current.filters,
+          ...(incoming.filters ?? {}),
+          showStarredOnly:
+            incoming.filters?.showStarredOnly ??
+            current.filters.showStarredOnly,
         };
+
+        const sessions = incoming.sessions ?? current.sessions;
+        const activeSessionId =
+          incoming.activeSessionId ?? current.activeSessionId;
+        const starred = new Set<string>(
+          incoming.starred ?? Array.from(current.starred),
+        );
+
         return {
           ...current,
-          ...incoming,
-          filters: {
-            ...current.filters,
-            ...(incoming.filters ?? {}),
-            showStarredOnly:
-              incoming.filters?.showStarredOnly ??
-              current.filters.showStarredOnly,
-          },
-          starred: new Set<string>(incoming.starred ?? []),
+          sessions,
+          filters: mergedFilters,
+          activeSessionId,
+          starred,
         };
       },
     },

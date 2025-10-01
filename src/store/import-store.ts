@@ -17,7 +17,7 @@ interface ImportState {
 }
 
 export const useImportStore = create<ImportState>()(
-  persist(
+  persist<ImportState>(
     (set) => ({
       fileSignatures: {},
       lastImportedAt: undefined,

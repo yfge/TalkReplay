@@ -10,7 +10,8 @@
 - [x] Establish provider-agnostic transcript schema in `src/types` (extend existing models for Gemini, add metadata fields) — see `src/types/chat.ts`.
 - [x] Expand sample data fixtures to cover Claude, Codex, Gemini edge cases (large files, missing metadata, code blocks) — see `src/data/sampleSessions.ts`.
 - [x] Set up i18n framework (e.g., `react-i18next`) with initial locales (en, zh-CN); add locale switcher component (see `src/lib/i18n.ts`).
-- [ ] Update lint/test/prettier configs to cover i18n files and new provider modules.
+- [x] Update lint/test/prettier configs to cover i18n files and new provider modules (see `package.json`, `vitest.config.ts`, `.prettierignore`).
+- [x] Migrate SPA scaffold to Next.js App Router with shared providers (`src/app/layout.tsx`, `src/app/providers.tsx`, `src/app/page.tsx`).
 
 ### 2. Local Directory Configuration
 
@@ -25,8 +26,9 @@
   - [x] Claude adapter reads JSONL sessions from ~/.claude/projects
   - [x] Codex adapter reads JSONL sessions from ~/.codex/sessions
   - [ ] Gemini adapter pending
-- [x] Support incremental import (only new/changed files) and surface parsing errors in UI notifications — see `src/lib/session-loader.ts` and import error banner in `App`.
+- [x] Support incremental import (only new/changed files) and surface parsing errors in UI notifications — see `src/lib/session-loader/server.ts`, `src/lib/session-loader/client.ts`, and the import error banner in `App`.
 - [x] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets — see `src/workers/parser.worker.ts`.
+- [x] Expose server-side loader via Next.js API route for lightweight backend (`src/app/api/sessions/route.ts`).
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).
 
 ### 4. Conversation Explorer UI
@@ -46,7 +48,7 @@
 
 ### 6. Quality, Docs, Release Ready
 
-- [ ] Update `README.md` with local setup, supported browsers, known limitations (file system access restrictions).
+- [x] Update `README.md` with local setup, supported browsers, known limitations (see "Browser Support & Limitations").
 - [ ] Create troubleshooting guide (`docs/troubleshooting.md`) covering directory permissions and parsing failures.
 - [ ] Expand `agents_chat` template snippet for multi-locale work and parser testing.
 - [ ] Prepare demo data script (optional) bundling sanitized transcripts for quick demos.

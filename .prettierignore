@@ -1,0 +1,7 @@
+.next
+node_modules
+coverage
+dist
+public/*.svg
+.pnpm-store
+pnpm-lock.yaml

@@ -1,6 +1,6 @@
 # Agents Chat Viewer
 
-A cross-platform web application for inspecting Claude and Codex chat transcripts. Built with React, TypeScript, Tailwind CSS, and shadcn/ui.
+A cross-platform web application for inspecting Claude and Codex chat transcripts. Built with Next.js (App Router), React, TypeScript, Tailwind CSS, and shadcn/ui.
 
 ## Quick Start
 
@@ -9,15 +9,22 @@ pnpm install
 pnpm dev
 ```
 
-The dev server runs on [http://localhost:5173](http://localhost:5173).
+The dev server runs on [http://localhost:3000](http://localhost:3000).
+
+## Browser Support & Limitations
+
+- Chromium-based browsers (Chrome, Edge, Arc) provide the best experience with directory pickers and drag-and-drop ingestion.
+- Safari and Firefox currently require manual file selection; File System Access APIs are gated or unavailable.
+- When running without the Next.js server (e.g., static export), the UI falls back to bundled sample data because real provider directories are only accessible via the `/api/sessions` endpoint.
 
 ## Available Scripts
 
-- `pnpm dev` – start Vite in development mode
-- `pnpm build` – type-check and create a production build
-- `pnpm preview` – preview the production build locally
+- `pnpm dev` – start the Next.js development server
+- `pnpm build` – create an optimized production build
+- `pnpm start` – serve the production build locally
 - `pnpm lint` – run ESLint across the project
 - `pnpm test` – execute unit tests with Vitest
+- `pnpm typecheck` – run TypeScript in no-emit mode
 - `pnpm format` – validate formatting via Prettier
 
 ## Project Structure
@@ -27,8 +34,10 @@ The dev server runs on [http://localhost:5173](http://localhost:5173).
 ├── agents_chat/            # AI collaboration logs (see policy)
 ├── src/                    # Application source code
 ├── public/                 # Static assets
+├── next.config.mjs         # Next.js configuration and webpack aliases
 ├── tailwind.config.ts      # Tailwind configuration with shadcn tokens
-└── vite.config.ts          # Vite + Vitest configuration
+├── vitest.config.ts        # Vitest configuration (React + alias support)
+└── src/app/                # Next.js App Router entrypoints
 ```
 
 ## agents_chat Policy
@@ -47,15 +56,15 @@ MIT
 
 ## Environment Configuration
 
-Set optional provider root paths via `.env` file (mirrored in `import.meta.env`):
+Set optional provider root paths via `.env` file (mirrored in `process.env.NEXT_PUBLIC_*`):
 
 ```bash
-VITE_CLAUDE_ROOT=/path/to/claude/logs
-VITE_CODEX_ROOT=/path/to/codex/logs
-VITE_GEMINI_ROOT=/path/to/gemini/logs
+NEXT_PUBLIC_CLAUDE_ROOT=/path/to/claude/logs
+NEXT_PUBLIC_CODEX_ROOT=/path/to/codex/logs
+NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs
 ```
 
-These defaults are read by `getProviderPaths()` in `src/config/providerPaths.ts`.
+These defaults are read by `getProviderPaths()` in `src/config/providerPaths.ts` and passed to the server-side loader exposed via `/api/sessions`.
 
 ## Browser File Access
 

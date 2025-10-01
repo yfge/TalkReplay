@@ -114,3 +114,9 @@
 - Integrate full-text search (e.g., Lunr.js) and tagging capabilities.
 - Provide side-by-side conversation diff view for comparative analysis.
 - Enable export of conversations (JSON/Markdown) for backup and sharing.
+
+## 15. Development Conventions
+
+- Keep code changes and commits as small and focused as possible.
+- Every commit must add a new `agents_chat/` record capturing the user prompts, interruptions, and key decisions for that work.
+- Update `tasks.md` in the same commit to reflect progress or new agreements.

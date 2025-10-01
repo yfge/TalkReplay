@@ -95,7 +95,8 @@
 
 ## Cross-Milestone Continuous Tasks
 
-- [ ] Maintain `agents_chat` logs per collaboration session and ensure hooks stay in sync.
+- [ ] Maintain detailed `agents_chat` logs per collaboration session (include prompts, interruptions, key decisions) and ensure hooks stay in sync.
 - [ ] Track dependency updates and security advisories (dependabot/renovate).
 - [ ] Periodic performance profiling for parsing and rendering large transcripts.
 - [ ] Capture user feedback/feature requests and update backlog regularly.
+- [ ] Keep commits small and focused; document progress updates in `tasks.md` for each change.

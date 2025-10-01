@@ -65,6 +65,13 @@
       "tokens": "Tokens",
       "toolCall": "Tool call"
     },
+    "toolCall": "Tool call",
+    "toolResult": "Tool result",
+    "noToolOutput": "Tool did not return any output.",
+    "reasoning": "Model reasoning",
+    "reasoningRedacted": "Reasoning content not available.",
+    "emptyMessage": "No textual content.",
+    "unknown": "unknown",
     "star": "Star conversation",
     "unstar": "Unstar conversation"
   }

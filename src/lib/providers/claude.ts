@@ -6,7 +6,9 @@ import type {
   ChatMessage,
   ChatRole,
   ChatSession,
+  MessageMetadata,
   SessionMetadata,
+  TokenUsage,
 } from "@/types/chat";
 import type { ProviderImportError } from "@/types/providers";
 
@@ -28,6 +30,13 @@ interface ClaudeMessageContentToolUse {
   input?: unknown;
 }
 
+interface ClaudeMessageContentToolResult {
+  type: "tool_result";
+  tool_use_id?: string;
+  content?: unknown;
+  is_error?: boolean;
+}
+
 interface ClaudeLogMessage {
   id?: string;
   role?: string;
@@ -36,6 +45,7 @@ interface ClaudeLogMessage {
     | Array<
         | ClaudeMessageContentText
         | ClaudeMessageContentToolUse
+        | ClaudeMessageContentToolResult
         | Record<string, unknown>
       >;
   model?: string;
@@ -49,6 +59,13 @@ interface ClaudeLogEntry {
   sessionId?: string;
   timestamp?: string;
   uuid?: string;
+  toolUseResult?: {
+    stdout?: string;
+    stderr?: string;
+    interrupted?: boolean;
+    isImage?: boolean;
+    [key: string]: unknown;
+  };
 }
 
 const ROLE_MAP: Record<string, ChatRole> = {
@@ -69,44 +86,6 @@ function toIsoTimestamp(value?: string): string {
   return date.toISOString();
 }
 
-function extractClaudeText(content: ClaudeLogMessage["content"]): {
-  text: string;
-  toolCallId?: string;
-} {
-  if (typeof content === "string") {
-    return { text: content };
-  }
-
-  if (Array.isArray(content)) {
-    const textParts: string[] = [];
-    let toolCallId: string | undefined;
-
-    for (const item of content) {
-      if (!item || typeof item !== "object") {
-        continue;
-      }
-
-      if ((item as ClaudeMessageContentText).type === "text") {
-        const text = (item as ClaudeMessageContentText).text;
-        if (typeof text === "string") {
-          textParts.push(text);
-        }
-      }
-
-      if ((item as ClaudeMessageContentToolUse).type === "tool_use") {
-        const toolId = (item as ClaudeMessageContentToolUse).id;
-        if (typeof toolId === "string") {
-          toolCallId = toolId;
-        }
-      }
-    }
-
-    return { text: textParts.join("\n"), toolCallId };
-  }
-
-  return { text: "" };
-}
-
 function parseClaudeLines(lines: string[]): ClaudeLogEntry[] {
   const entries: ClaudeLogEntry[] = [];
   for (const line of lines) {
@@ -118,6 +97,20 @@ function parseClaudeLines(lines: string[]): ClaudeLogEntry[] {
     }
   }
   return entries;
+}
+
+function safeStringify(value: unknown): string | null {
+  if (value === null || typeof value === "undefined") {
+    return null;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "[unserialisable]";
+  }
 }
 
 function buildClaudeSession(
@@ -151,37 +144,123 @@ function buildClaudeSession(
     }
 
     const roleKey = (message.role ?? entry.type ?? "").toLowerCase();
-    const role = ROLE_MAP[roleKey];
-    if (!role) {
+    const defaultRole = ROLE_MAP[roleKey];
+    if (!defaultRole) {
       return;
     }
 
-    const { text, toolCallId } = extractClaudeText(message.content);
-
-    const chatMessage: ChatMessage = {
-      id: message.id ?? entry.uuid ?? `${role}-${index}`,
-      role,
-      timestamp: toIsoTimestamp(entry.timestamp),
-      content: text,
-      metadata: {
-        toolCallId,
-        raw: entry,
-      },
+    const timestamp = toIsoTimestamp(entry.timestamp);
+    const baseId = message.id ?? entry.uuid ?? `${defaultRole}-${index}`;
+    const baseMetadata: MessageMetadata = {
+      raw: entry,
+      providerMessageType: undefined,
     };
+    let usageAttached = false;
 
-    if (message.usage) {
-      chatMessage.metadata = {
-        ...chatMessage.metadata,
-        tokens: {
+    const attachUsage = (metadata: MessageMetadata): MessageMetadata => {
+      if (!usageAttached && message.usage) {
+        metadata.tokens = {
           prompt: message.usage.input_tokens,
           completion: message.usage.output_tokens,
           total: message.usage.total_tokens,
-        },
-      };
-    }
+        } satisfies TokenUsage;
+        usageAttached = true;
+      }
+      return metadata;
+    };
 
-    messages.push(chatMessage);
-    participants.add(role);
+    const pushMessage = (
+      kind: ChatMessage["kind"],
+      content: string | null,
+      metadata: Partial<MessageMetadata> = {},
+      suffix?: string,
+      roleOverride?: ChatRole,
+    ) => {
+      const finalRole = roleOverride ?? defaultRole;
+      const meta = attachUsage({
+        ...baseMetadata,
+        ...metadata,
+      });
+      const chatMessage: ChatMessage = {
+        id: suffix ? `${baseId}:${suffix}` : baseId,
+        role: finalRole,
+        kind,
+        timestamp,
+        content,
+        metadata: meta,
+      };
+      messages.push(chatMessage);
+      participants.add(finalRole);
+    };
+
+    if (typeof message.content === "string") {
+      pushMessage("content", message.content, { providerMessageType: "text" });
+    } else if (Array.isArray(message.content)) {
+      let chunkIndex = 0;
+      for (const item of message.content) {
+        if (!item || typeof item !== "object") {
+          continue;
+        }
+        const itemType = (item as { type?: string }).type;
+        if (itemType === "text") {
+          const text = (item as ClaudeMessageContentText).text ?? "";
+          pushMessage(
+            "content",
+            text,
+            { providerMessageType: "text" },
+            `${chunkIndex++}`,
+          );
+        } else if (itemType === "tool_use") {
+          const tool = item as ClaudeMessageContentToolUse;
+          pushMessage(
+            "tool-call",
+            safeStringify(tool.input),
+            {
+              providerMessageType: "tool_use",
+              toolCallId: tool.id,
+              toolCall: {
+                id: tool.id,
+                name: tool.name,
+                arguments: tool.input,
+              },
+            },
+            `${chunkIndex++}`,
+          );
+        } else if (itemType === "tool_result") {
+          const result = item as ClaudeMessageContentToolResult;
+          const output =
+            typeof result.content === "string"
+              ? result.content
+              : (safeStringify(result.content) ??
+                safeStringify(entry.toolUseResult) ??
+                null);
+          pushMessage(
+            "tool-result",
+            output,
+            {
+              providerMessageType: "tool_result",
+              toolCallId: result.tool_use_id,
+              toolResult: {
+                callId: result.tool_use_id,
+                output: result.content ?? entry.toolUseResult ?? null,
+              },
+            },
+            `${chunkIndex++}`,
+            "tool",
+          );
+        }
+      }
+
+      if (chunkIndex === 0) {
+        pushMessage("content", safeStringify(message.content), {
+          providerMessageType: "unknown",
+        });
+      }
+    } else {
+      pushMessage("content", safeStringify(message.content), {
+        providerMessageType: "unknown",
+      });
+    }
 
     if (!providerModel && message.model) {
       providerModel = message.model;
@@ -198,10 +277,14 @@ function buildClaudeSession(
     extra: sessionId ? { sessionId } : undefined,
   };
 
+  const firstContent = messages.find(
+    (message) => message.kind === "content" && message.content,
+  );
+
   return {
     id: filePath,
     source: "claude",
-    topic: topic ?? messages[0]?.content?.slice(0, 80) ?? "Claude session",
+    topic: topic ?? firstContent?.content?.slice(0, 80) ?? "Claude session",
     startedAt:
       firstTimestamp ?? messages[0]?.timestamp ?? new Date().toISOString(),
     participants: Array.from(participants),

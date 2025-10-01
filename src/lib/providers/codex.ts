@@ -6,40 +6,18 @@ import type {
   ChatMessage,
   ChatRole,
   ChatSession,
+  MessageMetadata,
   SessionMetadata,
+  TokenUsage,
 } from "@/types/chat";
 import type { ProviderImportError } from "@/types/providers";
-
-interface CodexContentText {
-  type: string;
-  text?: string;
-}
-
-interface CodexContentToolUse {
-  type: "tool_use";
-  id?: string;
-  name?: string;
-  input?: unknown;
-}
-
-interface CodexContentToolResult {
-  type: "tool_result";
-  id?: string;
-  content?: string;
-  is_error?: boolean;
-}
 
 interface CodexPayload {
   id?: string;
   type?: string;
   role?: string;
   model?: string;
-  content?: Array<
-    | CodexContentText
-    | CodexContentToolUse
-    | CodexContentToolResult
-    | Record<string, unknown>
-  >;
+  content?: Array<Record<string, unknown>>;
   usage?: {
     input_tokens?: number;
     output_tokens?: number;
@@ -49,12 +27,18 @@ interface CodexPayload {
   cwd?: string;
   originator?: string;
   cli_version?: string;
+  summary?: Array<{ type?: string; text?: string }>;
+  encrypted_content?: string | null;
+  arguments?: string | null;
+  name?: string;
+  call_id?: string;
+  output?: string | null;
 }
 
 interface CodexLogEntry {
   type: string;
   timestamp?: string;
-  payload?: CodexPayload;
+  payload?: CodexPayload | Record<string, unknown>;
 }
 
 const ROLE_MAP: Record<string, ChatRole> = {
@@ -88,45 +72,29 @@ function parseCodexLines(lines: string[]): CodexLogEntry[] {
   return entries;
 }
 
-function extractCodexContent(content: CodexPayload["content"]): {
-  text: string;
-  toolCallId?: string;
-} {
-  if (!Array.isArray(content)) {
-    return { text: "" };
+function safeStringify(value: unknown): string | null {
+  if (value === null || typeof value === "undefined") {
+    return null;
   }
-
-  const textParts: string[] = [];
-  let toolCallId: string | undefined;
-
-  for (const item of content) {
-    if (!item || typeof item !== "object") {
-      continue;
-    }
-
-    if ((item as CodexContentToolUse).type === "tool_use") {
-      const toolId = (item as CodexContentToolUse).id;
-      if (typeof toolId === "string") {
-        toolCallId = toolId;
-      }
-      continue;
-    }
-
-    if ((item as CodexContentToolResult).type === "tool_result") {
-      const result = (item as CodexContentToolResult).content;
-      if (typeof result === "string") {
-        textParts.push(result);
-      }
-      continue;
-    }
-
-    const text = (item as CodexContentText).text;
-    if (typeof text === "string") {
-      textParts.push(text);
-    }
+  if (typeof value === "string") {
+    return value;
   }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return "[unserialisable]";
+  }
+}
 
-  return { text: textParts.join("\n"), toolCallId };
+function safeJsonParse(value: string | null | undefined): unknown {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
 }
 
 function buildCodexSession(
@@ -142,9 +110,10 @@ function buildCodexSession(
 
   entries.forEach((entry, index) => {
     if (entry.type === "session_meta" && entry.payload) {
-      sessionId = entry.payload.id ?? sessionId;
-      if (entry.payload.instructions) {
-        instructions = entry.payload.instructions;
+      const payload = entry.payload as CodexPayload;
+      sessionId = payload.id ?? sessionId;
+      if (payload.instructions) {
+        instructions = payload.instructions;
       }
       if (!firstTimestamp && entry.timestamp) {
         firstTimestamp = toIsoTimestamp(entry.timestamp);
@@ -152,43 +121,200 @@ function buildCodexSession(
       return;
     }
 
+    if (entry.type === "event_msg" && entry.payload) {
+      const eventPayload = entry.payload as Record<string, unknown>;
+      const eventType =
+        typeof eventPayload.type === "string" ? eventPayload.type : undefined;
+      if (eventType !== "agent_reasoning") {
+        return;
+      }
+      const text =
+        typeof eventPayload.text === "string" ? eventPayload.text : null;
+      if (!text) {
+        return;
+      }
+      const timestamp = toIsoTimestamp(entry.timestamp);
+      const message: ChatMessage = {
+        id: `event-reasoning-${index}`,
+        role: "assistant",
+        kind: "reasoning",
+        timestamp,
+        content: text,
+        metadata: {
+          providerMessageType: eventType,
+          raw: entry,
+        },
+      };
+      messages.push(message);
+      participants.add("assistant");
+      return;
+    }
+
     if (entry.type !== "response_item" || !entry.payload) {
       return;
     }
 
-    const payload = entry.payload;
+    const payload = entry.payload as CodexPayload;
     const roleKey = (payload.role ?? "").toLowerCase();
-    const role = ROLE_MAP[roleKey];
-    if (!role) {
-      return;
-    }
-
-    const { text, toolCallId } = extractCodexContent(payload.content);
-
-    const chatMessage: ChatMessage = {
-      id: payload.id ?? `${role}-${index}`,
-      role,
-      timestamp: toIsoTimestamp(entry.timestamp),
-      content: text,
-      metadata: {
-        toolCallId,
-        raw: entry,
-      },
+    const defaultRole = ROLE_MAP[roleKey] ?? "assistant";
+    const timestamp = toIsoTimestamp(entry.timestamp);
+    const baseId = payload.id ?? `${defaultRole}-${index}`;
+    const baseMetadata: MessageMetadata = {
+      raw: entry,
+      providerMessageType: payload.type,
     };
+    let usageAttached = false;
 
-    if (payload.usage) {
-      chatMessage.metadata = {
-        ...chatMessage.metadata,
-        tokens: {
+    const attachUsage = (metadata: MessageMetadata): MessageMetadata => {
+      if (!usageAttached && payload.usage) {
+        metadata.tokens = {
           prompt: payload.usage.input_tokens,
           completion: payload.usage.output_tokens,
           total: payload.usage.total_tokens,
-        },
-      };
-    }
+        } satisfies TokenUsage;
+        usageAttached = true;
+      }
+      return metadata;
+    };
 
-    messages.push(chatMessage);
-    participants.add(role);
+    const pushMessage = (
+      kind: ChatMessage["kind"],
+      content: string | null,
+      metadata: Partial<MessageMetadata> = {},
+      suffix?: string,
+      roleOverride?: ChatRole,
+    ) => {
+      const finalRole = roleOverride ?? defaultRole;
+      const meta = attachUsage({
+        ...baseMetadata,
+        ...metadata,
+      });
+      const message: ChatMessage = {
+        id: suffix ? `${baseId}:${suffix}` : baseId,
+        role: finalRole,
+        kind,
+        timestamp,
+        content,
+        metadata: meta,
+      };
+      messages.push(message);
+      participants.add(finalRole);
+    };
+
+    switch (payload.type) {
+      case "message": {
+        const items = Array.isArray(payload.content) ? payload.content : [];
+        let chunkIndex = 0;
+        for (const item of items) {
+          if (!item || typeof item !== "object") {
+            continue;
+          }
+          const itemType =
+            typeof item.type === "string" ? item.type : undefined;
+          if (itemType === "tool_use") {
+            const callId = typeof item.id === "string" ? item.id : undefined;
+            const name = typeof item.name === "string" ? item.name : undefined;
+            pushMessage(
+              "tool-call",
+              safeStringify(item.input),
+              {
+                toolCallId: callId,
+                toolCall: {
+                  id: callId,
+                  name,
+                  arguments: item.input,
+                },
+              },
+              `${chunkIndex++}`,
+            );
+            continue;
+          }
+          if (itemType === "tool_result") {
+            const callId = typeof item.id === "string" ? item.id : undefined;
+            const outputValue =
+              typeof item.content === "string"
+                ? safeJsonParse(item.content)
+                : (item.content ?? null);
+            pushMessage(
+              "tool-result",
+              safeStringify(outputValue),
+              {
+                toolCallId: callId,
+                toolResult: {
+                  callId,
+                  output: outputValue,
+                },
+              },
+              `${chunkIndex++}`,
+              "tool",
+            );
+            continue;
+          }
+          const text =
+            typeof item.text === "string" ? item.text : safeStringify(item);
+          if (text) {
+            pushMessage("content", text, {}, `${chunkIndex++}`);
+          }
+        }
+        if (chunkIndex === 0) {
+          pushMessage("content", safeStringify(payload.content) ?? "");
+        }
+        break;
+      }
+      case "reasoning": {
+        const summaryText = Array.isArray(payload.summary)
+          ? payload.summary
+              .map((item) => (typeof item.text === "string" ? item.text : ""))
+              .filter(Boolean)
+              .join("\n")
+          : undefined;
+        pushMessage("reasoning", summaryText ?? null, {
+          reasoning: {
+            summary: summaryText,
+            detail: null,
+            providerType: "reasoning",
+          },
+        });
+        break;
+      }
+      case "function_call": {
+        const args = safeJsonParse(payload.arguments);
+        pushMessage("tool-call", safeStringify(args), {
+          toolCall: {
+            id: payload.id,
+            name: payload.name,
+            arguments: args,
+          },
+        });
+        break;
+      }
+      case "function_call_output": {
+        const output = safeJsonParse(payload.output);
+        pushMessage(
+          "tool-result",
+          safeStringify(output),
+          {
+            toolResult: {
+              callId: payload.call_id,
+              output,
+            },
+          },
+          undefined,
+          "tool",
+        );
+        break;
+      }
+      default: {
+        pushMessage(
+          "system",
+          safeStringify(payload) ?? null,
+          {},
+          undefined,
+          "system",
+        );
+        break;
+      }
+    }
 
     if (!providerModel && payload.model) {
       providerModel = payload.model;
@@ -206,10 +332,17 @@ function buildCodexSession(
     extra: sessionId ? { sessionId } : undefined,
   };
 
+  const firstContent = messages.find(
+    (message) => message.kind === "content" && message.content,
+  );
+
   return {
     id: filePath,
     source: "codex",
-    topic: messages[0]?.content?.slice(0, 80) ?? "Codex session",
+    topic:
+      instructions?.split("\n", 1)[0]?.slice(0, 80) ??
+      firstContent?.content?.slice(0, 80) ??
+      "Codex session",
     startedAt:
       firstTimestamp ?? messages[0]?.timestamp ?? new Date().toISOString(),
     participants: Array.from(participants),

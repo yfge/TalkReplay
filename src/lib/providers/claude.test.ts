@@ -14,5 +14,6 @@ describe("parseClaudeSessionFromString", () => {
     expect(session?.messages).toHaveLength(2);
     expect(session?.source).toBe("claude");
     expect(session?.messages?.[1]?.metadata?.tokens?.total).toBe(30);
+    expect(session?.messages?.[0]?.kind).toBe("content");
   });
 });

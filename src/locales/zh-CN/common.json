@@ -65,6 +65,13 @@
       "tokens": "令牌",
       "toolCall": "工具调用"
     },
+    "toolCall": "工具调用",
+    "toolResult": "工具结果",
+    "noToolOutput": "工具未返回输出。",
+    "reasoning": "推理过程",
+    "reasoningRedacted": "推理内容不可用。",
+    "emptyMessage": "无文本内容。",
+    "unknown": "未知",
     "star": "收藏会话",
     "unstar": "取消收藏"
   }

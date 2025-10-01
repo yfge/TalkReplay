@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { safeStateStorage } from "@/lib/safe-storage";
 
+import { safeStateStorage } from "@/lib/safe-storage";
 import type {
   AgentSource,
   ChatFilterState,

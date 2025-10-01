@@ -8,6 +8,9 @@ import type { ChatSession } from "@/types/chat";
 
 function toSummary(session: ChatSession) {
   const sourceFile = session.metadata?.sourceFile ?? session.id;
+  const previewMessage = session.messages.find(
+    (message) => message.kind === "content" && message.content,
+  );
   return {
     id: encodeSessionId(sourceFile),
     source: session.source,
@@ -15,7 +18,8 @@ function toSummary(session: ChatSession) {
     startedAt: session.startedAt,
     participants: session.participants,
     metadata: session.metadata,
-    preview: session.messages[0]?.content,
+    preview:
+      previewMessage?.content ?? session.metadata?.summary ?? session.topic,
     messageCount: session.messages.length,
   };
 }

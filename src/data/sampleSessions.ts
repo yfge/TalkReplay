@@ -18,12 +18,32 @@ export const sampleSessions: ChatSession[] = [
     messages: [
       {
         id: "msg-1",
+        kind: "content",
         role: "user",
         timestamp: "2024-04-01T09:30:00.000Z",
         content: "Help me create a responsive timeline component in React.",
       },
       {
+        id: "msg-claude-tool-call",
+        kind: "tool-call",
+        role: "assistant",
+        timestamp: "2024-04-01T09:30:02.000Z",
+        content: '{"component":"Timeline","framework":"react"}',
+        metadata: {
+          toolCallId: "render-preview",
+          toolCall: {
+            id: "render-preview",
+            name: "preview",
+            arguments: {
+              component: "Timeline",
+              framework: "react",
+            },
+          },
+        },
+      },
+      {
         id: "msg-2",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-04-01T09:30:05.000Z",
         content: "Here is a timeline component using Tailwind CSS...",
@@ -44,6 +64,7 @@ export const sampleSessions: ChatSession[] = [
       },
       {
         id: "msg-claude-tool",
+        kind: "tool-result",
         role: "tool",
         timestamp: "2024-04-01T09:30:06.500Z",
         content: '{"result":"timeline component rendered"}',
@@ -72,12 +93,14 @@ export const sampleSessions: ChatSession[] = [
     messages: [
       {
         id: "msg-3",
+        kind: "content",
         role: "user",
         timestamp: "2024-03-28T14:10:00.000Z",
         content: "The build fails with ESLint errors, what should I do?",
       },
       {
         id: "msg-4",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-03-28T14:10:04.000Z",
         content:
@@ -100,6 +123,7 @@ export const sampleSessions: ChatSession[] = [
       },
       {
         id: "msg-5",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-03-28T14:10:05.000Z",
         content:
@@ -126,12 +150,14 @@ export const sampleSessions: ChatSession[] = [
     messages: [
       {
         id: "msg-5",
+        kind: "content",
         role: "user",
         timestamp: "2024-05-12T07:42:12.000Z",
         content: "Please summarise the key themes from this feedback dataset.",
       },
       {
         id: "msg-6",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-05-12T07:42:20.000Z",
         content:
@@ -154,6 +180,7 @@ export const sampleSessions: ChatSession[] = [
       },
       {
         id: "msg-7",
+        kind: "content",
         role: "assistant",
         timestamp: "2024-05-12T07:42:25.000Z",
         content:

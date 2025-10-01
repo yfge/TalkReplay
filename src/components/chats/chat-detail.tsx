@@ -17,6 +17,21 @@ const roleStyles: Record<string, string> = {
   tool: "bg-muted text-muted-foreground",
 };
 
+function formatJson(value: unknown): string | null {
+  if (value === null || typeof value === "undefined") {
+    return null;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (error) {
+    console.error("Failed to serialise value", error);
+    return "[unserialisable]";
+  }
+}
+
 interface ChatDetailProps {
   session: ChatSession | null;
   isLoading?: boolean;
@@ -61,7 +76,12 @@ export function ChatDetail({
         startedAt: parsedSession.startedAt,
         participants: parsedSession.participants,
         metadata: parsedSession.metadata,
-        preview: parsedSession.messages[0]?.content,
+        preview:
+          parsedSession.messages.find(
+            (message) => message.kind === "content" && message.content,
+          )?.content ??
+          parsedSession.metadata?.summary ??
+          parsedSession.topic,
         messageCount: parsedSession.messages.length,
       }));
 
@@ -220,22 +240,128 @@ export function ChatDetail({
         <ol className="space-y-4">
           {session.messages.map((message, index) => {
             const tokenInfo = message.metadata?.tokens;
-            const toolCall = message.metadata?.toolCallId;
+            const toolCallId =
+              message.metadata?.toolCallId ?? message.metadata?.toolCall?.id;
+            const toolCallArgs = message.metadata?.toolCall?.arguments;
+            const toolResultOutput = message.metadata?.toolResult?.output;
+            const reasoningSummary = message.metadata?.reasoning?.summary;
+
+            const resolvedContent =
+              message.kind === "tool-call"
+                ? (message.content ?? formatJson(toolCallArgs))
+                : message.kind === "tool-result"
+                  ? (message.content ?? formatJson(toolResultOutput))
+                  : message.kind === "reasoning"
+                    ? (message.content ?? reasoningSummary ?? null)
+                    : message.kind === "system"
+                      ? (message.content ?? null)
+                      : (message.content ?? "");
+
+            const copyPayload = resolvedContent ?? "";
+
             const metadataLine = [
+              message.kind !== "content"
+                ? message.kind.replaceAll("-", " ")
+                : null,
               tokenInfo?.total
                 ? `${t("detail.metadata.tokens")}: ${tokenInfo.total}`
                 : null,
-              toolCall ? `${t("detail.metadata.toolCall")}: ${toolCall}` : null,
+              toolCallId
+                ? `${t("detail.metadata.toolCall")}: ${toolCallId}`
+                : null,
             ].filter(Boolean);
 
             const messageKey = `${session.id}:${message.id ?? "message"}:${index}`;
 
             const isCopied = copiedMessageId === messageKey;
 
+            const renderBody = () => {
+              switch (message.kind) {
+                case "tool-call": {
+                  const label =
+                    message.metadata?.toolCall?.name ??
+                    toolCallId ??
+                    t("detail.unknown");
+                  return (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t("detail.toolCall")}: {label}
+                      </p>
+                      {toolCallArgs ? (
+                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                          {formatJson(toolCallArgs)}
+                        </pre>
+                      ) : null}
+                      {message.content && !toolCallArgs ? (
+                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                          {message.content}
+                        </pre>
+                      ) : null}
+                    </div>
+                  );
+                }
+                case "tool-result": {
+                  return (
+                    <div className="space-y-2 text-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t("detail.toolResult")}:{" "}
+                        {toolCallId ?? t("detail.unknown")}
+                      </p>
+                      {resolvedContent ? (
+                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                          {resolvedContent}
+                        </pre>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {t("detail.noToolOutput")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+                case "reasoning": {
+                  return (
+                    <div className="text-sm">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t("detail.reasoning")}
+                      </p>
+                      <p className="whitespace-pre-wrap break-words">
+                        {resolvedContent ?? t("detail.reasoningRedacted")}
+                      </p>
+                    </div>
+                  );
+                }
+                case "system": {
+                  return resolvedContent ? (
+                    <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                      {resolvedContent}
+                    </pre>
+                  ) : null;
+                }
+                default: {
+                  return resolvedContent ? (
+                    <pre className="whitespace-pre-wrap break-words font-sans text-sm">
+                      {resolvedContent}
+                    </pre>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {t("detail.emptyMessage")}
+                    </p>
+                  );
+                }
+              }
+            };
+
             return (
               <li key={messageKey} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   <span>{message.role}</span>
+                  {message.kind !== "content" ? (
+                    <>
+                      <span>•</span>
+                      <span>{message.kind.replaceAll("-", " ")}</span>
+                    </>
+                  ) : null}
                   <span>•</span>
                   <time dateTime={message.timestamp}>
                     {new Date(message.timestamp).toLocaleString()}
@@ -243,8 +369,12 @@ export function ChatDetail({
                   <Button
                     variant="ghost"
                     className="ml-auto h-6 px-2 text-xs"
+                    disabled={!copyPayload}
                     onClick={() => {
-                      void copyMessage(message.content, messageKey);
+                      if (!copyPayload) {
+                        return;
+                      }
+                      void copyMessage(copyPayload, messageKey);
                     }}
                   >
                     {isCopied ? t("detail.copied") : t("detail.copy")}
@@ -256,11 +386,9 @@ export function ChatDetail({
                   </div>
                 ) : null}
                 <div
-                  className={`rounded-lg px-4 py-3 text-sm leading-relaxed shadow-sm ${roleStyles[message.role] ?? "bg-muted text-foreground"}`}
+                  className={`rounded-lg px-4 py-3 leading-relaxed shadow-sm ${roleStyles[message.role] ?? "bg-muted text-foreground"}`}
                 >
-                  <pre className="whitespace-pre-wrap break-words font-sans text-sm">
-                    {message.content}
-                  </pre>
+                  {renderBody()}
                 </div>
               </li>
             );

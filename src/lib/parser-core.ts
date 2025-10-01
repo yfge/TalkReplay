@@ -72,6 +72,7 @@ export function parseJsonSessions(
       return {
         id: message.id ?? `${source}-${index}`,
         role: role as ChatMessage["role"],
+        kind: "content",
         timestamp: normaliseTimestamp(
           message.timestamp ?? raw.startedAt ?? Date.now(),
         ),
@@ -108,6 +109,7 @@ export function parsePlainTextTranscript(
     messages.push({
       id: randomId(),
       role: role.toLowerCase() as ChatMessage["role"],
+      kind: "content",
       timestamp: new Date().toISOString(),
       content: content.trim(),
     });

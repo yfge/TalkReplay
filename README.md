@@ -48,7 +48,33 @@ The dev server runs on [http://localhost:3000](http://localhost:3000).
 
 ## Docker
 
-Docker configuration will be added in a subsequent iteration. The initial commit focuses on the application scaffold and tooling.
+The repository ships with a multi-stage `Dockerfile` and a `docker-compose.yml` to run the production build without installing Node.js locally.
+
+### Build & run with Docker
+
+```bash
+docker build -t agents-chat-viewer .
+docker run \
+  -p 3000:3000 \
+  -e CLAUDE_ROOT=/app/data/claude \
+  -e CODEX_ROOT=/app/data/codex \
+  -v "$HOME/.claude/projects":/app/data/claude:ro \
+  -v "$HOME/.codex/sessions":/app/data/codex:ro \
+  agents-chat-viewer
+```
+
+### Using docker-compose
+
+`docker-compose.yml` provides the same container with convenient volume bindings. Override the host paths through environment variables when needed:
+
+```bash
+CLAUDE_LOGS_PATH="$HOME/.claude/projects" \
+CODEX_LOGS_PATH="$HOME/.codex/sessions" \
+APP_PORT=3000 \
+docker compose up --build
+```
+
+By default the compose file mounts `./fixtures/claude` and `./fixtures/codex`, allowing the container to start with bundled sample transcripts. Map the variables above to your real log directories to inspect live data.
 
 ## License
 

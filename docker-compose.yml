@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      CLAUDE_ROOT: /app/data/claude
+      CODEX_ROOT: /app/data/codex
+    volumes:
+      - ${CLAUDE_LOGS_PATH:-./fixtures/claude}:/app/data/claude:ro
+      - ${CODEX_LOGS_PATH:-./fixtures/codex}:/app/data/codex:ro
+    restart: unless-stopped

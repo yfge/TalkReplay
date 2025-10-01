@@ -5,10 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_CLAUDE_ROOT: /app/data/claude
+        NEXT_PUBLIC_CODEX_ROOT: /app/data/codex
+        NEXT_PUBLIC_GEMINI_ROOT: ""
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
+      NEXT_PUBLIC_CLAUDE_ROOT: /app/data/claude
+      NEXT_PUBLIC_CODEX_ROOT: /app/data/codex
+      NEXT_PUBLIC_GEMINI_ROOT: ""
       CLAUDE_ROOT: /app/data/claude
       CODEX_ROOT: /app/data/codex
     volumes:

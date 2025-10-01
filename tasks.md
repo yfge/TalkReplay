@@ -12,6 +12,7 @@
 - [x] Set up i18n framework (e.g., `react-i18next`) with initial locales (en, zh-CN); add locale switcher component (see `src/lib/i18n.ts`).
 - [x] Update lint/test/prettier configs to cover i18n files and new provider modules (see `package.json`, `vitest.config.ts`, `.prettierignore`).
 - [x] Migrate SPA scaffold to Next.js App Router with shared providers (`src/app/layout.tsx`, `src/app/providers.tsx`, `src/app/page.tsx`).
+- [x] Ensure Docker builds and runtime export provider roots via `NEXT_PUBLIC_*` env defaults so the UI skips manual setup (`Dockerfile`, `docker-compose.yml`).
 
 ### 2. Local Directory Configuration
 

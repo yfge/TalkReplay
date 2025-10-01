@@ -57,6 +57,8 @@ The repository ships with a multi-stage `Dockerfile` and a `docker-compose.yml` 
 docker build -t agents-chat-viewer .
 docker run \
   -p 3000:3000 \
+  -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
+  -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
   -e CLAUDE_ROOT=/app/data/claude \
   -e CODEX_ROOT=/app/data/codex \
   -v "$HOME/.claude/projects":/app/data/claude:ro \
@@ -66,7 +68,7 @@ docker run \
 
 ### Using docker-compose
 
-`docker-compose.yml` provides the same container with convenient volume bindings. By default it mounts `${HOME}/.claude/projects` and `${HOME}/.codex/sessions`; override the host paths through environment variables when needed:
+`docker-compose.yml` provides the same container with convenient volume bindings. By default it mounts `${HOME}/.claude/projects` and `${HOME}/.codex/sessions`; override the host paths through environment variables when needed. The compose file passes these mounts through `NEXT_PUBLIC_*` variables so the UI loads without an additional setup step:
 
 ```bash
 CLAUDE_LOGS_PATH="$HOME/.claude/projects" \
@@ -75,7 +77,7 @@ APP_PORT=3000 \
 docker compose up --build
 ```
 
-By default the compose file mounts `./fixtures/claude` and `./fixtures/codex`, allowing the container to start with bundled sample transcripts. Map the variables above to your real log directories to inspect live data.
+The defaults point at your `${HOME}` transcripts; to start with bundled samples instead, set `CLAUDE_LOGS_PATH=./fixtures/claude` and `CODEX_LOGS_PATH=./fixtures/codex` before running the command. Map the variables to your real log directories to inspect live data.
 
 ## License
 

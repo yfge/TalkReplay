@@ -31,7 +31,7 @@
 - [x] Expose server-side loader via Next.js API route for lightweight backend (`src/app/api/sessions/route.ts`).
 - [x] Split session summary/detail flow with dedicated API route and cached detail store.
 - [x] Unify session ID encoding/decoding across client and server to keep sample + provider data in sync.
-- [ ] Add integration tests for session summary/detail endpoints and store wiring.
+- [x] Add integration tests for session summary/detail endpoints and store wiring.
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).
 
 ### 4. Conversation Explorer UI

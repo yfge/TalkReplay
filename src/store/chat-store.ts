@@ -41,7 +41,7 @@ function pruneStarred(
 }
 
 type ChatPersistedState = Partial<
-  Pick<ChatState, "sessions" | "filters" | "activeSessionId">
+  Pick<ChatState, "filters" | "activeSessionId">
 > & {
   starred?: string[];
 };
@@ -110,7 +110,6 @@ export const useChatStore = create<ChatState>()(
       name: "agents-chat-state",
       version: 2,
       partialize: (state) => ({
-        sessions: state.sessions,
         filters: state.filters,
         activeSessionId: state.activeSessionId,
         starred: Array.from(state.starred),
@@ -125,7 +124,6 @@ export const useChatStore = create<ChatState>()(
             current.filters.showStarredOnly,
         };
 
-        const sessions = incoming.sessions ?? current.sessions;
         const activeSessionId =
           incoming.activeSessionId ?? current.activeSessionId;
         const starred = new Set<string>(
@@ -134,7 +132,6 @@ export const useChatStore = create<ChatState>()(
 
         return {
           ...current,
-          sessions,
           filters: mergedFilters,
           activeSessionId,
           starred,

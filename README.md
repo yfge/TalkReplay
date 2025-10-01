@@ -113,4 +113,4 @@ Future enhancements: Gemini support, virtualised lists, keyboard shortcuts, coll
 
 ## License
 
-MIT
+[MIT](LICENSE)

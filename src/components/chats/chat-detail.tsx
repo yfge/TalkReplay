@@ -174,7 +174,7 @@ export function ChatDetail({ session }: ChatDetailProps) {
       </div>
       <ScrollArea className="flex-1 bg-background px-6 py-4">
         <ol className="space-y-4">
-          {session.messages.map((message) => {
+          {session.messages.map((message, index) => {
             const tokenInfo = message.metadata?.tokens;
             const toolCall = message.metadata?.toolCallId;
             const metadataLine = [
@@ -184,8 +184,12 @@ export function ChatDetail({ session }: ChatDetailProps) {
               toolCall ? `${t("detail.metadata.toolCall")}: ${toolCall}` : null,
             ].filter(Boolean);
 
+            const messageKey = `${session.id}:${message.id ?? index}`;
+
+            const isCopied = copiedMessageId === messageKey;
+
             return (
-              <li key={message.id} className="flex flex-col gap-2">
+              <li key={messageKey} className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   <span>{message.role}</span>
                   <span>•</span>
@@ -196,12 +200,10 @@ export function ChatDetail({ session }: ChatDetailProps) {
                     variant="ghost"
                     className="ml-auto h-6 px-2 text-xs"
                     onClick={() => {
-                      void copyMessage(message.content, message.id);
+                      void copyMessage(message.content, messageKey);
                     }}
                   >
-                    {copiedMessageId === message.id
-                      ? t("detail.copied")
-                      : t("detail.copy")}
+                    {isCopied ? t("detail.copied") : t("detail.copy")}
                   </Button>
                 </div>
                 {metadataLine.length > 0 ? (

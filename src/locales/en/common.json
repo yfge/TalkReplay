@@ -1,0 +1,23 @@
+{
+  "header": {
+    "title": "Agents Chat Viewer",
+    "subtitle": "Inspect and compare Claude, Codex, and Gemini conversations."
+  },
+  "sidebar": {
+    "filters": "Filters",
+    "filtersDescription": "Choose which agent conversations to display and narrow results by keywords.",
+    "search": "Search",
+    "searchPlaceholder": "Search topics or messages...",
+    "tip": "Tip: Import new logs via the toolbar within the conversation pane."
+  },
+  "localeToggle": {
+    "label": "Language",
+    "option": {
+      "en": "English",
+      "zh-CN": "中文"
+    }
+  },
+  "themeToggle": {
+    "label": "Toggle theme"
+  }
+}

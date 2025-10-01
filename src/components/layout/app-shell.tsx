@@ -1,5 +1,7 @@
 import type * as React from "react";
+import { useTranslation } from "react-i18next";
 
+import { LocaleToggle } from "@/components/theme/locale-toggle";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -9,16 +11,19 @@ interface AppShellProps {
 }
 
 export function AppShell({ sidebar, children }: AppShellProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex h-screen min-h-[600px] w-full flex-col bg-background text-foreground">
       <header className="flex items-center justify-between border-b px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold">Agents Chat Viewer</h1>
+          <h1 className="text-lg font-semibold">{t("header.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Inspect and compare Claude and Codex conversations.
+            {t("header.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <LocaleToggle />
           <ThemeToggle />
         </div>
       </header>

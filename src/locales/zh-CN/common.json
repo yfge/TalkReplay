@@ -1,0 +1,23 @@
+{
+  "header": {
+    "title": "智能对话浏览器",
+    "subtitle": "统一查看 Claude、Codex 与 Gemini 的会话记录。"
+  },
+  "sidebar": {
+    "filters": "筛选",
+    "filtersDescription": "选择需要展示的助手会话，并通过关键字快速定位。",
+    "search": "检索",
+    "searchPlaceholder": "搜索主题或消息内容…",
+    "tip": "提示：可在会话面板的工具栏导入新的聊天记录。"
+  },
+  "localeToggle": {
+    "label": "语言",
+    "option": {
+      "en": "English",
+      "zh-CN": "中文"
+    }
+  },
+  "themeToggle": {
+    "label": "切换主题"
+  }
+}

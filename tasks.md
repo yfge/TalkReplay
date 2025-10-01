@@ -26,7 +26,7 @@
   - [x] Codex adapter reads JSONL sessions from ~/.codex/sessions
   - [ ] Gemini adapter pending
 - [x] Support incremental import (only new/changed files) and surface parsing errors in UI notifications — see `src/lib/session-loader.ts` and import error banner in `App`.
-- [ ] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets.
+- [x] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets — see `src/workers/parser.worker.ts`.
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).
 
 ### 4. Conversation Explorer UI

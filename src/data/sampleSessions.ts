@@ -35,6 +35,23 @@ export const sampleSessions: ChatSession[] = [
               language: "tsx",
             },
           ],
+          tokens: {
+            prompt: 420,
+            completion: 320,
+            total: 740,
+          },
+        },
+      },
+      {
+        id: "msg-claude-tool",
+        role: "tool",
+        timestamp: "2024-04-01T09:30:06.500Z",
+        content: '{"result":"timeline component rendered"}',
+        metadata: {
+          toolCallId: "render-preview",
+          raw: {
+            status: "success",
+          },
         },
       },
     ],
@@ -65,6 +82,28 @@ export const sampleSessions: ChatSession[] = [
         timestamp: "2024-03-28T14:10:04.000Z",
         content:
           "Try updating the ESLint configuration to extend the recommended rules...",
+        metadata: {
+          attachments: [
+            {
+              type: "link",
+              name: "ESLint config docs",
+              uri: "https://eslint.org/docs/latest/user-guide/configuring",
+            },
+            {
+              type: "code",
+              name: ".eslintrc.cjs",
+              language: "javascript",
+              text: "module.exports = { extends: ['plugin:@typescript-eslint/recommended'] };",
+            },
+          ],
+        },
+      },
+      {
+        id: "msg-5",
+        role: "assistant",
+        timestamp: "2024-03-28T14:10:05.000Z",
+        content:
+          "Let me know if you also want autofix instructions or CI setup details.",
       },
     ],
   },
@@ -103,7 +142,47 @@ export const sampleSessions: ChatSession[] = [
             completion: 210,
             total: 1490,
           },
+          attachments: [
+            {
+              type: "image",
+              name: "feedback-treemap.png",
+              uri: "https://example.com/assets/feedback-treemap.png",
+              mimeType: "image/png",
+            },
+          ],
         },
+      },
+      {
+        id: "msg-7",
+        role: "assistant",
+        timestamp: "2024-05-12T07:42:25.000Z",
+        content:
+          "Additional sentiment analysis indicates 68% positive sentiment with requests focusing on usability improvements.",
+        metadata: {
+          latencyMs: 480,
+        },
+      },
+    ],
+  },
+  {
+    id: "gemini-20240512-004",
+    source: "gemini",
+    topic: "Handle missing metadata",
+    startedAt: "2024-05-12T08:05:00.000Z",
+    participants: ["user", "gemini"],
+    messages: [
+      {
+        id: "msg-8",
+        role: "user",
+        timestamp: "2024-05-12T08:05:00.000Z",
+        content: "This sample shows optional metadata omitted entirely.",
+      },
+      {
+        id: "msg-9",
+        role: "assistant",
+        timestamp: "2024-05-12T08:05:02.000Z",
+        content:
+          "Acknowledged. Some transcripts may only provide raw text without tokens or attachments.",
       },
     ],
   },

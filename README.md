@@ -19,9 +19,9 @@ Vibe coding thrives on fast feedback loops. TalkReplay preserves that energy by:
 
 ## Interface Preview
 
-| Session Explorer                                                   | Conversation Detail                                                      |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| ![TalkReplay session explorer](./docs/assets/session-explorer.png) | ![TalkReplay conversation detail](./docs/assets/conversation-detail.png) |
+![TalkReplay session explorer](./docs/assets/session-explorer.png)
+
+![TalkReplay conversation detail](./docs/assets/conversation-detail.png)
 
 ## Getting Started (Local Dev)
 

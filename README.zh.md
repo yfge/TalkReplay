@@ -16,9 +16,9 @@ TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 C
 
 ## 界面预览
 
-| 会话总览                                                   | 对话详情                                                      |
-| ---------------------------------------------------------- | ------------------------------------------------------------- |
-| ![TalkReplay 会话总览](./docs/assets/session-explorer.png) | ![TalkReplay 对话详情](./docs/assets/conversation-detail.png) |
+![TalkReplay 会话总览](./docs/assets/session-explorer.png)
+
+![TalkReplay 对话详情](./docs/assets/conversation-detail.png)
 
 ## 本地开发
 

@@ -1,7 +1,14 @@
 import type { ProviderPaths } from "@/config/providerPaths";
 import { SUPPORTED_SOURCES, type ChatSession } from "@/types/chat";
+import type { ProviderImportError, ProviderId } from "@/types/providers";
 // eslint-disable-next-line import/order
 import { sampleSessions } from "@/data/sampleSessions";
+
+export interface LoadSessionsResult {
+  sessions: ChatSession[];
+  signatures: Record<string, number>;
+  errors: ProviderImportError[];
+}
 
 function filteredSampleSessions(): ChatSession[] {
   const allowed = new Set<string>(SUPPORTED_SOURCES);
@@ -11,69 +18,109 @@ function filteredSampleSessions(): ChatSession[] {
   return filtered.length > 0 ? filtered : sampleSessions;
 }
 
-async function resolveDefaultPath(
-  current: string | undefined,
-  guesses: string[],
-): Promise<string | undefined> {
-  if (current && current.trim().length > 0) {
-    return current.trim();
-  }
+function signatureKey(provider: ProviderId, filePath: string): string {
+  return `${provider}:${filePath}`;
+}
 
-  const fs = await import("node:fs/promises");
-  const path = await import("node:path");
-
-  for (const guess of guesses) {
-    const candidate = guess.startsWith("~")
-      ? path.join(process.env.HOME ?? "", guess.slice(1))
-      : guess;
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-      // ignore missing candidate
+function filterProviderSignatures(
+  signatures: Record<string, number>,
+  provider: ProviderId,
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  const prefix = `${provider}:`;
+  for (const [key, value] of Object.entries(signatures)) {
+    if (key.startsWith(prefix)) {
+      result[key.slice(prefix.length)] = value;
     }
   }
-
-  return undefined;
+  return result;
 }
 
 export async function loadSessionsFromProviders(
   paths: ProviderPaths,
-): Promise<ChatSession[]> {
+  previousSignatures: Record<string, number>,
+  previousSessions: ChatSession[],
+): Promise<LoadSessionsResult> {
   if (typeof window !== "undefined") {
-    return filteredSampleSessions();
+    return {
+      sessions: filteredSampleSessions(),
+      signatures: previousSignatures,
+      errors: [],
+    };
   }
 
   const sessions: ChatSession[] = [];
+  const signatures: Record<string, number> = {};
+  const errors: ProviderImportError[] = [];
 
-  const claudeRoot = await resolveDefaultPath(paths.claudeRoot, [
-    "~/.claude/projects",
-    "~/.local/share/claude/projects",
-  ]);
+  const previousByFile = new Map<string, ChatSession>();
+  for (const session of previousSessions) {
+    const filePath = session.metadata?.sourceFile;
+    if (filePath) {
+      previousByFile.set(filePath, session);
+    }
+  }
+
+  const claudeRoot = paths.claudeRoot;
   if (claudeRoot) {
     try {
       const { loadClaudeSessions } = await import("@/lib/providers/claude");
-      sessions.push(...(await loadClaudeSessions(claudeRoot)));
-    } catch {
-      // ignore failures and continue with other providers
+      const providerResult = await loadClaudeSessions(
+        claudeRoot,
+        filterProviderSignatures(previousSignatures, "claude"),
+        previousByFile,
+      );
+      sessions.push(...providerResult.sessions);
+      errors.push(...providerResult.errors);
+      for (const [file, signature] of Object.entries(
+        providerResult.signatures,
+      )) {
+        signatures[signatureKey("claude", file)] = signature;
+      }
+    } catch (error) {
+      errors.push({
+        provider: "claude",
+        reason:
+          error instanceof Error
+            ? error.message
+            : "Failed to load Claude sessions",
+      });
     }
   }
 
-  const codexRoot = await resolveDefaultPath(paths.codexRoot, [
-    "~/.codex/sessions",
-  ]);
+  const codexRoot = paths.codexRoot;
   if (codexRoot) {
     try {
       const { loadCodexSessions } = await import("@/lib/providers/codex");
-      sessions.push(...(await loadCodexSessions(codexRoot)));
-    } catch {
-      // ignore failures
+      const providerResult = await loadCodexSessions(
+        codexRoot,
+        filterProviderSignatures(previousSignatures, "codex"),
+        previousByFile,
+      );
+      sessions.push(...providerResult.sessions);
+      errors.push(...providerResult.errors);
+      for (const [file, signature] of Object.entries(
+        providerResult.signatures,
+      )) {
+        signatures[signatureKey("codex", file)] = signature;
+      }
+    } catch (error) {
+      errors.push({
+        provider: "codex",
+        reason:
+          error instanceof Error
+            ? error.message
+            : "Failed to load Codex sessions",
+      });
     }
   }
 
-  if (sessions.length === 0) {
-    return filteredSampleSessions();
-  }
+  const dedupedSessions =
+    sessions.length > 0 ? sessions : filteredSampleSessions();
 
-  return sessions;
+  return {
+    sessions: dedupedSessions,
+    signatures,
+    errors,
+  };
 }

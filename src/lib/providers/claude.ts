@@ -1,11 +1,13 @@
 import type { Dirent } from "node:fs";
 
+import type { ProviderLoadResult } from "@/lib/providers/types";
 import type {
   ChatMessage,
   ChatRole,
   ChatSession,
   SessionMetadata,
 } from "@/types/chat";
+import type { ProviderImportError } from "@/types/providers";
 
 interface ClaudeUsage {
   input_tokens?: number;
@@ -241,26 +243,69 @@ async function collectClaudeFiles(root: string): Promise<string[]> {
   return results;
 }
 
-export async function loadClaudeSessions(root: string): Promise<ChatSession[]> {
-  const { readFile } = await import("node:fs/promises");
+export async function loadClaudeSessions(
+  root: string,
+  previousSignatures: Record<string, number>,
+  previousSessions: Map<string, ChatSession>,
+): Promise<ProviderLoadResult> {
+  const fs = await import("node:fs/promises");
+
   const files = await collectClaudeFiles(root);
   const sessions: ChatSession[] = [];
+  const signatures: Record<string, number> = {};
+  const errors: ProviderImportError[] = [];
 
   for (const filePath of files) {
+    let mtimeMs = 0;
     try {
-      const raw = await readFile(filePath, "utf8");
+      const stats = await fs.stat(filePath);
+      mtimeMs = stats.mtimeMs;
+      signatures[filePath] = mtimeMs;
+    } catch (error) {
+      errors.push({
+        provider: "claude",
+        file: filePath,
+        reason: error instanceof Error ? error.message : "Failed to stat file",
+      });
+      const cached = previousSessions.get(filePath);
+      if (cached) {
+        sessions.push(cached);
+      }
+      continue;
+    }
+
+    const previousSignature = previousSignatures[filePath];
+    const cachedSession = previousSessions.get(filePath);
+    if (previousSignature === mtimeMs && cachedSession) {
+      sessions.push(cachedSession);
+      continue;
+    }
+
+    try {
+      const raw = await fs.readFile(filePath, "utf8");
       const lines = raw.split(/\r?\n/).filter(Boolean);
       const entries = parseClaudeLines(lines);
       const session = buildClaudeSession(filePath, entries);
       if (session) {
+        session.metadata = {
+          ...(session.metadata ?? {}),
+          sourceFile: filePath,
+        };
         sessions.push(session);
       }
-    } catch {
-      // ignore malformed files for now
+    } catch (error) {
+      errors.push({
+        provider: "claude",
+        file: filePath,
+        reason: error instanceof Error ? error.message : "Failed to read log",
+      });
+      if (cachedSession) {
+        sessions.push(cachedSession);
+      }
     }
   }
 
-  return sessions;
+  return { sessions, signatures, errors };
 }
 
 export function parseClaudeSessionFromString(

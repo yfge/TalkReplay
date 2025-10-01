@@ -25,7 +25,7 @@
   - [x] Claude adapter reads JSONL sessions from ~/.claude/projects
   - [x] Codex adapter reads JSONL sessions from ~/.codex/sessions
   - [ ] Gemini adapter pending
-- [ ] Support incremental import (only new/changed files) and surface parsing errors in UI notifications.
+- [x] Support incremental import (only new/changed files) and surface parsing errors in UI notifications — see `src/lib/session-loader.ts` and import error banner in `App`.
 - [ ] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets.
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).
 

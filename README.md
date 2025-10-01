@@ -44,3 +44,15 @@ Docker configuration will be added in a subsequent iteration. The initial commit
 ## License
 
 MIT
+
+## Environment Configuration
+
+Set optional provider root paths via `.env` file (mirrored in `import.meta.env`):
+
+```bash
+VITE_CLAUDE_ROOT=/path/to/claude/logs
+VITE_CODEX_ROOT=/path/to/codex/logs
+VITE_GEMINI_ROOT=/path/to/gemini/logs
+```
+
+These defaults are read by `getProviderPaths()` in `src/config/providerPaths.ts`.

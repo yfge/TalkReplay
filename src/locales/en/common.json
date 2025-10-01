@@ -33,6 +33,12 @@
     "save": "Save",
     "skip": "Skip for now",
     "notice": "You can update these paths later from the header.",
-    "validation": "Provide at least one directory or continue without importing."
+    "validation": "Provide at least one directory or continue without importing.",
+    "validationInvalid": "Enter a valid directory path (avoid characters like * ? < > |)."
+  },
+  "chats": {
+    "emptyTitle": "No conversations yet",
+    "emptyDescription": "Add provider directories to import existing chat logs.",
+    "configureButton": "Configure providers"
   }
 }

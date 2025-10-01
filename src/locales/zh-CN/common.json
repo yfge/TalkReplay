@@ -33,6 +33,12 @@
     "save": "保存",
     "skip": "暂时跳过",
     "notice": "稍后可以在顶部工具栏再次修改。",
-    "validation": "请至少提供一个目录，或选择跳过后再导入。"
+    "validation": "请至少提供一个目录，或选择跳过后再导入。",
+    "validationInvalid": "请输入有效的目录路径（避免包含 * ? < > | 等字符）。"
+  },
+  "chats": {
+    "emptyTitle": "暂无会话",
+    "emptyDescription": "请配置数据目录以导入现有聊天记录。",
+    "configureButton": "去配置目录"
   }
 }

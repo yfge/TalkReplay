@@ -25,6 +25,13 @@ export function ProviderSetupDialog({
   const completeSetup = usePreferencesStore((state) => state.completeSetup);
 
   const [localPaths, setLocalPaths] = useState(providerPaths);
+  const [errors, setErrors] = useState<Record<ProviderKey, string | undefined>>(
+    {
+      claude: undefined,
+      codex: undefined,
+      gemini: undefined,
+    },
+  );
 
   useEffect(() => {
     setLocalPaths(providerPaths);
@@ -44,17 +51,38 @@ export function ProviderSetupDialog({
       ...prev,
       [provider]: value,
     }));
+    setErrors((prev) => ({
+      ...prev,
+      [provider]: undefined,
+    }));
   };
 
   const handleSave = () => {
+    const nextErrors: Record<ProviderKey, string | undefined> = {
+      claude: undefined,
+      codex: undefined,
+      gemini: undefined,
+    };
     providerOrder.forEach((provider) => {
       const value = localPaths[provider];
       if (value && value.trim().length > 0) {
-        setProviderPath(provider, value);
+        const trimmed = value.trim();
+        if (trimmed.length < 2 || /[<>:"|?*]/.test(trimmed)) {
+          nextErrors[provider] = t("providerSetup.validationInvalid");
+        } else {
+          setProviderPath(provider, trimmed);
+        }
       } else if (!value || value.trim().length === 0) {
         clearProviderPath(provider);
       }
     });
+    const hasErrors = Object.values(nextErrors).some((message) =>
+      Boolean(message),
+    );
+    if (hasErrors) {
+      setErrors(nextErrors);
+      return;
+    }
     completeSetup();
     onClose();
   };
@@ -83,7 +111,11 @@ export function ProviderSetupDialog({
                 placeholder={t("providerSetup.placeholder")}
                 value={localPaths[provider] ?? ""}
                 onChange={(event) => handleChange(provider, event.target.value)}
+                aria-invalid={Boolean(errors[provider])}
               />
+              {errors[provider] ? (
+                <p className="text-xs text-destructive">{errors[provider]}</p>
+              ) : null}
             </div>
           ))}
           <p className="text-xs text-muted-foreground">

@@ -36,7 +36,7 @@ export function App() {
       >
         <div className="flex h-full flex-col lg:flex-row">
           <div className="w-full border-b lg:w-80 lg:border-b-0 lg:border-r">
-            <ChatList />
+            <ChatList onConfigureProviders={() => setSetupOpen(true)} />
           </div>
           <div className="flex-1">
             <ChatDetail session={activeSession} />

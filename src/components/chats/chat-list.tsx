@@ -1,28 +1,45 @@
 import { Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatStore, useFilteredSessions } from "@/store/chat-store";
 import type { ChatSession } from "@/types/chat";
 
 interface ChatListProps {
   onSelect?: (session: ChatSession) => void;
+  onConfigureProviders?: () => void;
 }
 
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString();
 }
 
-export function ChatList({ onSelect }: ChatListProps) {
+export function ChatList({ onSelect, onConfigureProviders }: ChatListProps) {
   const sessions = useFilteredSessions();
   const activeSessionId = useChatStore((state) => state.activeSessionId);
   const setActiveSession = useChatStore((state) => state.setActiveSession);
+  const { t } = useTranslation();
 
   if (sessions.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
         <Clock className="size-5" />
-        <p>No conversations match your filters yet.</p>
-        <p className="text-xs">Import a transcript to get started.</p>
+        <div>
+          <p className="font-medium text-foreground">{t("chats.emptyTitle")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("chats.emptyDescription")}
+          </p>
+        </div>
+        {onConfigureProviders ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onConfigureProviders}
+          >
+            {t("chats.configureButton")}
+          </Button>
+        ) : null}
       </div>
     );
   }

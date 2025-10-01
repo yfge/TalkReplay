@@ -21,7 +21,10 @@
 
 ### 3. Transcript Ingestion & Normalisation
 
-- [ ] Build provider adapters (`claudeAdapter`, `codexAdapter`, `geminiAdapter`) translating raw files into unified session/message schema.
+- [ ] Build provider adapters translating raw files into unified session/message schema:
+  - [x] Claude adapter reads JSONL sessions from ~/.claude/projects
+  - [x] Codex adapter reads JSONL sessions from ~/.codex/sessions
+  - [ ] Gemini adapter pending
 - [ ] Support incremental import (only new/changed files) and surface parsing errors in UI notifications.
 - [ ] Implement background parsing worker (Web Worker) to keep UI responsive for large datasets.
 - [ ] Write unit tests covering parser edge cases per provider (Vitest snapshot/fixtures).

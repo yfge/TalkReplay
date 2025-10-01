@@ -184,7 +184,7 @@ export function ChatDetail({ session }: ChatDetailProps) {
               toolCall ? `${t("detail.metadata.toolCall")}: ${toolCall}` : null,
             ].filter(Boolean);
 
-            const messageKey = `${session.id}:${message.id ?? index}`;
+            const messageKey = `${session.id}:${message.id ?? "message"}:${index}`;
 
             const isCopied = copiedMessageId === messageKey;
 

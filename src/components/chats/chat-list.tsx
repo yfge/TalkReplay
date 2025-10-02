@@ -1,4 +1,5 @@
 import { Clock, Star } from "lucide-react";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,11 +79,12 @@ export function ChatList({
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
           return (
-            <button
+            <Link
               key={session.id}
               className="flex flex-col items-start gap-2 p-4 text-left transition hover:bg-accent data-[state=active]:bg-accent"
-              type="button"
+              href={`/chats/${session.id}`}
               onClick={() => {
+                // Keep in-app state in sync, navigation handled by Link
                 setActiveSession(session.id);
                 onSelect?.(session);
               }}
@@ -106,7 +108,7 @@ export function ChatList({
               <span className="line-clamp-2 text-xs text-muted-foreground">
                 {session.preview ?? t("chats.noPreview")}
               </span>
-            </button>
+            </Link>
           );
         })}
       </div>

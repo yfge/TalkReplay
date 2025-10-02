@@ -2,17 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { ChatDetail } from "@/components/chats/chat-detail";
 import { ChatList } from "@/components/chats/chat-list";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  fetchSessionDetail,
-  fetchSessionSummaries,
-} from "@/lib/session-loader/client";
-import { useActiveSession, useChatStore } from "@/store/chat-store";
+import { fetchSessionSummaries } from "@/lib/session-loader/client";
+import { useChatStore } from "@/store/chat-store";
 import { useImportStore } from "@/store/import-store";
 import { usePreferencesStore } from "@/store/preferences-store";
 
@@ -21,15 +17,12 @@ export function App() {
   const setSessionSummaries = useChatStore(
     (state) => state.setSessionSummaries,
   );
-  const setSessionDetail = useChatStore((state) => state.setSessionDetail);
-  const activeSessionId = useChatStore((state) => state.activeSessionId);
-  const activeSession = useActiveSession();
+  // Active selection is handled by the list; details open in a separate route
   const isSetupComplete = usePreferencesStore((state) => state.isSetupComplete);
   const providerPaths = usePreferencesStore((state) => state.providerPaths);
   const [setupOpen, setSetupOpen] = useState(!isSetupComplete);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [detailLoadingId, setDetailLoadingId] = useState<string | null>(null);
-  const [detailError, setDetailError] = useState<string | null>(null);
+  // Inline detail state removed; details now open on /chats/[id]
 
   const fileSignatures = useImportStore((state) => state.fileSignatures);
   const setImportResult = useImportStore((state) => state.setImportResult);
@@ -38,7 +31,6 @@ export function App() {
 
   const refreshSessions = useCallback(async () => {
     setIsRefreshing(true);
-    setDetailError(null);
     try {
       const result = await fetchSessionSummaries({
         paths: providerPaths,
@@ -66,53 +58,7 @@ export function App() {
     }
   }, [isSetupComplete]);
 
-  useEffect(() => {
-    if (!isSetupComplete || !activeSessionId) {
-      return;
-    }
-    if (activeSession) {
-      return;
-    }
-
-    let cancelled = false;
-    setDetailLoadingId(activeSessionId);
-    setDetailError(null);
-
-    void fetchSessionDetail({ id: activeSessionId, paths: providerPaths })
-      .then((detail) => {
-        if (!cancelled && detail) {
-          setSessionDetail(detail);
-        }
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          setDetailError(
-            error instanceof Error ? error.message : "Unknown error",
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setDetailLoadingId(null);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    activeSession,
-    activeSessionId,
-    isSetupComplete,
-    providerPaths,
-    setSessionDetail,
-  ]);
-
-  useEffect(() => {
-    if (activeSession) {
-      setDetailError(null);
-    }
-  }, [activeSession]);
+  // No inline detail fetching effect — navigation handles full-page detail view.
 
   const errorBanner = useMemo(() => {
     if (importErrors.length === 0) {
@@ -163,39 +109,16 @@ export function App() {
               isRefreshing={isRefreshing}
             />
           </div>
-          <div className="flex min-h-0 flex-1">
-            <ChatDetail
-              session={activeSession}
-              isLoading={
-                detailLoadingId !== null && detailLoadingId === activeSessionId
-              }
-              error={detailError}
-              onRetry={() => {
-                if (activeSessionId) {
-                  setDetailLoadingId(activeSessionId);
-                  setDetailError(null);
-                  void fetchSessionDetail({
-                    id: activeSessionId,
-                    paths: providerPaths,
-                  })
-                    .then((detail) => {
-                      if (detail) {
-                        setSessionDetail(detail);
-                      }
-                    })
-                    .catch((error: unknown) => {
-                      setDetailError(
-                        error instanceof Error
-                          ? error.message
-                          : "Unknown error",
-                      );
-                    })
-                    .finally(() => {
-                      setDetailLoadingId(null);
-                    });
-                }
-              }}
-            />
+          <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
+            <div className="max-w-md space-y-2">
+              <p className="font-medium text-foreground">
+                Select a conversation to open its full-page detail.
+              </p>
+              <p>
+                Clicking an item in the list will navigate to a dedicated page
+                for easier reading and sharing.
+              </p>
+            </div>
           </div>
         </div>
       </AppShell>

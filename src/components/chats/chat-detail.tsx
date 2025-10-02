@@ -8,9 +8,10 @@ import {
   StarOff,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { useTranslation } from "react-i18next";
+import rehypeHighlight from "rehype-highlight";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -194,6 +195,7 @@ export function ChatDetail({
             <div className="mt-2 text-sm">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
                 components={mdComponents as never}
               >
                 {session.metadata.summary ?? ""}
@@ -473,6 +475,7 @@ export function ChatDetail({
                   return resolvedContent ? (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
                       components={mdComponents as never}
                     >
                       {resolvedContent}

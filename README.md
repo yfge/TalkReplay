@@ -32,9 +32,9 @@ TalkReplay doubles as a living reference implementation for vibe coding teams:
 
 ![TalkReplay Home](./docs/assets/app-home.png)
 
-![TalkReplay Chat Detail](./docs/assets/chat-detail.png)
+![TalkReplay Provider Setup](./docs/assets/provider-setup.png)
 
-![TalkReplay Project Filter](./docs/assets/project-filter.png)
+![TalkReplay Chat Detail](./docs/assets/chat-detail.png)
 
 ### More Screens
 

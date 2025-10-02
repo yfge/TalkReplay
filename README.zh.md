@@ -29,9 +29,9 @@ TalkReplay 本身就是一个 vibe coding 标杆项目：
 
 ![TalkReplay 首页](./docs/assets/app-home.png)
 
-![TalkReplay 会话详情](./docs/assets/chat-detail.png)
+![TalkReplay 目录配置](./docs/assets/provider-setup.png)
 
-![TalkReplay 项目筛选](./docs/assets/project-filter.png)
+![TalkReplay 会话详情](./docs/assets/chat-detail.png)
 
 ### 更多界面
 

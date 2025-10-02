@@ -1,5 +1,3 @@
-# Keep node_modules for offline build (do NOT ignore)
-
 # VCS and OS junk
 .git
 .gitignore
@@ -14,7 +12,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Local package caches not used in this offline build
+# Node modules should not be sent to Docker context
+node_modules
+
+# Local package caches
 .pnpm-store
 
 # Big local assets not needed in Docker context

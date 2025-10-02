@@ -22,20 +22,16 @@ ENV NODE_ENV=production \
     CODEX_ROOT=${NEXT_PUBLIC_CODEX_ROOT} \
     GEMINI_ROOT=${NEXT_PUBLIC_GEMINI_ROOT}
 
-# Build stage (offline): rely on vendored node_modules, no package manager needed
-FROM base AS build
-# Copy source and local dependencies (node_modules must be present in build context)
-COPY package.json ./
-COPY next.config.mjs ./
-COPY tsconfig.json ./
-COPY tailwind.config.ts ./
-COPY postcss.config.cjs ./
-COPY public ./public
-COPY src ./src
-COPY node_modules ./node_modules
+# Deps stage: install dependencies with pnpm (via Corepack)
+FROM base AS deps
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Build using Next CLI directly (no pnpm/npm)
-RUN node node_modules/next/dist/bin/next build
+# Build stage: copy source and build
+FROM deps AS build
+COPY . .
+RUN pnpm build
 
 # Runtime stage: use standalone output to avoid runtime package manager
 FROM node:18-alpine AS runner

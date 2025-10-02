@@ -109,17 +109,7 @@ export function App() {
               isRefreshing={isRefreshing}
             />
           </div>
-          <div className="flex min-h-0 flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
-            <div className="max-w-md space-y-2">
-              <p className="font-medium text-foreground">
-                Select a conversation to open its full-page detail.
-              </p>
-              <p>
-                Clicking an item in the list will navigate to a dedicated page
-                for easier reading and sharing.
-              </p>
-            </div>
-          </div>
+          {/* Intentionally left blank: detail now opens on /chats/[id] */}
         </div>
       </AppShell>
       <ProviderSetupDialog

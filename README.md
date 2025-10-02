@@ -62,13 +62,40 @@ The first run launches a provider setup dialog. Point Claude/Codex to your trans
 
 ## Provider Roots & Configuration
 
-Environment variables drive autodiscovery:
+Environment variables drive autodiscovery (defaults by OS):
 
 ```bash
-NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects
-NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions
+NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects   # macOS/Linux default
+NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions     # macOS/Linux default
 NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # optional
 ```
+
+Windows paths
+
+```
+# PowerShell
+$env:CLAUDE_ROOT="C:\\Users\\<you>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<you>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+
+# Cmd
+set CLAUDE_ROOT=C:\Users\<you>\.claude\projects
+set CODEX_ROOT=C:\Users\<you>\.codex\sessions
+set NEXT_PUBLIC_CLAUDE_ROOT=%CLAUDE_ROOT%
+set NEXT_PUBLIC_CODEX_ROOT=%CODEX_ROOT%
+```
+
+Linux/macOS paths
+
+```bash
+export CLAUDE_ROOT="$HOME/.claude/projects"
+export CODEX_ROOT="$HOME/.codex/sessions"
+export NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT"
+export NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT"
+```
+
+WSL2 note: use `/mnt/c/Users/<you>/.claude/projects` and `/mnt/c/Users/<you>/.codex/sessions` when launching Docker from WSL.
 
 Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
 
@@ -95,6 +122,34 @@ docker run \
   talk-replay
 ```
 
+Windows PowerShell
+
+```powershell
+docker run `
+  -p 3000:3000 `
+  -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude `
+  -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex `
+  -e CLAUDE_ROOT=/app/data/claude `
+  -e CODEX_ROOT=/app/data/codex `
+  -v C:\Users\<you>\.claude\projects:/app/data/claude:ro `
+  -v C:\Users\<you>\.codex\sessions:/app/data/codex:ro `
+  talk-replay
+```
+
+WSL2 (from the Ubuntu shell)
+
+```bash
+docker run \
+  -p 3000:3000 \
+  -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
+  -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e CLAUDE_ROOT=/app/data/claude \
+  -e CODEX_ROOT=/app/data/codex \
+  -v /mnt/c/Users/<you>/.claude/projects:/app/data/claude:ro \
+  -v /mnt/c/Users/<you>/.codex/sessions:/app/data/codex:ro \
+  talk-replay
+```
+
 Or use docker-compose:
 
 ```bash
@@ -105,6 +160,15 @@ docker compose up --build
 ```
 
 To demo bundled fixtures instead, set `CLAUDE_LOGS_PATH=./fixtures/claude` and `CODEX_LOGS_PATH=./fixtures/codex` before running compose. The container sets both runtime and `NEXT_PUBLIC_*` env variables so the UI skips manual setup.
+
+Windows compose (PowerShell)
+
+```powershell
+$env:CLAUDE_LOGS_PATH="C:\\Users\\<you>\\.claude\\projects";
+$env:CODEX_LOGS_PATH="C:\\Users\\<you>\\.codex\\sessions";
+$env:APP_PORT=3000;
+docker compose up --build
+```
 
 ## Testing & Quality Gates
 

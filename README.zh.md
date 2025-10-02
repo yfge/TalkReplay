@@ -59,11 +59,40 @@ pnpm dev -- --port 3002
 
 ## 提供者目录配置
 
+默认路径（按操作系统）
+
 ```bash
-NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects
-NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions
+NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects   # macOS/Linux 默认
+NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions     # macOS/Linux 默认
 NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # 可选
 ```
+
+Windows 示例
+
+```
+# PowerShell
+$env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+
+# Cmd
+set CLAUDE_ROOT=C:\Users\<你>\.claude\projects
+set CODEX_ROOT=C:\Users\<你>\.codex\sessions
+set NEXT_PUBLIC_CLAUDE_ROOT=%CLAUDE_ROOT%
+set NEXT_PUBLIC_CODEX_ROOT=%CODEX_ROOT%
+```
+
+Linux/macOS 示例
+
+```bash
+export CLAUDE_ROOT="$HOME/.claude/projects"
+export CODEX_ROOT="$HOME/.codex/sessions"
+export NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT"
+export NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT"
+```
+
+WSL2 注意：从 WSL 里启动 Docker 时，使用 `/mnt/c/Users/<你>/.claude/projects` 与 `/mnt/c/Users/<你>/.codex/sessions` 挂载。
 
 后端同样支持 `CLAUDE_ROOT`、`CODEX_ROOT`、`GEMINI_ROOT` 环境变量；归一化逻辑位于 `src/config/providerPaths.ts`。
 
@@ -88,6 +117,34 @@ docker run \
   talk-replay
 ```
 
+Windows PowerShell
+
+```powershell
+docker run `
+  -p 3000:3000 `
+  -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude `
+  -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex `
+  -e CLAUDE_ROOT=/app/data/claude `
+  -e CODEX_ROOT=/app/data/codex `
+  -v C:\Users\<你>\.claude\projects:/app/data/claude:ro `
+  -v C:\Users\<你>\.codex\sessions:/app/data/codex:ro `
+  talk-replay
+```
+
+WSL2（在 Ubuntu shell 中）
+
+```bash
+docker run \
+  -p 3000:3000 \
+  -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
+  -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e CLAUDE_ROOT=/app/data/claude \
+  -e CODEX_ROOT=/app/data/codex \
+  -v /mnt/c/Users/<你>/.claude/projects:/app/data/claude:ro \
+  -v /mnt/c/Users/<你>/.codex/sessions:/app/data/codex:ro \
+  talk-replay
+```
+
 使用 docker-compose：
 
 ```bash
@@ -98,6 +155,15 @@ docker compose up --build
 ```
 
 如需演示内置样例，可将 `CLAUDE_LOGS_PATH=./fixtures/claude`、`CODEX_LOGS_PATH=./fixtures/codex` 再执行 compose。容器会同时注入运行时与 `NEXT_PUBLIC_*` 环境变量，免去手动配置。
+
+Windows compose（PowerShell）
+
+```powershell
+$env:CLAUDE_LOGS_PATH="C:\\Users\\<你>\\.claude\\projects";
+$env:CODEX_LOGS_PATH="C:\\Users\\<你>\\.codex\\sessions";
+$env:APP_PORT=3000;
+docker compose up --build
+```
 
 ## 测试与质量
 

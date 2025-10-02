@@ -47,8 +47,14 @@ export default function ChatDetailPage() {
     <div className="flex h-screen min-h-[600px] w-full flex-col bg-background text-foreground">
       <header className="flex items-center justify-between border-b px-6 py-4">
         <div>
-          <h1 className="text-lg font-semibold">Conversation</h1>
-          <p className="text-sm text-muted-foreground">Full-page detail view</p>
+          <h1 className="text-lg font-semibold">
+            {session?.topic ?? "Conversation"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {session
+              ? new Date(session.startedAt).toLocaleString()
+              : "Full-page detail view"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" type="button">

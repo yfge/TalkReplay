@@ -44,6 +44,11 @@
 - [ ] Support pagination/virtualisation for long conversation lists (e.g., `@tanstack/react-virtual`).
 - [ ] Implement quick navigation (keyboard shortcuts, breadcrumbs, recent sessions panel).
 
+  Progress (2025-10-02):
+  - [x] Render images inline in chat detail (tool results + content) and add secure file proxy API for local image paths.
+  - [x] Improve long-text wrapping in message cards to avoid clipping when base64/JSON is present.
+  - [x] Add Project filter in sidebar and wire to store.
+
 ### 5. Internationalisation & Accessibility
 
 - [ ] Externalise copy to locale files; ensure components pull strings via i18n hooks.

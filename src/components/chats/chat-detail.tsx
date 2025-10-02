@@ -10,8 +10,8 @@ import {
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import remarkGfm from "remark-gfm";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,16 +44,16 @@ const mdComponents = {
     <h3 className="my-3 text-lg font-semibold" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="my-2 whitespace-pre-wrap break-words" {...props} />
+    <p className="my-2 whitespace-pre-wrap break-all" {...props} />
   ),
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre
-      className="my-3 overflow-x-auto rounded-md bg-muted p-3 text-xs"
+      className="my-3 max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-md bg-muted p-3 text-xs"
       {...props}
     />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="font-mono" {...props} />
+    <code className="font-mono whitespace-pre-wrap break-all" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul className="my-2 list-disc space-y-1 pl-6" {...props} />
@@ -62,10 +62,17 @@ const mdComponents = {
     <ol className="my-2 list-decimal space-y-1 pl-6" {...props} />
   ),
   li: (props: React.HTMLAttributes<HTMLLIElement>) => (
-    <li className="break-words" {...props} />
+    <li className="break-all" {...props} />
   ),
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a className="underline" {...props} />
+    <a className="underline break-all" {...props} />
+  ),
+  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    <img
+      className="my-2 max-h-[28rem] max-w-full rounded border object-contain"
+      loading="lazy"
+      {...props}
+    />
   ),
 };
 
@@ -173,6 +180,7 @@ export function ChatDetail({
     }
     const providerLabel = t(`providers.${session.source}`);
     const model = session.metadata?.provider?.model ?? "-";
+    const project = session.metadata?.project;
     return (
       <div className="flex flex-col gap-1 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
@@ -187,6 +195,14 @@ export function ChatDetail({
           </span>{" "}
           {model}
         </div>
+        {project ? (
+          <div>
+            <span className="font-medium text-foreground">
+              {t("detail.project", { defaultValue: "Project" })}:
+            </span>{" "}
+            {project}
+          </div>
+        ) : null}
         {session.metadata?.summary ? (
           <details className="mt-1">
             <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -369,8 +385,8 @@ export function ChatDetail({
           </Button>
         </div>
       </div>
-      <ScrollArea className="flex-1 bg-background px-6 py-4">
-        <ol className="space-y-4">
+      <ScrollArea className="flex-1 bg-background px-6 py-4 overflow-x-hidden">
+        <ol className="space-y-4 max-w-full overflow-x-hidden">
           {session.messages.map((message, index) => {
             const tokenInfo = message.metadata?.tokens;
             const toolCallId =
@@ -390,7 +406,129 @@ export function ChatDetail({
                       ? (message.content ?? null)
                       : (message.content ?? "");
 
-            const copyPayload = resolvedContent ?? "";
+            let copyPayload = resolvedContent ?? "";
+
+            // Extract image URIs from attachments and common tool payload shapes
+            const extractImageUris = (): string[] => {
+              const results: string[] = [];
+              const atts = message.metadata?.attachments ?? [];
+              for (const att of atts) {
+                if (att?.type === "image" && typeof att.uri === "string") {
+                  results.push(att.uri);
+                }
+              }
+
+              const candidates: unknown[] = [];
+              if (typeof message.content === "string")
+                candidates.push(message.content);
+              if (typeof toolResultOutput !== "undefined")
+                candidates.push(toolResultOutput);
+
+              const pushIfImageLike = (obj: unknown) => {
+                if (!obj || typeof obj !== "object") return;
+                const anyObj = obj as Record<string, unknown>;
+                const type =
+                  typeof anyObj.type === "string" ? anyObj.type : undefined;
+                const url =
+                  typeof anyObj.image_url === "string"
+                    ? anyObj.image_url
+                    : typeof anyObj.url === "string"
+                      ? anyObj.url
+                      : typeof anyObj.uri === "string"
+                        ? anyObj.uri
+                        : typeof anyObj.path === "string"
+                          ? anyObj.path
+                          : undefined;
+                const isImageFlag =
+                  anyObj.isImage === true ||
+                  type === "image" ||
+                  type === "input_image";
+                if (
+                  url &&
+                  (isImageFlag ||
+                    /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ||
+                    url.startsWith("data:image/"))
+                ) {
+                  results.push(url);
+                }
+                const stdout =
+                  typeof anyObj.stdout === "string" ? anyObj.stdout : undefined;
+                if (
+                  stdout &&
+                  (stdout.startsWith("data:image/") ||
+                    /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(stdout))
+                ) {
+                  results.push(stdout);
+                }
+              };
+
+              const tryParseJson = (text: string): unknown => {
+                try {
+                  return JSON.parse(text) as unknown;
+                } catch {
+                  return null;
+                }
+              };
+
+              for (const cand of candidates) {
+                if (typeof cand === "string") {
+                  const trimmed = cand.trim();
+                  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                    const parsed = tryParseJson(trimmed);
+                    if (Array.isArray(parsed)) {
+                      for (const it of parsed) pushIfImageLike(it);
+                    } else if (parsed && typeof parsed === "object") {
+                      pushIfImageLike(parsed);
+                      const anyParsed = parsed as Record<string, unknown>;
+                      const maybeArrs = [anyParsed.content, anyParsed.data];
+                      for (const arr of maybeArrs) {
+                        if (Array.isArray(arr)) {
+                          for (const it of arr) pushIfImageLike(it);
+                        }
+                      }
+                    } else if (/^data:image\//.test(trimmed)) {
+                      results.push(trimmed);
+                    }
+                  } else if (
+                    /^https?:\/\//i.test(trimmed) ||
+                    trimmed.startsWith("data:image/")
+                  ) {
+                    results.push(trimmed);
+                  }
+                } else if (cand && typeof cand === "object") {
+                  pushIfImageLike(cand);
+                }
+              }
+
+              return Array.from(new Set(results));
+            };
+
+            const imageUris = extractImageUris();
+            if (imageUris.length > 0) {
+              copyPayload = imageUris.join("\n");
+            }
+
+            const toFileServerUrl = (raw: string): string => {
+              if (/^https?:\/\//i.test(raw) || raw.startsWith("data:"))
+                return raw;
+              try {
+                const enc = (str: string) => {
+                  const utf8 = encodeURIComponent(str).replace(
+                    /%([0-9A-F]{2})/g,
+                    (_: string, h: string) =>
+                      String.fromCharCode(Number.parseInt(h, 16)),
+                  );
+                  const b64 = btoa(utf8)
+                    .replace(/\+/g, "-")
+                    .replace(/\//g, "_")
+                    .replace(/=+$/g, "");
+                  return b64;
+                };
+                return `/api/file?p=${enc(raw)}`;
+              } catch {
+                return `/api/file?p=${raw}`;
+              }
+            };
 
             const metadataLine = [
               message.kind !== "content"
@@ -420,17 +558,62 @@ export function ChatDetail({
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {t("detail.toolCall")}: {label}
                       </p>
+                      {imageUris.length > 0 ? (
+                        <div className="flex flex-wrap gap-3">
+                          {imageUris.map((u, i) => (
+                            <img
+                              key={`${messageKey}:img-call:${i}`}
+                              src={toFileServerUrl(u)}
+                              alt={label}
+                              className="max-h-[28rem] max-w-full rounded border object-contain"
+                              loading="lazy"
+                            />
+                          ))}
+                        </div>
+                      ) : null}
                       {toolCallArgs ? (
-                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                        <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                           {formatJson(toolCallArgs)}
                         </pre>
                       ) : null}
-                      {message.content && !toolCallArgs ? (
-                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                      {message.content &&
+                      !toolCallArgs &&
+                      imageUris.length === 0 ? (
+                        <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                           {message.content}
                         </pre>
                       ) : null}
                     </div>
+                  );
+                }
+                case "content": {
+                  if (imageUris.length > 0) {
+                    return (
+                      <div className="flex flex-wrap gap-3">
+                        {imageUris.map((u, i) => (
+                          <img
+                            key={`${messageKey}:img-content:${i}`}
+                            src={toFileServerUrl(u)}
+                            alt={message.role}
+                            className="max-h-[28rem] max-w-full rounded border object-contain"
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
+                    );
+                  }
+                  return resolvedContent ? (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      components={mdComponents as never}
+                    >
+                      {resolvedContent}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      {t("detail.emptyMessage")}
+                    </p>
                   );
                 }
                 case "tool-result": {
@@ -440,8 +623,22 @@ export function ChatDetail({
                         {t("detail.toolResult")}:{" "}
                         {toolCallId ?? t("detail.unknown")}
                       </p>
-                      {resolvedContent ? (
-                        <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                      {imageUris.length > 0 ? (
+                        <div className="flex flex-wrap gap-3">
+                          {imageUris.map((u, i) => (
+                            <img
+                              key={`${messageKey}:img:${i}`}
+                              src={toFileServerUrl(u)}
+                              alt={
+                                message.metadata?.toolResult?.callId ?? "image"
+                              }
+                              className="max-h-[28rem] max-w-full rounded border object-contain"
+                              loading="lazy"
+                            />
+                          ))}
+                        </div>
+                      ) : resolvedContent ? (
+                        <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                           {resolvedContent}
                         </pre>
                       ) : (
@@ -458,7 +655,7 @@ export function ChatDetail({
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {t("detail.reasoning")}
                       </p>
-                      <p className="whitespace-pre-wrap break-words">
+                      <p className="whitespace-pre-wrap break-all">
                         {resolvedContent ?? t("detail.reasoningRedacted")}
                       </p>
                     </div>
@@ -466,7 +663,7 @@ export function ChatDetail({
                 }
                 case "system": {
                   return resolvedContent ? (
-                    <pre className="whitespace-pre-wrap break-words font-mono text-xs">
+                    <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                       {resolvedContent}
                     </pre>
                   ) : null;
@@ -490,7 +687,10 @@ export function ChatDetail({
             };
 
             return (
-              <li key={messageKey} className="flex flex-col gap-2">
+              <li
+                key={messageKey}
+                className="flex w-full max-w-full flex-col gap-2 overflow-hidden"
+              >
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
                   <span>{message.role}</span>
                   {message.kind !== "content" ? (
@@ -523,7 +723,7 @@ export function ChatDetail({
                   </div>
                 ) : null}
                 <div
-                  className={`rounded-lg px-4 py-3 leading-relaxed shadow-sm ${roleStyles[message.role] ?? "bg-muted text-foreground"}`}
+                  className={`w-full max-w-full overflow-hidden break-words rounded-lg px-4 py-3 leading-relaxed shadow-sm ${roleStyles[message.role] ?? "bg-muted text-foreground"}`}
                 >
                   {renderBody()}
                 </div>

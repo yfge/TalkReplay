@@ -30,9 +30,21 @@ TalkReplay doubles as a living reference implementation for vibe coding teams:
 
 ## Interface Preview
 
-![TalkReplay session explorer](./docs/assets/session-explorer.png)
+![TalkReplay Home](./docs/assets/app-home.png)
 
-![TalkReplay conversation detail](./docs/assets/conversation-detail.png)
+![TalkReplay Chat Detail](./docs/assets/chat-detail.png)
+
+![TalkReplay Project Filter](./docs/assets/project-filter.png)
+
+### More Screens
+
+![TalkReplay Extra 1](./docs/assets/extra-1.png)
+
+![TalkReplay Extra 2](./docs/assets/extra-2.png)
+
+![TalkReplay Extra 3](./docs/assets/extra-3.png)
+
+![TalkReplay Extra 4](./docs/assets/extra-4.png)
 
 ## Getting Started (Local Dev)
 

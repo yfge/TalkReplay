@@ -211,6 +211,38 @@ export async function loadSessionDetail(
     }
   }
 
+  // Fallback: attempt to load by probing both providers when roots are not configured/matching
+  try {
+    const fs = await import("node:fs/promises");
+    const stat = await fs.stat(filePath);
+    if (stat.isFile()) {
+      try {
+        const { loadClaudeSessionFromFile } = await import(
+          "@/lib/providers/claude"
+        );
+        const session = await loadClaudeSessionFromFile(filePath);
+        if (session) {
+          return { session: { ...session, id: encodeSessionId(filePath) } };
+        }
+      } catch {
+        // ignore and try next
+      }
+      try {
+        const { loadCodexSessionFromFile } = await import(
+          "@/lib/providers/codex"
+        );
+        const session = await loadCodexSessionFromFile(filePath);
+        if (session) {
+          return { session: { ...session, id: encodeSessionId(filePath) } };
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // stat/read failed, fall through to error
+  }
+
   return {
     error: {
       provider: "claude",

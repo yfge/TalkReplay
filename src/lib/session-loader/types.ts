@@ -22,3 +22,18 @@ export interface LoadSessionDetailResult {
   session?: ChatSession;
   error?: ProviderImportError;
 }
+
+// Projects API
+export interface LoadProjectsPayload {
+  paths: ProviderPaths;
+  previousSignatures?: Record<string, number>;
+}
+
+export interface ProjectEntry {
+  name: string;
+  count: number;
+}
+
+export interface LoadProjectsResult {
+  projects: ProjectEntry[];
+}

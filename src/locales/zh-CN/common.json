@@ -73,6 +73,10 @@
     "emptyMessage": "无文本内容。",
     "unknown": "未知",
     "star": "收藏会话",
-    "unstar": "取消收藏"
+    "unstar": "取消收藏",
+    "copyMarkdown": "复制 Markdown 会话",
+    "downloadMarkdown": "下载 Markdown",
+    "downloadJson": "下载 JSON",
+    "shareCopied": "已复制!"
   }
 }

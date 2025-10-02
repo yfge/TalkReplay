@@ -54,6 +54,7 @@
 ### 6. Quality, Docs, Release Ready
 
 - [x] Update `README.md` with local setup, supported browsers, known limitations (see "Browser Support & Limitations").
+- [x] Refactor Dockerfile for offline builds (no Corepack/pnpm), add `.dockerignore`, enable Next `output: "standalone"`.
 - [ ] Create troubleshooting guide (`docs/troubleshooting.md`) covering directory permissions and parsing failures.
 - [ ] Expand `agents_chat` template snippet for multi-locale work and parser testing.
 - [ ] Prepare demo data script (optional) bundling sanitized transcripts for quick demos.

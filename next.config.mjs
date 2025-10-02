@@ -5,6 +5,7 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
+  output: "standalone",
   webpack: (config) => {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {

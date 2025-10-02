@@ -73,6 +73,10 @@
     "emptyMessage": "No textual content.",
     "unknown": "unknown",
     "star": "Star conversation",
-    "unstar": "Unstar conversation"
+    "unstar": "Unstar conversation",
+    "copyMarkdown": "Copy conversation (Markdown)",
+    "downloadMarkdown": "Download Markdown",
+    "downloadJson": "Download JSON",
+    "shareCopied": "Copied conversation!"
   }
 }

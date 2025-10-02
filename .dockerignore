@@ -1,0 +1,25 @@
+# Keep node_modules for offline build (do NOT ignore)
+
+# VCS and OS junk
+.git
+.gitignore
+.DS_Store
+
+# Build outputs and caches
+.next
+dist
+coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local package caches not used in this offline build
+.pnpm-store
+
+# Big local assets not needed in Docker context
+ui*.png
+
+# Editor/IDE
+.vscode
+.idea

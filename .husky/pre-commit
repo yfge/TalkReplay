@@ -43,6 +43,14 @@ for file in $STAGED_CHAT_FILES; do
 
 done
 
-pnpm lint
-pnpm exec vitest run
-pnpm format
+# Prefer pnpm if available; otherwise fall back to local binaries (offline mode)
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm lint
+  pnpm exec vitest run
+  pnpm format
+else
+  echo "[hooks] pnpm not found, using local node binaries (offline)" >&2
+  node ./node_modules/.bin/eslint .
+  node ./node_modules/.bin/vitest run
+  node ./node_modules/.bin/prettier --check .
+fi

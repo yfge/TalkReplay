@@ -1,4 +1,12 @@
-import { Download, FileUp, Info, Star, StarOff } from "lucide-react";
+import {
+  Download,
+  FileUp,
+  FileText,
+  Info,
+  Share2,
+  Star,
+  StarOff,
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,6 +15,11 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseFile } from "@/lib/parsers";
 import { providerBadgeClass } from "@/lib/provider-info";
+import {
+  sessionToFilename,
+  sessionToJson,
+  sessionToMarkdown,
+} from "@/lib/share/session-export";
 import { useChatStore, useIsStarred } from "@/store/chat-store";
 import type { ChatSession, ChatSessionSummary } from "@/types/chat";
 
@@ -53,6 +66,7 @@ export function ChatDetail({
   const toggleStarred = useChatStore((state) => state.toggleStarred);
   const { t } = useTranslation();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<"markdown" | null>(null);
   const isStarred = useIsStarred(session?.id ?? "");
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +160,48 @@ export function ChatDetail({
     );
   }, [session, t]);
 
+  const copyMarkdown = React.useCallback(async () => {
+    if (!session) {
+      return;
+    }
+    try {
+      const markdown = sessionToMarkdown(session);
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(markdown);
+        setShareStatus("markdown");
+        setTimeout(() => setShareStatus(null), 2000);
+      } else {
+        const blob = new Blob([markdown], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = sessionToFilename(session, "md");
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Failed to copy markdown", error);
+    }
+  }, [session]);
+
+  const downloadFile = React.useCallback(
+    (content: string, mime: string, extension: string) => {
+      if (!session) {
+        return;
+      }
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = sessionToFilename(session, extension);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    [session],
+  );
+
   if (!session) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
@@ -231,8 +287,38 @@ export function ChatDetail({
           >
             <FileUp className="mr-2 size-4" /> Import Transcript
           </Button>
-          <Button type="button" variant="ghost">
-            <Download className="mr-2 size-4" /> Export (soon)
+          <Button
+            type="button"
+            variant={shareStatus === "markdown" ? "default" : "ghost"}
+            onClick={() => {
+              void copyMarkdown();
+            }}
+            className="flex items-center"
+          >
+            <Share2 className="mr-2 size-4" />
+            {shareStatus === "markdown"
+              ? t("detail.shareCopied")
+              : t("detail.copyMarkdown")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() =>
+              downloadFile(sessionToMarkdown(session), "text/markdown", "md")
+            }
+          >
+            <FileText className="mr-2 size-4" />
+            {t("detail.downloadMarkdown")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() =>
+              downloadFile(sessionToJson(session), "application/json", "json")
+            }
+          >
+            <Download className="mr-2 size-4" />
+            {t("detail.downloadJson")}
           </Button>
         </div>
       </div>

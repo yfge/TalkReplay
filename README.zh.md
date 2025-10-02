@@ -27,21 +27,19 @@ TalkReplay 本身就是一个 vibe coding 标杆项目：
 
 ## 界面预览
 
-![TalkReplay 首页](./docs/assets/app-home.png)
+![TalkReplay 首页（最新）](./docs/assets/home-updated.png)
 
-![TalkReplay 目录配置](./docs/assets/provider-setup.png)
+![TalkReplay 会话详情（图片直出）](./docs/assets/detail-inline-images.png)
 
-![TalkReplay 会话详情](./docs/assets/chat-detail.png)
+![TalkReplay 会话详情（变体）](./docs/assets/detail-inline-images-alt.png)
 
 ### 更多界面
 
-![TalkReplay 其他界面 1](./docs/assets/extra-1.png)
+![目录配置弹窗](./docs/assets/provider-setup.png)
 
-![TalkReplay 其他界面 2](./docs/assets/extra-2.png)
+![旧版首页](./docs/assets/app-home.png)
 
-![TalkReplay 其他界面 3](./docs/assets/extra-3.png)
-
-![TalkReplay 其他界面 4](./docs/assets/extra-4.png)
+![旧版会话详情](./docs/assets/chat-detail.png)
 
 ## 本地开发
 

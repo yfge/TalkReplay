@@ -30,21 +30,19 @@ TalkReplay doubles as a living reference implementation for vibe coding teams:
 
 ## Interface Preview
 
-![TalkReplay Home](./docs/assets/app-home.png)
+![TalkReplay Home (latest)](./docs/assets/home-updated.png)
 
-![TalkReplay Provider Setup](./docs/assets/provider-setup.png)
+![TalkReplay Chat Detail (inline images)](./docs/assets/detail-inline-images.png)
 
-![TalkReplay Chat Detail](./docs/assets/chat-detail.png)
+![TalkReplay Chat Detail (variant)](./docs/assets/detail-inline-images-alt.png)
 
 ### More Screens
 
-![TalkReplay Extra 1](./docs/assets/extra-1.png)
+![Provider Setup Dialog](./docs/assets/provider-setup.png)
 
-![TalkReplay Extra 2](./docs/assets/extra-2.png)
+![Previous Home](./docs/assets/app-home.png)
 
-![TalkReplay Extra 3](./docs/assets/extra-3.png)
-
-![TalkReplay Extra 4](./docs/assets/extra-4.png)
+![Previous Chat Detail](./docs/assets/chat-detail.png)
 
 ## Getting Started (Local Dev)
 

@@ -8,6 +8,8 @@ import {
   StarOff,
 } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
@@ -30,117 +32,41 @@ const roleStyles: Record<string, string> = {
   tool: "bg-muted text-muted-foreground",
 };
 
-function escapeHtml(input: string): string {
-  return input
-    .replaceAll(/&/g, "&amp;")
-    .replaceAll(/</g, "&lt;")
-    .replaceAll(/>/g, "&gt;")
-    .replaceAll(/"/g, "&quot;")
-    .replaceAll(/'/g, "&#39;");
-}
-
-function renderSimpleMarkdown(md: string): string {
-  const lines = md.replace(/\r\n/g, "\n").split("\n");
-  const out: string[] = [];
-  let inCode = false;
-  let list: "ul" | "ol" | null = null;
-  let para: string[] = [];
-  const flushPara = () => {
-    if (para.length > 0) {
-      out.push(
-        `<p class='my-2 whitespace-pre-wrap break-words'>${para.join("<br/>")}</p>`,
-      );
-      para = [];
-    }
-  };
-  const closeList = () => {
-    if (list) {
-      out.push(list === "ul" ? "</ul>" : "</ol>");
-      list = null;
-    }
-  };
-  for (const raw of lines) {
-    const line = raw; // do not trim to keep indent in code
-    const fence = line.match(/^```(.*)$/);
-    if (fence) {
-      if (!inCode) {
-        flushPara();
-        closeList();
-        inCode = true;
-        out.push(`<pre class='rounded-md bg-muted p-3 overflow-x-auto'><code>`);
-      } else {
-        inCode = false;
-        out.push("</code></pre>");
-      }
-      continue;
-    }
-    if (inCode) {
-      out.push(`${escapeHtml(line)}\n`);
-      continue;
-    }
-
-    // Headings
-    const h = line.match(/^(#{1,6})\s+(.*)$/);
-    if (h) {
-      flushPara();
-      closeList();
-      const level = h[1].length;
-      const text = escapeHtml(h[2]);
-      const sizes = [
-        "text-3xl",
-        "text-2xl",
-        "text-xl",
-        "text-lg",
-        "text-base",
-        "text-sm",
-      ];
-      const size = sizes[level - 1] ?? "text-lg";
-      out.push(
-        `<h${level} class='${size} font-semibold my-3'>${text}</h${level}>`,
-      );
-      continue;
-    }
-
-    // Ordered list
-    const ol = line.match(/^\s*\d+\.\s+(.*)$/);
-    if (ol) {
-      flushPara();
-      if (list !== "ol") {
-        closeList();
-        list = "ol";
-        out.push(`<ol class='my-2 list-decimal pl-6 space-y-1'>`);
-      }
-      out.push(`<li class='break-words'>${escapeHtml(ol[1])}</li>`);
-      continue;
-    }
-
-    // Unordered list
-    const ul = line.match(/^\s*[-*+]\s+(.*)$/);
-    if (ul) {
-      flushPara();
-      if (list !== "ul") {
-        closeList();
-        list = "ul";
-        out.push(`<ul class='my-2 list-disc pl-6 space-y-1'>`);
-      }
-      out.push(`<li class='break-words'>${escapeHtml(ul[1])}</li>`);
-      continue;
-    }
-
-    // Blank line
-    if (line.trim() === "") {
-      closeList();
-      flushPara();
-      continue;
-    }
-
-    // Default paragraph content
-    para.push(escapeHtml(line));
-  }
-  closeList();
-  flushPara();
-  return out.join("");
-}
+const mdComponents = {
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h1 className="my-3 text-2xl font-semibold" {...props} />
+  ),
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2 className="my-3 text-xl font-semibold" {...props} />
+  ),
+  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h3 className="my-3 text-lg font-semibold" {...props} />
+  ),
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p className="my-2 whitespace-pre-wrap break-words" {...props} />
+  ),
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre
+      className="my-3 overflow-x-auto rounded-md bg-muted p-3 text-xs"
+      {...props}
+    />
+  ),
+  code: (props: React.HTMLAttributes<HTMLElement>) => (
+    <code className="font-mono" {...props} />
+  ),
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul className="my-2 list-disc space-y-1 pl-6" {...props} />
+  ),
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+    <ol className="my-2 list-decimal space-y-1 pl-6" {...props} />
+  ),
+  li: (props: React.HTMLAttributes<HTMLLIElement>) => (
+    <li className="break-words" {...props} />
+  ),
+  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a className="underline" {...props} />
+  ),
+};
 
 function formatJson(value: unknown): string | null {
   if (value === null || typeof value === "undefined") {
@@ -266,13 +192,12 @@ export function ChatDetail({
               {t("detail.sessionInfo")}
             </summary>
             <div className="mt-2 text-sm">
-              <div
-                className="max-w-none"
-                // eslint-disable-next-line react/no-danger
-                dangerouslySetInnerHTML={{
-                  __html: renderSimpleMarkdown(session.metadata.summary ?? ""),
-                }}
-              />
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={mdComponents as never}
+              >
+                {session.metadata.summary ?? ""}
+              </ReactMarkdown>
             </div>
           </details>
         ) : null}
@@ -546,13 +471,12 @@ export function ChatDetail({
                 }
                 default: {
                   return resolvedContent ? (
-                    <div
-                      className="max-w-none text-foreground"
-                      // eslint-disable-next-line react/no-danger
-                      dangerouslySetInnerHTML={{
-                        __html: renderSimpleMarkdown(resolvedContent),
-                      }}
-                    />
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={mdComponents as never}
+                    >
+                      {resolvedContent}
+                    </ReactMarkdown>
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       {t("detail.emptyMessage")}

@@ -73,6 +73,7 @@ export interface SessionMetadata {
   tags?: string[];
   summary?: string;
   language?: string;
+  project?: string;
   provider?: ProviderDetails;
   format?: string;
   extra?: Record<string, unknown>;
@@ -105,4 +106,5 @@ export interface ChatFilterState {
   showStarredOnly: boolean;
   startDate?: string;
   endDate?: string;
+  project?: string;
 }

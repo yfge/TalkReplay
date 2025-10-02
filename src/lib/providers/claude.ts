@@ -273,8 +273,43 @@ function buildClaudeSession(
 
   const metadata: SessionMetadata = {
     sourceFile: filePath,
+    project: (() => {
+      try {
+        const dir = path.dirname(filePath);
+        const base = path.basename(dir);
+        if (
+          base.startsWith("-") &&
+          !base.includes("/") &&
+          !base.includes("\\")
+        ) {
+          const parts = base.split("-").filter(Boolean);
+          return parts.length > 0 ? parts[parts.length - 1] : base;
+        }
+        return base;
+      } catch {
+        return undefined;
+      }
+    })(),
     provider: providerModel ? { model: providerModel } : undefined,
-    extra: sessionId ? { sessionId } : undefined,
+    extra: (() => {
+      const e: Record<string, unknown> = {};
+      if (sessionId) e.sessionId = sessionId;
+      try {
+        const dir = path.dirname(filePath);
+        const base = path.basename(dir);
+        if (
+          base.startsWith("-") &&
+          !base.includes("/") &&
+          !base.includes("\\")
+        ) {
+          const tokens = base.split("-").filter(Boolean);
+          if (tokens.length > 0) e.cwd = `/${tokens.join("/")}`;
+        }
+      } catch {
+        // ignore
+      }
+      return Object.keys(e).length > 0 ? e : undefined;
+    })(),
   };
 
   const firstContent = messages.find(

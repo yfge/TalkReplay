@@ -97,6 +97,41 @@ function safeJsonParse(value: string | null | undefined): unknown {
   }
 }
 
+function deriveProjectFromCwd(cwd?: string): {
+  project?: string;
+  normalizedPath?: string;
+} {
+  if (!cwd || typeof cwd !== "string") {
+    return {};
+  }
+  // If cwd already looks like a real path, use it directly.
+  if (cwd.includes("/") || cwd.includes("\\")) {
+    return { project: path.basename(cwd), normalizedPath: cwd };
+  }
+  // Some logs redact path separators and join with hyphens, e.g.
+  // "-Users-foo-dev-bar-my-project" which actually means
+  // "/Users/foo/dev/bar/my-project". We can't perfectly reconstruct
+  // component boundaries inside the last segment (which may itself include hyphens),
+  // but for project name we can heuristically take the last 2–3 tokens.
+  const tokens = cwd.split("-").filter(Boolean);
+  if (tokens.length === 0) return {};
+  const parts: string[] = [];
+  let combined = 0;
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const t = tokens[i];
+    parts.unshift(t);
+    combined += t.length + (parts.length > 1 ? 1 : 0);
+    // Stop when project label is reasonably descriptive
+    if (combined >= 8 || parts.length >= 3) break;
+  }
+  const project = parts.join("-");
+  // Rebuild a plausible absolute path by treating earlier tokens as directories
+  const dirTokens = tokens.slice(0, tokens.length - parts.length);
+  const normalizedPath =
+    dirTokens.length > 0 ? `/${dirTokens.join("/")}/${project}` : project;
+  return { project, normalizedPath };
+}
+
 function buildCodexSession(
   filePath: string,
   entries: CodexLogEntry[],
@@ -107,6 +142,7 @@ function buildCodexSession(
   let instructions: string | undefined;
   let providerModel: string | undefined;
   let firstTimestamp: string | undefined;
+  let cwdPath: string | undefined;
 
   entries.forEach((entry, index) => {
     if (entry.type === "session_meta" && entry.payload) {
@@ -114,6 +150,9 @@ function buildCodexSession(
       sessionId = payload.id ?? sessionId;
       if (payload.instructions) {
         instructions = payload.instructions;
+      }
+      if (typeof payload.cwd === "string" && payload.cwd.length > 0) {
+        cwdPath = payload.cwd;
       }
       if (!firstTimestamp && entry.timestamp) {
         firstTimestamp = toIsoTimestamp(entry.timestamp);
@@ -328,8 +367,19 @@ function buildCodexSession(
   const metadata: SessionMetadata = {
     sourceFile: filePath,
     summary: instructions ?? undefined,
+    project: (() => {
+      const { project } = deriveProjectFromCwd(cwdPath);
+      return project;
+    })(),
     provider: providerModel ? { model: providerModel } : undefined,
-    extra: sessionId ? { sessionId } : undefined,
+    extra: (() => {
+      const out: Record<string, unknown> = {};
+      if (sessionId) out.sessionId = sessionId;
+      const derived = deriveProjectFromCwd(cwdPath);
+      if (derived.normalizedPath) out.cwd = derived.normalizedPath;
+      else if (cwdPath) out.cwd = cwdPath;
+      return out;
+    })(),
   };
 
   const firstContent = messages.find(

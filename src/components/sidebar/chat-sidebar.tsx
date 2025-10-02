@@ -18,7 +18,17 @@ export function ChatSidebar() {
   const setQuery = useChatStore((state) => state.setQuery);
   const setShowStarred = useChatStore((state) => state.setShowStarred);
   const setDateRange = useChatStore((state) => state.setDateRange);
+  const setProject = useChatStore((state) => state.setProject);
+  const sessionSummaries = useChatStore((state) => state.sessionSummaries);
   const { t } = useTranslation();
+
+  const projectOptions = Array.from(
+    new Set(
+      sessionSummaries
+        .map((s) => s.metadata?.project)
+        .filter((p): p is string => typeof p === "string" && p.length > 0),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -66,6 +76,21 @@ export function ChatSidebar() {
           value={filters.query}
           onChange={(event) => setQuery(event.target.value)}
         />
+      </label>
+      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("sidebar.project")}
+        <select
+          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          value={filters.project ?? ""}
+          onChange={(e) => setProject(e.target.value || undefined)}
+        >
+          <option value="">{t("sidebar.allProjects")}</option>
+          {projectOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="space-y-2 rounded-md border border-input bg-background px-3 py-2 text-xs text-muted-foreground">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">

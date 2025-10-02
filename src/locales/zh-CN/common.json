@@ -11,6 +11,8 @@
     "filtersDescription": "选择需要展示的助手会话，并通过关键字快速定位。",
     "search": "检索",
     "searchPlaceholder": "搜索主题或消息内容…",
+    "project": "项目",
+    "allProjects": "全部项目",
     "tip": "提示：可在会话面板的工具栏导入新的聊天记录。",
     "starredOnly": "仅查看收藏",
     "dateRange": "时间范围",
@@ -59,6 +61,7 @@
     "sessionInfo": "会话信息",
     "source": "来源",
     "model": "模型",
+    "project": "项目",
     "copy": "复制消息",
     "copied": "已复制",
     "metadata": {

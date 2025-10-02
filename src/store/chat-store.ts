@@ -29,6 +29,7 @@ interface ChatState {
   toggleStarred: (id: string) => void;
   setDateRange: (start?: string, end?: string) => void;
   setShowStarred: (value: boolean) => void;
+  setProject: (project?: string) => void;
 }
 
 const defaultFilters: ChatFilterState = {
@@ -37,6 +38,7 @@ const defaultFilters: ChatFilterState = {
   showStarredOnly: false,
   startDate: undefined,
   endDate: undefined,
+  project: undefined,
 };
 
 function pruneStarred(
@@ -105,7 +107,7 @@ function normalizeSessionSummaries(
 
 const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
   name: "agents-chat-state",
-  version: 3,
+  version: 4,
   storage: createJSONStorage(() => safeStateStorage),
   partialize: (state) => ({
     filters: state.filters,
@@ -206,6 +208,13 @@ export const useChatStore = create<ChatState>()(
             showStarredOnly: value,
           },
         })),
+      setProject: (project) =>
+        set((state) => ({
+          filters: {
+            ...state.filters,
+            project: project || undefined,
+          },
+        })),
     }),
     chatStorePersistOptions,
   ),
@@ -229,6 +238,13 @@ export function useFilteredSessionSummaries(): ChatSessionSummary[] {
       const matchesSource = state.filters.sources.includes(session.source);
       if (!matchesSource) {
         return false;
+      }
+
+      if (state.filters.project) {
+        const project = session.metadata?.project;
+        if (!project || project !== state.filters.project) {
+          return false;
+        }
       }
 
       if (state.filters.showStarredOnly && !state.starred.has(session.id)) {

@@ -11,6 +11,8 @@
     "filtersDescription": "Choose which agent conversations to display and narrow results by keywords.",
     "search": "Search",
     "searchPlaceholder": "Search topics or messages...",
+    "project": "Project",
+    "allProjects": "All projects",
     "tip": "Tip: Import new logs via the toolbar within the conversation pane.",
     "starredOnly": "Starred only",
     "dateRange": "Date range",
@@ -59,6 +61,7 @@
     "sessionInfo": "Session info",
     "source": "Source",
     "model": "Model",
+    "project": "Project",
     "copy": "Copy message",
     "copied": "Copied!",
     "metadata": {

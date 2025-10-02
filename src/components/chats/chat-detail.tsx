@@ -261,12 +261,20 @@ export function ChatDetail({
           {model}
         </div>
         {session.metadata?.summary ? (
-          <div>
-            <span className="font-medium text-foreground">
-              {t("detail.sessionInfo")}:
-            </span>{" "}
-            {session.metadata.summary}
-          </div>
+          <details className="mt-1">
+            <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("detail.sessionInfo")}
+            </summary>
+            <div className="mt-2 text-sm">
+              <div
+                className="max-w-none"
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{
+                  __html: renderSimpleMarkdown(session.metadata.summary ?? ""),
+                }}
+              />
+            </div>
+          </details>
         ) : null}
       </div>
     );

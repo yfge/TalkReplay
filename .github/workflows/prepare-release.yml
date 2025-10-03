@@ -1,0 +1,62 @@
+name: Prepare Release Draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (must start with v, e.g., v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Validate version input
+        id: ver
+        run: |
+          VERSION_INPUT="${{ github.event.inputs.version }}"
+          if [[ ! $VERSION_INPUT =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "Version must start with 'v' (e.g., v1.0.0)" >&2
+            exit 1
+          fi
+          VERSION_NO_V="${VERSION_INPUT#v}"
+          echo "tag=$VERSION_INPUT" >> $GITHUB_OUTPUT
+          echo "version=$VERSION_NO_V" >> $GITHUB_OUTPUT
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump package.json version
+        run: |
+          node -e "const fs=require('fs');const f='package.json';const p=JSON.parse(fs.readFileSync(f,'utf8'));p.version='${{ steps.ver.outputs.version }}';fs.writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
+          git add package.json
+          git commit -m "chore(release): ${{ steps.ver.outputs.tag }}"
+          git tag ${{ steps.ver.outputs.tag }}
+          git push --follow-tags
+
+      - name: Create draft GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          release_name: ${{ steps.ver.outputs.tag }}
+          draft: true
+          prerelease: false
+          body: |
+            Draft release for ${{ steps.ver.outputs.tag }}.
+
+            - Auto-bumped package.json to ${{ steps.ver.outputs.version }}.
+            - When ready, publish this release to trigger the Docker build workflow.

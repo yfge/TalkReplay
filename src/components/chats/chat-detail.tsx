@@ -6,7 +6,6 @@ import {
   Filter,
   Info,
   Share2,
-  Shield,
   Star,
   StarOff,
   User,
@@ -130,7 +129,6 @@ const MESSAGE_FILTER_CONFIG: Array<{
   { key: "human", icon: User, labelKey: "detail.messageFilters.human" },
   { key: "assistant", icon: Bot, labelKey: "detail.messageFilters.assistant" },
   { key: "tool", icon: Wrench, labelKey: "detail.messageFilters.tool" },
-  { key: "system", icon: Shield, labelKey: "detail.messageFilters.system" },
 ];
 
 function resolveMessageFilterKey(message: ChatMessage): MessageFilterKey {

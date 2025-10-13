@@ -396,24 +396,15 @@ function buildCodexSession(
         const queryVal = anyItemWS.query;
         const query = typeof queryVal === "string" ? queryVal : undefined;
         if (entry.type === "item.started") {
-          const msg: ChatMessage = {
+          const msg = makeToolCall({
             id: itemId,
-            role: "assistant",
-            kind: "tool-call",
             timestamp,
-            content: safeStringify({ query }),
-            metadata: {
-              providerMessageType: "web_search",
-              toolCallId: itemId,
-              toolCall: {
-                id: itemId,
-                name: "web_search",
-                arguments: { query },
-                toolType: "web_search",
-              },
-              raw: entry,
-            },
-          };
+            name: "web_search",
+            args: { query },
+            toolType: "web_search",
+            providerMessageType: "web_search",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("assistant");
           return;
@@ -421,23 +412,14 @@ function buildCodexSession(
         if (entry.type === "item.completed") {
           // results may appear as 'results' or similar; include payload for now
           const results = anyItemWS.results;
-          const msg: ChatMessage = {
-            id: `${itemId}:result`,
-            role: "tool",
-            kind: "tool-result",
+          const msg = makeToolResult({
+            callId: itemId,
             timestamp,
-            content: safeStringify({ query, results }),
-            metadata: {
-              providerMessageType: "web_search",
-              toolCallId: itemId,
-              toolResult: {
-                callId: itemId,
-                output: { query, results },
-                exitCode: 0,
-              },
-              raw: entry,
-            },
-          };
+            output: { query, results },
+            exitCode: 0,
+            providerMessageType: "web_search",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("tool");
           return;

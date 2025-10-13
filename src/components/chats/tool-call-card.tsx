@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
+
 import { Button } from "@/components/ui/button";
 import type { DiffFile } from "@/lib/diff";
 import type { ChatMessage } from "@/types/chat";
@@ -20,7 +21,7 @@ export interface ToolCallCardProps {
 }
 
 export function ToolCallCard({ call, result }: ToolCallCardProps) {
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
   const [tab, setTab] = React.useState<"stdout" | "stderr" | "diff" | null>(
     null,
   );
@@ -57,6 +58,26 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
     formatJson(result?.metadata?.toolResult?.output) ??
     undefined;
 
+  const previewSource =
+    bodyText ??
+    stdout ??
+    stderr ??
+    diff ??
+    (diffFiles && diffFiles.length > 0
+      ? diffFiles
+          .map((file) => file.newPath ?? file.oldPath ?? "")
+          .filter((p): p is string => Boolean(p))
+          .join(", ")
+      : "");
+  const previewFlat =
+    typeof previewSource === "string"
+      ? previewSource.replace(/\s+/g, " ").trim()
+      : "";
+  const collapsedPreview =
+    previewFlat.length > 0
+      ? `${previewFlat.slice(0, 160)}${previewFlat.length > 160 ? "…" : ""}`
+      : null;
+
   const statusLabel =
     typeof exitCode === "number"
       ? exitCode === 0
@@ -68,10 +89,10 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
 
   return (
     <div
-      className={`w-full overflow-hidden rounded-lg border bg-muted/50 text-foreground shadow-sm ${hasDiff ? "toolcall-has-diff" : ""}`}
+      className="w-full overflow-hidden rounded-xl border border-muted-foreground/20 bg-muted/70 text-foreground shadow-sm transition"
       data-has-diff={hasDiff ? "1" : undefined}
     >
-      <div className="flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
         <span>{toolName}</span>
         {toolId ? (
           <>
@@ -87,6 +108,17 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
               {typeof durationMs === "number"
                 ? ` • ${Math.round(durationMs)} ms`
                 : ""}
+            </span>
+          </>
+        ) : null}
+        {!open && collapsedPreview ? (
+          <>
+            <span>•</span>
+            <span
+              className="hidden max-w-[320px] truncate text-muted-foreground/80 md:inline"
+              title={previewFlat}
+            >
+              {collapsedPreview}
             </span>
           </>
         ) : null}
@@ -154,28 +186,32 @@ function ResultTabs(props: {
   if (diff || (diffFiles && diffFiles.length > 0)) available.push("diff");
 
   const active = tab && available.includes(tab) ? tab : (available[0] ?? null);
-  const [hunkIndex, setHunkIndex] = React.useState(0);
+  const [, setHunkIndex] = React.useState(0);
   const hunkRefs = React.useRef<Array<HTMLDivElement | null>>([]);
   React.useEffect(() => {
     hunkRefs.current = [];
   }, [diffFiles, diff]);
 
-  const nextHunk = () => {
+  const nextHunk = React.useCallback(() => {
     const total = hunkRefs.current.length;
     if (total === 0) return;
-    const next = (hunkIndex + 1) % total;
-    setHunkIndex(next);
-    const el = hunkRefs.current[next];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-  const prevHunk = () => {
+    setHunkIndex((current) => {
+      const next = (current + 1) % total;
+      const el = hunkRefs.current[next];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return next;
+    });
+  }, []);
+  const prevHunk = React.useCallback(() => {
     const total = hunkRefs.current.length;
     if (total === 0) return;
-    const prev = (hunkIndex - 1 + total) % total;
-    setHunkIndex(prev);
-    const el = hunkRefs.current[prev];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
+    setHunkIndex((current) => {
+      const prev = (current - 1 + total) % total;
+      const el = hunkRefs.current[prev];
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return prev;
+    });
+  }, []);
 
   React.useEffect(() => {
     if (active !== "diff") return;
@@ -193,7 +229,7 @@ function ResultTabs(props: {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [active, hunkIndex, nextHunk, prevHunk]);
+  }, [active, nextHunk, prevHunk]);
 
   return (
     <div className="space-y-2">

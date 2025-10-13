@@ -65,6 +65,7 @@ Progress (2025-10-13): Codex parser now handles `command_execution`, `file_chang
 Acceptance: For both providers’ fixtures, tool calls render as grouped cards with status/exit code and outputs; long outputs are collapsed by default; keyboard navigation preserved.
 
 Progress (2025-10-13): Display `exitCode`和时长(ms)；新增 `ToolCallCard` 并按 `toolCallId` 将调用+结果分组为卡片（基础版，后续补 Tabs）。
+Progress (2025-10-13): 会话详情新增消息类型筛选、工具类消息默认折叠，优化用户消息视觉层级，并同步美化 `ToolCallCard` 预览。
 
 ### A5. Search, Filters, and Stats Enhancements
 

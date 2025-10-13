@@ -103,6 +103,17 @@
     "jump": {
       "nextDiffCard": "Next diff card",
       "prevDiffCard": "Previous diff card"
+    },
+    "messageFilters": {
+      "label": "Message types",
+      "human": "Human",
+      "assistant": "Assistant",
+      "tool": "Tools",
+      "system": "System"
+    },
+    "toggleMessage": {
+      "show": "Show message",
+      "hide": "Hide message"
     }
   }
 }

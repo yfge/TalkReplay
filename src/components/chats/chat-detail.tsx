@@ -1,19 +1,25 @@
 import {
+  Bot,
   Download,
-  FileUp,
   FileText,
+  FileUp,
+  Filter,
   Info,
   Share2,
+  Shield,
   Star,
   StarOff,
+  User,
+  Wrench,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
-import { ToolCallCard } from "@/components/chats/tool-call-card";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 
+import { ToolCallCard } from "@/components/chats/tool-call-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,13 +31,19 @@ import {
   sessionToMarkdown,
 } from "@/lib/share/session-export";
 import { useChatStore, useIsStarred } from "@/store/chat-store";
-import type { ChatSession, ChatSessionSummary } from "@/types/chat";
+import type {
+  ChatMessage,
+  ChatSession,
+  ChatSessionSummary,
+} from "@/types/chat";
 
 const roleStyles: Record<string, string> = {
-  user: "bg-secondary text-secondary-foreground",
-  assistant: "bg-primary text-primary-foreground",
-  system: "bg-muted text-muted-foreground",
-  tool: "bg-muted text-muted-foreground",
+  user: "bg-sky-500/10 dark:bg-sky-500/20 border border-sky-500/40 text-sky-950 dark:text-sky-50 shadow-sm ring-1 ring-sky-500/30",
+  assistant:
+    "bg-primary/10 border border-primary/30 text-foreground shadow-sm ring-1 ring-primary/25",
+  system:
+    "bg-muted/60 border border-muted-foreground/30 text-muted-foreground shadow-sm ring-1 ring-muted-foreground/20",
+  tool: "bg-muted/80 border border-muted-foreground/20 text-muted-foreground shadow-sm ring-1 ring-muted-foreground/20",
 };
 
 const mdComponents = {
@@ -54,7 +66,7 @@ const mdComponents = {
     />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="font-mono whitespace-pre-wrap break-all" {...props} />
+    <code className="whitespace-pre-wrap break-all font-mono" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul className="my-2 list-disc space-y-1 pl-6" {...props} />
@@ -66,9 +78,10 @@ const mdComponents = {
     <li className="break-all" {...props} />
   ),
   a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a className="underline break-all" {...props} />
+    <a className="break-all underline" {...props} />
   ),
   img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       className="my-2 max-h-[28rem] max-w-full rounded border object-contain"
       loading="lazy"
@@ -90,6 +103,57 @@ function formatJson(value: unknown): string | null {
     console.error("Failed to serialise value", error);
     return "[unserialisable]";
   }
+}
+
+type MessageFilterKey = "human" | "assistant" | "tool" | "system";
+
+const ALL_MESSAGE_FILTERS: MessageFilterKey[] = [
+  "human",
+  "assistant",
+  "tool",
+  "system",
+];
+
+const TOOL_LIKE_PROVIDER_TYPES = new Set([
+  "command_execution",
+  "file_change",
+  "mcp_tool_call",
+  "web_search",
+  "tool_use",
+]);
+
+const MESSAGE_FILTER_CONFIG: Array<{
+  key: MessageFilterKey;
+  icon: LucideIcon;
+  labelKey: string;
+}> = [
+  { key: "human", icon: User, labelKey: "detail.messageFilters.human" },
+  { key: "assistant", icon: Bot, labelKey: "detail.messageFilters.assistant" },
+  { key: "tool", icon: Wrench, labelKey: "detail.messageFilters.tool" },
+  { key: "system", icon: Shield, labelKey: "detail.messageFilters.system" },
+];
+
+function resolveMessageFilterKey(message: ChatMessage): MessageFilterKey {
+  if (message.role === "user") {
+    return "human";
+  }
+  if (message.role === "system") {
+    return "system";
+  }
+  if (message.role === "tool") {
+    return "tool";
+  }
+  if (message.kind === "tool-call" || message.kind === "tool-result") {
+    return "tool";
+  }
+  const providerType = message.metadata?.providerMessageType;
+  if (typeof providerType === "string") {
+    const normalised = providerType.toLowerCase();
+    if (TOOL_LIKE_PROVIDER_TYPES.has(normalised)) {
+      return "tool";
+    }
+  }
+  return "assistant";
 }
 
 interface ChatDetailProps {
@@ -114,10 +178,34 @@ export function ChatDetail({
   const { t } = useTranslation();
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<"markdown" | null>(null);
+  const [activeMessageFilters, setActiveMessageFilters] =
+    useState<MessageFilterKey[]>(ALL_MESSAGE_FILTERS);
+  const activeFilterSet = useMemo(
+    () => new Set<MessageFilterKey>(activeMessageFilters),
+    [activeMessageFilters],
+  );
+  const [collapsedMessages, setCollapsedMessages] = useState<
+    Record<string, boolean>
+  >({});
+  React.useEffect(() => {
+    setCollapsedMessages({});
+  }, [session?.id]);
   const isStarred = useIsStarred(session?.id ?? "");
+  const toggleMessageFilter = React.useCallback((key: MessageFilterKey) => {
+    setActiveMessageFilters((current) => {
+      const has = current.includes(key);
+      if (has) {
+        if (current.length === 1) {
+          return current;
+        }
+        return current.filter((item) => item !== key);
+      }
+      return [...current, key];
+    });
+  }, []);
   const nextDiffCard = React.useCallback(() => {
     const cards = Array.from(
-      document.querySelectorAll<HTMLElement>(".toolcall-has-diff"),
+      document.querySelectorAll<HTMLElement>('[data-has-diff="1"]'),
     );
     if (cards.length === 0) return;
     const y = window.scrollY || document.documentElement.scrollTop || 0;
@@ -195,8 +283,8 @@ export function ChatDetail({
     const model = session.metadata?.provider?.model ?? "-";
     const project = session.metadata?.project;
     return (
-      <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 rounded-lg border border-muted-foreground/20 bg-muted/40 p-3 text-sm text-muted-foreground shadow-sm">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground/80">
           <Badge className={providerBadgeClass[session.source]}>
             {providerLabel}
           </Badge>
@@ -325,91 +413,120 @@ export function ChatDetail({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b bg-background/80 px-6 py-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">{session.topic}</h2>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            {new Date(session.startedAt).toLocaleString()}
-          </p>
-          {metadataSummary}
+      <div className="border-b bg-background/80 px-6 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">{session.topic}</h2>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              {new Date(session.startedAt).toLocaleString()}
+            </p>
+            {metadataSummary}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant={isStarred ? "default" : "ghost"}
+              onClick={() => toggleStarred(session.id)}
+              aria-label={isStarred ? t("detail.unstar") : t("detail.star")}
+              className="px-2"
+            >
+              {isStarred ? (
+                <Star className="size-4" />
+              ) : (
+                <StarOff className="size-4" />
+              )}
+            </Button>
+            <input
+              ref={fileInputRef}
+              className="hidden"
+              type="file"
+              accept=".json,.txt,.md"
+              onChange={(event) => {
+                void handleImport(event);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileUp className="mr-2 size-4" /> Import Transcript
+            </Button>
+            <Button
+              type="button"
+              variant={shareStatus === "markdown" ? "default" : "ghost"}
+              onClick={() => {
+                void copyMarkdown();
+              }}
+              className="flex items-center gap-2"
+            >
+              <Share2 className="size-4" />
+              {shareStatus === "markdown"
+                ? t("detail.shareCopied")
+                : t("detail.copyMarkdown")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() =>
+                downloadFile(sessionToMarkdown(session), "text/markdown", "md")
+              }
+            >
+              <FileText className="mr-2 size-4" />
+              {t("detail.downloadMarkdown")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() =>
+                downloadFile(sessionToJson(session), "application/json", "json")
+              }
+            >
+              <Download className="mr-2 size-4" />
+              {t("detail.downloadJson")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={nextDiffCard}
+              title={t("detail.jump.nextDiffCard")}
+              aria-label={t("detail.jump.nextDiffCard")}
+            >
+              <span className="mr-2">⤵︎</span>
+              {t("detail.jump.nextDiffCard")}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant={isStarred ? "default" : "ghost"}
-            onClick={() => toggleStarred(session.id)}
-            aria-label={isStarred ? t("detail.unstar") : t("detail.star")}
-            className="px-2"
-          >
-            {isStarred ? (
-              <Star className="size-4" />
-            ) : (
-              <StarOff className="size-4" />
-            )}
-          </Button>
-          <input
-            ref={fileInputRef}
-            className="hidden"
-            type="file"
-            accept=".json,.txt,.md"
-            onChange={(event) => {
-              void handleImport(event);
-            }}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FileUp className="mr-2 size-4" /> Import Transcript
-          </Button>
-          <Button
-            type="button"
-            variant={shareStatus === "markdown" ? "default" : "ghost"}
-            onClick={() => {
-              void copyMarkdown();
-            }}
-            className="flex items-center"
-          >
-            <Share2 className="mr-2 size-4" />
-            {shareStatus === "markdown"
-              ? t("detail.shareCopied")
-              : t("detail.copyMarkdown")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() =>
-              downloadFile(sessionToMarkdown(session), "text/markdown", "md")
-            }
-          >
-            <FileText className="mr-2 size-4" />
-            {t("detail.downloadMarkdown")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() =>
-              downloadFile(sessionToJson(session), "application/json", "json")
-            }
-          >
-            <Download className="mr-2 size-4" />
-            {t("detail.downloadJson")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={nextDiffCard}
-            title={t("detail.jump.nextDiffCard")}
-            aria-label={t("detail.jump.nextDiffCard")}
-          >
-            <span className="mr-2">⤵︎</span>
-            {t("detail.jump.nextDiffCard")}
-          </Button>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            <Filter className="size-3" />
+            {t("detail.messageFilters.label")}
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {MESSAGE_FILTER_CONFIG.map(({ key, icon: Icon, labelKey }) => {
+              const isActive = activeFilterSet.has(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleMessageFilter(key)}
+                  aria-pressed={isActive}
+                  className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    isActive
+                      ? "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-4" />
+                  {t(labelKey)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
-      <ScrollArea className="flex-1 bg-background px-6 py-4 overflow-x-hidden">
-        <ol className="space-y-4 max-w-full overflow-x-hidden">
+      <ScrollArea className="flex-1 overflow-x-hidden bg-background p-6">
+        <ol className="max-w-full space-y-5 overflow-x-hidden">
           {(() => {
             // Pre-group tool-call with matching tool-result by toolCallId
             const resultByCallId = new Map<string, number>();
@@ -458,7 +575,14 @@ export function ChatDetail({
               items.push({ type: "single", message: m });
             }
 
-            return items.map((item, index) => {
+            const filteredItems = items.filter((item) => {
+              if (item.type === "group") {
+                return activeFilterSet.has("tool");
+              }
+              return activeFilterSet.has(resolveMessageFilterKey(item.message));
+            });
+
+            return filteredItems.map((item, index) => {
               if (item.type === "group") {
                 const call = item.call;
                 const result = item.result;
@@ -474,7 +598,6 @@ export function ChatDetail({
               }
 
               const message = item.message;
-              const indexInner = index;
               const tokenInfo = message.metadata?.tokens;
               const toolCallId =
                 message.metadata?.toolCallId ?? message.metadata?.toolCall?.id;
@@ -597,6 +720,10 @@ export function ChatDetail({
                 copyPayload = imageUris.join("\n");
               }
 
+              const category = resolveMessageFilterKey(message);
+              const shouldOfferCollapseToggle =
+                category === "tool" && copyPayload.length > 0;
+
               const toFileServerUrl = (raw: string): string => {
                 if (/^https?:\/\//i.test(raw) || raw.startsWith("data:"))
                   return raw;
@@ -644,8 +771,26 @@ export function ChatDetail({
                   : null,
               ].filter(Boolean);
 
-              const messageKey = `${session.id}:${message.id ?? "message"}:${indexInner}`;
-
+              const messageKey = `${session.id}:${message.id ?? "message"}:${index}`;
+              const shouldDefaultCollapse =
+                shouldOfferCollapseToggle && Boolean(copyPayload);
+              const isCollapsed =
+                collapsedMessages[messageKey] ?? shouldDefaultCollapse;
+              const handleToggleCollapse = () => {
+                setCollapsedMessages((prev) => {
+                  const current = prev[messageKey];
+                  const nextValue =
+                    typeof current === "boolean"
+                      ? !current
+                      : !shouldDefaultCollapse;
+                  if (nextValue === shouldDefaultCollapse) {
+                    const next = { ...prev };
+                    delete next[messageKey];
+                    return next;
+                  }
+                  return { ...prev, [messageKey]: nextValue };
+                });
+              };
               const isCopied = copiedMessageId === messageKey;
 
               const renderBody = () => {
@@ -663,6 +808,7 @@ export function ChatDetail({
                         {imageUris.length > 0 ? (
                           <div className="flex flex-wrap gap-3">
                             {imageUris.map((u, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 key={`${messageKey}:img-call:${i}`}
                                 src={toFileServerUrl(u)}
@@ -693,6 +839,7 @@ export function ChatDetail({
                       return (
                         <div className="flex flex-wrap gap-3">
                           {imageUris.map((u, i) => (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               key={`${messageKey}:img-content:${i}`}
                               src={toFileServerUrl(u)}
@@ -728,6 +875,7 @@ export function ChatDetail({
                         {imageUris.length > 0 ? (
                           <div className="flex flex-wrap gap-3">
                             {imageUris.map((u, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 key={`${messageKey}:img:${i}`}
                                 src={toFileServerUrl(u)}
@@ -789,13 +937,37 @@ export function ChatDetail({
                 }
               };
 
+              const previewSource =
+                imageUris.length > 0
+                  ? imageUris.join(", ")
+                  : typeof resolvedContent === "string"
+                    ? resolvedContent
+                    : "";
+              const previewFlat = previewSource.replace(/\s+/g, " ").trim();
+              const collapsedPreview =
+                previewFlat.length > 0
+                  ? `${previewFlat.slice(0, 200)}${
+                      previewFlat.length > 200 ? "…" : ""
+                    }`
+                  : t("detail.noOutput");
+              const headerTone =
+                category === "human"
+                  ? "text-sky-600 dark:text-sky-300"
+                  : category === "assistant"
+                    ? "text-primary"
+                    : "text-muted-foreground";
+              const metadataText = metadataLine.join(" • ");
+
               return (
                 <li
                   key={messageKey}
-                  className="flex w-full max-w-full flex-col gap-2 overflow-hidden"
+                  data-category={category}
+                  className="flex w-full max-w-full flex-col gap-3 overflow-hidden rounded-lg"
                 >
-                  <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                    <span>{message.role}</span>
+                  <div
+                    className={`flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide ${headerTone}`}
+                  >
+                    <span className="font-semibold">{message.role}</span>
                     {message.kind !== "content" ? (
                       <>
                         <span>•</span>
@@ -806,29 +978,52 @@ export function ChatDetail({
                     <time dateTime={message.timestamp}>
                       {new Date(message.timestamp).toLocaleString()}
                     </time>
-                    <Button
-                      variant="ghost"
-                      className="ml-auto h-6 px-2 text-xs"
-                      disabled={!copyPayload}
-                      onClick={() => {
-                        if (!copyPayload) {
-                          return;
-                        }
-                        void copyMessage(copyPayload, messageKey);
-                      }}
-                    >
-                      {isCopied ? t("detail.copied") : t("detail.copy")}
-                    </Button>
+                    <div className="ml-auto flex items-center gap-1">
+                      {shouldOfferCollapseToggle ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-6 px-2 text-xs"
+                          onClick={handleToggleCollapse}
+                        >
+                          {isCollapsed
+                            ? t("detail.toggleMessage.show")
+                            : t("detail.toggleMessage.hide")}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        disabled={!copyPayload}
+                        onClick={() => {
+                          if (!copyPayload) {
+                            return;
+                          }
+                          void copyMessage(copyPayload, messageKey);
+                        }}
+                      >
+                        {isCopied ? t("detail.copied") : t("detail.copy")}
+                      </Button>
+                    </div>
                   </div>
-                  {metadataLine.length > 0 ? (
-                    <div className="text-xs text-muted-foreground">
-                      {metadataLine.join(" • ")}
+                  {metadataText ? (
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground/80">
+                      {metadataText}
                     </div>
                   ) : null}
                   <div
-                    className={`w-full max-w-full overflow-hidden break-words rounded-lg px-4 py-3 leading-relaxed shadow-sm ${roleStyles[message.role] ?? "bg-muted text-foreground"}`}
+                    className={`relative w-full max-w-full overflow-hidden break-words rounded-xl px-4 py-3 leading-relaxed transition ${
+                      roleStyles[message.role] ??
+                      "border border-muted bg-muted text-foreground"
+                    } ${isCollapsed ? "opacity-90" : ""}`}
                   >
-                    {renderBody()}
+                    {isCollapsed ? (
+                      <p className="text-sm text-muted-foreground">
+                        {collapsedPreview}
+                      </p>
+                    ) : (
+                      renderBody()
+                    )}
                   </div>
                 </li>
               );

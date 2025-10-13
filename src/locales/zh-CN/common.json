@@ -103,6 +103,17 @@
     "jump": {
       "nextDiffCard": "跳到下一个差异卡片",
       "prevDiffCard": "跳到上一个差异卡片"
+    },
+    "messageFilters": {
+      "label": "消息类型",
+      "human": "用户",
+      "assistant": "助手",
+      "tool": "工具",
+      "system": "系统"
+    },
+    "toggleMessage": {
+      "show": "展开消息",
+      "hide": "收起消息"
     }
   }
 }

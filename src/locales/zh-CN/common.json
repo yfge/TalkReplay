@@ -80,6 +80,16 @@
     "copyMarkdown": "复制 Markdown 会话",
     "downloadMarkdown": "下载 Markdown",
     "downloadJson": "下载 JSON",
-    "shareCopied": "已复制!"
+    "shareCopied": "已复制!",
+    "arguments": "参数",
+    "result": "结果",
+    "noOutput": "无输出",
+    "tabs": {
+      "stdout": "标准输出",
+      "stderr": "错误输出",
+      "diff": "差异"
+    },
+    "nextHunk": "下一个块",
+    "prevHunk": "上一个块"
   }
 }

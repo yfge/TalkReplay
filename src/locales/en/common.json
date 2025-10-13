@@ -80,6 +80,16 @@
     "copyMarkdown": "Copy conversation (Markdown)",
     "downloadMarkdown": "Download Markdown",
     "downloadJson": "Download JSON",
-    "shareCopied": "Copied conversation!"
+    "shareCopied": "Copied conversation!",
+    "arguments": "Arguments",
+    "result": "Result",
+    "noOutput": "No output",
+    "tabs": {
+      "stdout": "stdout",
+      "stderr": "stderr",
+      "diff": "diff"
+    },
+    "nextHunk": "Next Hunk",
+    "prevHunk": "Prev Hunk"
   }
 }

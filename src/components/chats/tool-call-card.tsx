@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { DiffFile } from "@/lib/diff";
 import type { ChatMessage } from "@/types/chat";
@@ -23,6 +24,7 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
   const [tab, setTab] = React.useState<"stdout" | "stderr" | "diff" | null>(
     null,
   );
+  const { t } = useTranslation();
 
   const toolId = call.metadata?.toolCallId ?? call.metadata?.toolCall?.id;
   const toolName =
@@ -95,14 +97,16 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
         <div className="space-y-3 px-4 py-3">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Arguments
+              {t("detail.arguments")}
             </p>
             {argsText ? (
               <pre className="whitespace-pre-wrap break-all font-mono text-xs">
                 {argsText}
               </pre>
             ) : (
-              <p className="text-xs text-muted-foreground">No arguments</p>
+              <p className="text-xs text-muted-foreground">
+                {t("detail.noOutput")}
+              </p>
             )}
           </div>
           <ResultTabs
@@ -113,6 +117,7 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
             diff={diff}
             diffFiles={diffFiles}
             fallback={bodyText}
+            t={t}
           />
         </div>
       ) : null}
@@ -128,8 +133,9 @@ function ResultTabs(props: {
   diff?: string;
   diffFiles?: DiffFile[];
   fallback?: string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
-  const { tab, setTab, stdout, stderr, diff, diffFiles, fallback } = props;
+  const { tab, setTab, stdout, stderr, diff, diffFiles, fallback, t } = props;
   const available: Array<"stdout" | "stderr" | "diff"> = [];
   if (stdout) available.push("stdout");
   if (stderr) available.push("stderr");
@@ -150,6 +156,32 @@ function ResultTabs(props: {
     const el = hunkRefs.current[next];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+  const prevHunk = () => {
+    const total = hunkRefs.current.length;
+    if (total === 0) return;
+    const prev = (hunkIndex - 1 + total) % total;
+    setHunkIndex(prev);
+    const el = hunkRefs.current[prev];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  React.useEffect(() => {
+    if (active !== "diff") return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      const editable = (e.target as HTMLElement | null)?.getAttribute?.(
+        "contenteditable",
+      );
+      if (tag === "input" || tag === "textarea" || editable === "true") return;
+      if (e.key === "n" || e.key === "N") {
+        nextHunk();
+      } else if (e.key === "p" || e.key === "P") {
+        prevHunk();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [active, hunkIndex, nextHunk, prevHunk]);
 
   return (
     <div className="space-y-2">
@@ -161,18 +193,34 @@ function ResultTabs(props: {
             className="h-6 px-2 text-xs"
             onClick={() => setTab(k)}
           >
-            {k}
+            {k === "stdout"
+              ? t("detail.tabs.stdout")
+              : k === "stderr"
+                ? t("detail.tabs.stderr")
+                : t("detail.tabs.diff")}
           </Button>
         ))}
         {active === "diff" && (diff || (diffFiles && diffFiles.length > 0)) ? (
-          <Button
-            type="button"
-            variant="ghost"
-            className="ml-auto h-6 px-2 text-xs"
-            onClick={nextHunk}
-          >
-            Next Hunk
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-6 px-2 text-xs"
+              onClick={prevHunk}
+              aria-label={t("detail.prevHunk")}
+            >
+              {t("detail.prevHunk")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-6 px-2 text-xs"
+              onClick={nextHunk}
+              aria-label={t("detail.nextHunk")}
+            >
+              {t("detail.nextHunk")}
+            </Button>
+          </div>
         ) : null}
       </div>
       <div>
@@ -244,7 +292,9 @@ function ResultTabs(props: {
               {fallback}
             </pre>
           ) : (
-            <p className="text-xs text-muted-foreground">No output</p>
+            <p className="text-xs text-muted-foreground">
+              {t("detail.noOutput")}
+            </p>
           )
         ) : null}
         {!active && fallback ? (

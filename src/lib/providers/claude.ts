@@ -222,6 +222,12 @@ function buildClaudeSession(
                 id: tool.id,
                 name: tool.name,
                 arguments: tool.input,
+                toolType:
+                  typeof tool.name === "string"
+                    ? tool.name === "Bash"
+                      ? "bash"
+                      : tool.name
+                    : undefined,
               },
             },
             `${chunkIndex++}`,
@@ -243,6 +249,14 @@ function buildClaudeSession(
               toolResult: {
                 callId: result.tool_use_id,
                 output: result.content ?? entry.toolUseResult ?? null,
+                stdout:
+                  typeof entry.toolUseResult?.stdout === "string"
+                    ? entry.toolUseResult.stdout
+                    : undefined,
+                stderr:
+                  typeof entry.toolUseResult?.stderr === "string"
+                    ? entry.toolUseResult.stderr
+                    : undefined,
               },
             },
             `${chunkIndex++}`,

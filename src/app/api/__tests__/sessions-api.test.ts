@@ -117,6 +117,9 @@ describe("/api/sessions/detail", () => {
 
         expect(result.session).toBeDefined();
         const detail = result.session;
+        if (!detail) {
+          throw new Error("session detail is undefined in test");
+        }
         expect(detail.id).toBe(encodedId);
         expect(detail.source).toBe(sample.source);
         expect(detail.messages.length).toBeGreaterThan(0);

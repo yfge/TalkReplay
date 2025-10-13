@@ -31,6 +31,8 @@ Acceptance: Capture at least 3 real files per source as fixtures (sanitised) und
 
 Acceptance: Types updated with strict TypeScript, no breaking changes to existing callers; add a small migration note in `docs/data-sources.md`.
 
+Progress (2025-10-13): Extended `MessageMetadata.toolCall.toolType` and `toolResult{ exitCode, durationMs, stdout, stderr, filesChanged, diff }` fields (optional). Fixed a test type guard to satisfy `tsc --noEmit`.
+
 ### A3. Parser Adapters (Claude, Codex)
 
 - Claude (`src/lib/providers/claude.ts`)

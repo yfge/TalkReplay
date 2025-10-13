@@ -35,10 +35,18 @@ export interface MessageMetadata {
     id?: string;
     name?: string;
     arguments?: unknown;
+    // Suggested values: "bash" | "apply_patch" | "mcp" | "web_search" | "file_change" | ...
+    toolType?: string;
   };
   toolResult?: {
     callId?: string;
     output?: unknown;
+    exitCode?: number;
+    durationMs?: number;
+    stdout?: string;
+    stderr?: string;
+    filesChanged?: string[];
+    diff?: string;
   };
   reasoning?: {
     summary?: string;

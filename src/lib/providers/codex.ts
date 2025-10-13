@@ -145,6 +145,73 @@ function buildCodexSession(
   let cwdPath: string | undefined;
 
   entries.forEach((entry, index) => {
+    // Handle exec JSON mode item events
+    if (entry.type && entry.type.startsWith("item.")) {
+      const p = (entry.payload ?? {}) as Record<string, unknown>;
+      const item = p.item as Record<string, unknown> | undefined;
+      if (!item || typeof item !== "object") {
+        return;
+      }
+      const itemId = typeof item.id === "string" ? item.id : `item-${index}`;
+      const itemType = typeof item.type === "string" ? item.type : undefined;
+      const timestamp = toIsoTimestamp(entry.timestamp);
+
+      if (itemType === "command_execution") {
+        const command =
+          typeof item.command === "string" ? item.command : undefined;
+        if (entry.type === "item.started") {
+          pushMessage("tool-call", command ?? null, {
+            providerMessageType: "command_execution",
+            toolCallId: itemId,
+            toolCall: {
+              id: itemId,
+              name: "command_execution",
+              arguments: { command },
+              toolType:
+                command && command.startsWith("bash ")
+                  ? "bash"
+                  : "command_execution",
+            },
+          });
+          return;
+        }
+
+        if (entry.type === "item.completed") {
+          const aggregated =
+            typeof item.aggregated_output === "string"
+              ? item.aggregated_output
+              : undefined;
+          const anyItem = item as Record<string, unknown> & {
+            exit_code?: unknown;
+          };
+          const exitCode =
+            typeof anyItem.exit_code === "number"
+              ? anyItem.exit_code
+              : undefined;
+          const message: ChatMessage = {
+            id: `${itemId}:result`,
+            role: "tool",
+            kind: "tool-result",
+            timestamp,
+            content: safeStringify(aggregated) ?? aggregated ?? null,
+            metadata: {
+              providerMessageType: "command_execution",
+              toolCallId: itemId,
+              toolResult: {
+                callId: itemId,
+                output: aggregated,
+                exitCode,
+              },
+              raw: entry,
+            },
+          };
+          messages.push(message);
+          participants.add("tool");
+          return;
+        }
+      }
+    }
+
     if (entry.type === "session_meta" && entry.payload) {
       const payload = entry.payload as CodexPayload;
       sessionId = payload.id ?? sessionId;

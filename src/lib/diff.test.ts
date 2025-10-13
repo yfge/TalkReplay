@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+
 import { parseUnifiedDiff } from "@/lib/diff";
 
 const SAMPLE = `--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1,1 +1,1 @@\n-console.log('Hello')\n+console.log('Hello world')\n`;

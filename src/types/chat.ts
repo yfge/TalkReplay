@@ -50,6 +50,10 @@ export interface MessageMetadata {
     diffFiles?: Array<{
       oldPath?: string;
       newPath?: string;
+      status?: string;
+      renamedFrom?: string;
+      renamedTo?: string;
+      binary?: boolean;
       hunks: Array<{
         oldStart: number;
         oldLines?: number;

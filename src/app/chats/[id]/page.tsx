@@ -44,43 +44,45 @@ export default function ChatDetailPage() {
   }, [id, providerPaths]);
 
   return (
-    <div className="flex h-screen min-h-[600px] w-full flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b px-6 py-4">
-        <div>
-          <h1 className="text-lg font-semibold">
-            {session?.topic ?? "Conversation"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {session
-              ? new Date(session.startedAt).toLocaleString()
-              : "Full-page detail view"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" type="button">
-            <Link href="/">Back to chats</Link>
-          </Button>
-        </div>
-      </header>
-      <main className="flex-1 overflow-hidden">
-        <ChatDetail
-          session={session}
-          isLoading={isLoading}
-          error={error}
-          onRetry={() => {
-            if (!id) return;
-            setIsLoading(true);
-            setError(null);
-            fetchSessionDetail({ id, paths: providerPaths })
-              .then((detail) => setSession(detail))
-              .catch((e: unknown) =>
-                setError(
-                  e instanceof Error ? e.message : "Failed to load session",
-                ),
-              )
-              .finally(() => setIsLoading(false));
-          }}
-        />
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background via-muted/40 to-background text-foreground">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-8 sm:px-6 lg:px-10">
+        <header className="mb-6 flex items-center justify-between rounded-2xl border border-border/60 bg-card/80 px-6 py-4 shadow-sm backdrop-blur">
+          <div>
+            <h1 className="text-xl font-semibold sm:text-2xl">
+              {session?.topic ?? "Conversation"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {session
+                ? new Date(session.startedAt).toLocaleString()
+                : "Full-page detail view"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" type="button">
+              <Link href="/">Back to chats</Link>
+            </Button>
+          </div>
+        </header>
+        <section className="flex-1 overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-lg backdrop-blur">
+          <ChatDetail
+            session={session}
+            isLoading={isLoading}
+            error={error}
+            onRetry={() => {
+              if (!id) return;
+              setIsLoading(true);
+              setError(null);
+              fetchSessionDetail({ id, paths: providerPaths })
+                .then((detail) => setSession(detail))
+                .catch((e: unknown) =>
+                  setError(
+                    e instanceof Error ? e.message : "Failed to load session",
+                  ),
+                )
+                .finally(() => setIsLoading(false));
+            }}
+          />
+        </section>
       </main>
     </div>
   );

@@ -130,4 +130,5 @@ export interface ChatFilterState {
   startDate?: string;
   endDate?: string;
   project?: string;
+  participants?: ChatRole[];
 }

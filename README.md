@@ -172,6 +172,10 @@ $env:APP_PORT=3000;
 docker compose up --build
 ```
 
+Containers can only see paths mounted into the filesystem above. Use the in-app Provider Setup dialog
+to confirm the mapped `/app/data/**` directories once the container is running; host-only paths will not
+resolve inside Docker without the volume bindings shown here.
+
 ### Option 2: Local Build + Host Paths
 
 If you prefer to run the production server directly on the host, build once and then launch with
@@ -197,8 +201,37 @@ $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
 pnpm start
 ```
 
-Adjust the paths if you store transcripts elsewhere. Using environment variables keeps the
-configuration aligned with Docker deployments and avoids hard-coding host-only paths inside the app.
+Alternatively, leverage the standalone output (`next.config.mjs` sets `output: "standalone"`) and
+run it with Node directly. Ensure the `.next/standalone`, `.next/static`, and `public` folders stay
+side-by-side so asset paths resolve correctly:
+
+```bash
+pnpm build
+CLAUDE_ROOT="$HOME/.claude/projects" \
+CODEX_ROOT="$HOME/.codex/sessions" \
+NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
+NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+PORT=3000 \
+NODE_ENV=production \
+node .next/standalone/server.js
+```
+
+Windows PowerShell:
+
+```powershell
+pnpm build
+$env:CLAUDE_ROOT="C:\\Users\\<you>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<you>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:PORT=3000
+$env:NODE_ENV="production"
+node .next/standalone/server.js
+```
+
+Adjust the paths if you store transcripts elsewhere. When running directly on the host, you can also
+skip the environment variables and point the Provider Setup dialog to any readable directory on demand;
+the env vars simply provide sensible defaults that mirror the Docker layout.
 
 ## Testing & Quality Gates
 

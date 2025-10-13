@@ -167,6 +167,9 @@ $env:APP_PORT=3000;
 docker compose up --build
 ```
 
+容器只能读取挂载进来的目录，运行后可在应用内的「提供者目录」向导中确认 `/app/data/**`
+是否就绪；未挂载的宿主机路径在容器内部无法直接访问。
+
 ### 方案二：本机构建 + 本地路径
 
 如果直接在宿主机运行生产服务，可先构建再注入本地日志目录：
@@ -191,7 +194,37 @@ $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
 pnpm start
 ```
 
+也可以利用 Next.js 独立产物（`next.config.mjs` 指定了 `output: "standalone"`），直接用 Node
+启动。请确保 `.next/standalone`、`.next/static`、`public` 目录位于同级，以便静态资源正确
+解析：
+
+```bash
+pnpm build
+CLAUDE_ROOT="$HOME/.claude/projects" \
+CODEX_ROOT="$HOME/.codex/sessions" \
+NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
+NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+PORT=3000 \
+NODE_ENV=production \
+node .next/standalone/server.js
+```
+
+Windows PowerShell：
+
+```powershell
+pnpm build
+$env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:PORT=3000
+$env:NODE_ENV="production"
+node .next/standalone/server.js
+```
+
 根据实际存储位置调整路径。通过环境变量保持与 Docker 配置一致，避免在代码里写死宿主机专用路径。
+若直接在宿主机运行，也可以不设置环境变量，启动后通过「提供者目录」对话框手动指定任意
+可读目录；环境变量仅提供默认值，便于与 Docker 场景对齐。
 
 ## 测试与质量
 

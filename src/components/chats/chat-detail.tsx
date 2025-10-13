@@ -425,7 +425,7 @@ export function ChatDetail({
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Button
               type="button"
-              variant={isStarred ? "default" : "ghost"}
+              variant="ghost"
               onClick={() => toggleStarred(session.id)}
               aria-label={isStarred ? t("detail.unstar") : t("detail.star")}
               className="px-2"

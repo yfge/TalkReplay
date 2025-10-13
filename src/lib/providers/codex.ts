@@ -318,24 +318,59 @@ function buildCodexSession(
       }
       case "function_call": {
         const args = safeJsonParse(payload.arguments);
+        // Derive a coarse tool type from name when possible
+        const name = payload.name;
+        let toolType: string | undefined;
+        if (typeof name === "string") {
+          if (name === "shell") toolType = "bash";
+          else if (name === "apply_patch") toolType = "apply_patch";
+          else toolType = name;
+        }
         pushMessage("tool-call", safeStringify(args), {
           toolCall: {
             id: payload.id,
-            name: payload.name,
+            name,
             arguments: args,
+            toolType,
           },
         });
         break;
       }
       case "function_call_output": {
-        const output = safeJsonParse(payload.output);
+        const parsed = safeJsonParse(payload.output);
+        let display: unknown = parsed;
+        let exitCode: number | undefined;
+        let durationMs: number | undefined;
+        let stdout: string | undefined;
+        let stderr: string | undefined;
+
+        if (parsed && typeof parsed === "object") {
+          const anyParsed = parsed as Record<string, unknown>;
+          const maybeOutput = anyParsed.output;
+          if (typeof maybeOutput === "string") {
+            stdout = maybeOutput;
+            display = maybeOutput;
+          }
+          const md = anyParsed.metadata as Record<string, unknown> | undefined;
+          if (md && typeof md === "object") {
+            const code = md.exit_code;
+            const secs = md.duration_seconds;
+            if (typeof code === "number") exitCode = code;
+            if (typeof secs === "number") durationMs = Math.round(secs * 1000);
+          }
+        }
+
         pushMessage(
           "tool-result",
-          safeStringify(output),
+          safeStringify(display),
           {
             toolResult: {
               callId: payload.call_id,
-              output,
+              output: parsed,
+              exitCode,
+              durationMs,
+              stdout,
+              stderr,
             },
           },
           undefined,

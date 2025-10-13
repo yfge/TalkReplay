@@ -97,7 +97,7 @@ export function ChatList({
                 </span>
                 {starred.has(session.id) ? (
                   <Star
-                    className="size-4 fill-secondary text-secondary"
+                    className="size-4 fill-yellow-300 text-yellow-500 dark:fill-yellow-200 dark:text-yellow-200"
                     aria-hidden
                   />
                 ) : null}

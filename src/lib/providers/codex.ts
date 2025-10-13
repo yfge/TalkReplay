@@ -600,14 +600,29 @@ function buildCodexSession(
       }
       case "function_call": {
         const args = safeJsonParse(payload.arguments);
-        // Derive a coarse tool type from name when possible
+        // Normalise common Codex tool names to canonical toolType
         const name = payload.name;
-        let toolType: string | undefined;
-        if (typeof name === "string") {
-          if (name === "shell") toolType = "bash";
-          else if (name === "apply_patch") toolType = "apply_patch";
-          else toolType = name;
-        }
+        const mapToolType = (n?: string): string | undefined => {
+          if (!n) return undefined;
+          const table: Record<string, string> = {
+            shell: "bash",
+            apply_patch: "apply_patch",
+            read_file: "read_file",
+            list_dir: "list_dir",
+            grep_files: "grep_files",
+            update_plan: "update_plan",
+            unified_exec: "unified_exec",
+            view_image: "view_image",
+            web_search: "web_search",
+          };
+          if (n in table) return table[n];
+          if (n.endsWith("_call") && n.startsWith("web_search"))
+            return "web_search";
+          return n;
+        };
+        const toolType = mapToolType(
+          typeof name === "string" ? name : undefined,
+        );
         pushMessage("tool-call", safeStringify(args), {
           toolCall: {
             id: payload.id,

@@ -1,5 +1,96 @@
 # Project Task Plan
 
+## Milestone 1.A – Log Analysis + Structured Tool Call UI
+
+Goal: Analyse Claude Code and Codex CLI log formats in detail, finalise a unified conversation schema (v1), and refactor the chat detail UI to present tool invocations and results in a structured, inspectable way.
+
+### A1. Source Log Formats (observed)
+
+- Claude Code
+  - Location: `~/.claude/projects/<sanitized-cwd>/*.jsonl`
+  - Entries: `file-history-snapshot`, `summary`, `user`/`assistant` messages; assistant `content[]` includes `text`, `tool_use`, `tool_result` chunks; paired `tool_result` may also include `toolUseResult` with `stdout`, `stderr`, `interrupted`, `isImage`.
+  - Sample: `~/.claude/projects/-Users-geyunfei-dev-yfge-ai-shifu/4658f936-*.jsonl` shows `message.content[{ type: "tool_use" | "tool_result", id/name/input/content }]` with `message.usage` token counts.
+- Codex CLI
+  - Location: `~/.codex/sessions/YYYY/MM/DD/*.jsonl`
+  - Interactive logs: `session_meta`, `turn_context`, `event_msg{ type: agent_reasoning | token_count }`, `response_item{ type: message | reasoning | function_call | function_call_output }`.
+  - Exec JSON mode (docs): `thread.started`, `turn.started/completed/failed`, `item.started/updated/completed` with `type: command_execution | file_change | mcp_tool_call | web_search | agent_message | reasoning`.
+  - Sample: `~/.codex/sessions/2025/10/13/rollout-*.jsonl` shows `function_call{name: shell, arguments}` and `function_call_output{ output: { output, metadata:{ exit_code, duration_seconds }}}`.
+
+Acceptance: Capture at least 3 real files per source as fixtures (sanitised) under `fixtures/{claude,codex}/` and document field mappings in `docs/data-sources.md`.
+
+### A2. Unified Schema v1 (gaps + extensions)
+
+- Keep `src/types/chat.ts` as the core model; extend minimally:
+  - `MessageMetadata.toolCall`: add `toolType?: "bash" | "apply_patch" | "mcp" | "web_search" | "file_change" | string`.
+  - `MessageMetadata.toolResult`: add optional `exitCode?: number`, `durationMs?: number`, `stdout?: string`, `stderr?: string`, `filesChanged?: string[]`, `diff?: string`.
+  - `MessageMetadata.reasoning.detail?: string | null` reserved for future expansion.
+- Normalisation rules:
+  - Timestamps → ISO 8601 strings.
+  - Roles → `user|assistant|system|tool`.
+  - Preserve provider raw in `metadata.raw` for forensic inspection.
+
+Acceptance: Types updated with strict TypeScript, no breaking changes to existing callers; add a small migration note in `docs/data-sources.md`.
+
+### A3. Parser Adapters (Claude, Codex)
+
+- Claude (`src/lib/providers/claude.ts`)
+  - Map `content[]` items:
+    - `tool_use` → `kind: tool-call` with `toolCallId`, `toolCall.name`, `toolCall.arguments`, infer `toolType` by `name` (e.g., `Bash`, `apply_patch`).
+    - `tool_result` → `kind: tool-result` with `toolResult.callId`, attach `stdout`/`stderr`/`interrupted`/`isImage` from sibling `toolUseResult` when present.
+  - Token usage: attach `message.usage` to the first chunk per log entry.
+- Codex (`src/lib/providers/codex.ts`)
+  - `response_item.type`:
+    - `message` → text chunks; include `tool_use`/`tool_result` when present.
+    - `reasoning` → `kind: reasoning` with `summary` text.
+    - `function_call` → `kind: tool-call` with `toolCall.*`.
+    - `function_call_output` → `kind: tool-result` with `toolResult.*`; parse JSON `output` to extract `{ output, metadata: { exit_code, duration_seconds } }` into `stdout`, `exitCode`, `durationMs`.
+  - Exec JSON mode: when `item.*` events are encountered (from `docs/exec.md`), map `command_execution`/`file_change` into tool-call/result pairs with aggregated output and status.
+
+Acceptance: Parsing produces stable `ChatSession` with correct `kind` and enriched `toolResult` fields for the provided fixtures; unit tests snapshot important messages.
+
+### A4. Structured Tool Call UI Refactor
+
+- New component: `ToolCallCard` (collapsible)
+  - Header: icon + tool name + status chip (success/warn/error) + `exitCode` + duration.
+  - Body: arguments (pretty JSON), result tabs (stdout/stderr/diff/preview), large-output collapse with expand.
+  - Footer: actions (copy command/args, copy output, export to file), mini-metadata (cwd, sandbox/approvals if available).
+- Grouping: Co-locate `tool-call` + matching `tool-result` by `toolCallId` into one card.
+- Reasoning: optional toggle to show/hide `kind: reasoning` messages inline.
+- Token usage: show per-message token usage and session totals (in metadata panel).
+
+Acceptance: For both providers’ fixtures, tool calls render as grouped cards with status/exit code and outputs; long outputs are collapsed by default; keyboard navigation preserved.
+
+### A5. Search, Filters, and Stats Enhancements
+
+- Filters: `has:tool-calls`, `has:errors`, `source:claude|codex`, `project:<name>`; surface as sidebar chips.
+- Keyword highlight: match within message text, tool args, stdout/stderr.
+- Mini-stats: per-session counts (messages, tool calls, errors), duration estimate.
+
+Acceptance: Filters narrow the chat list and highlights appear inside detail view; counts match parser outputs for fixtures.
+
+### A6. Fixtures, Tests, and Docs
+
+- Fixtures: add sanitised examples to `fixtures/claude/*.jsonl`, `fixtures/codex/*.jsonl`.
+- Unit tests (Vitest): parser mapping per provider; snapshot key message shapes; edge cases (missing fields, malformed lines, large outputs).
+- Docs: `docs/data-sources.md` detailing field mapping tables and known caveats; `docs/ui-tool-calls.md` with screenshots of the new cards.
+
+Acceptance: ≥80% coverage for parser modules; docs linked from `README.md` “Data Sources” section.
+
+### A7. Integration & Release Tasks
+
+- Wire `ToolCallCard` into `src/components/chats/chat-detail.tsx` with grouping logic.
+- i18n: add new strings (labels, tabs, chips) to `src/locales/en/*` and `src/locales/zh-CN/*`.
+- Accessibility: keyboard toggles for collapse/expand; ARIA labels on tabs and buttons.
+- Performance: virtualise message list if total nodes > 500; lazy-render heavy outputs.
+
+Acceptance: No regressions in existing features; renders smoothly on long sessions; Lighthouse a11y score unchanged or better.
+
+—
+
+Owner: @yfge
+ETA: 5–7 days (including tests and docs)
+Blocking risks: very large JSONL files, provider format drift, path permissions in browsers.
+
 ## Milestone 1 – Local Frontend Experience
 
 **Goal:** Ship a browser-based UI that can ingest local Claude, Codex, and Gemini chat histories, display unified conversations, and support internationalisation without requiring a backend.
@@ -64,6 +155,7 @@
 - [ ] Expand `agents_chat` template snippet for multi-locale work and parser testing.
 - [ ] Prepare demo data script (optional) bundling sanitized transcripts for quick demos.
 - [ ] Define acceptance checklist for Milestone 1 (QA scenarios, manual test plan).
+- [ ] Resolve Next.js build warnings surfaced after fixing Docker devDependencies (Tailwind class ordering and `@next/next/no-img-element`).
 
 ## Milestone 2 – Collaborative Server Platform
 

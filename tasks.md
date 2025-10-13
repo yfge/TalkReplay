@@ -46,9 +46,11 @@ Progress (2025-10-13): Extended `MessageMetadata.toolCall.toolType` and `toolRes
     - `reasoning` → `kind: reasoning` with `summary` text.
     - `function_call` → `kind: tool-call` with `toolCall.*`.
     - `function_call_output` → `kind: tool-result` with `toolResult.*`; parse JSON `output` to extract `{ output, metadata: { exit_code, duration_seconds } }` into `stdout`, `exitCode`, `durationMs`.
-  - Exec JSON mode: when `item.*` events are encountered (from `docs/exec.md`), map `command_execution`/`file_change` into tool-call/result pairs with aggregated output and status.
+  - Exec JSON mode: when `item.*` events are encountered (from `docs/exec.md`), map `command_execution`/`file_change`/`mcp_tool_call` into tool-call/result pairs with aggregated output and status.
 
 Acceptance: Parsing produces stable `ChatSession` with correct `kind` and enriched `toolResult` fields for the provided fixtures; unit tests snapshot important messages.
+
+Progress (2025-10-13): Codex parser now handles `command_execution`, `file_change`, `mcp_tool_call` item events; Claude parser attaches stdout/stderr from `toolUseResult`.
 
 ### A4. Structured Tool Call UI Refactor
 
@@ -62,7 +64,7 @@ Acceptance: Parsing produces stable `ChatSession` with correct `kind` and enrich
 
 Acceptance: For both providers’ fixtures, tool calls render as grouped cards with status/exit code and outputs; long outputs are collapsed by default; keyboard navigation preserved.
 
-Progress (2025-10-13): Display `exitCode` and duration (ms) in tool-result metadata line to improve scanability; full grouped card and collapse controls to follow.
+Progress (2025-10-13): Display `exitCode`和时长(ms)；新增 `ToolCallCard` 并按 `toolCallId` 将调用+结果分组为卡片（基础版，后续补 Tabs）。
 
 ### A5. Search, Filters, and Stats Enhancements
 
@@ -77,6 +79,8 @@ Acceptance: Filters narrow the chat list and highlights appear inside detail vie
 - Fixtures: add sanitised examples to `fixtures/claude/*.jsonl`, `fixtures/codex/*.jsonl`.
 - Unit tests (Vitest): parser mapping per provider; snapshot key message shapes; edge cases (missing fields, malformed lines, large outputs).
 - Docs: `docs/data-sources.md` detailing field mapping tables and known caveats; `docs/ui-tool-calls.md` with screenshots of the new cards.
+
+Progress (2025-10-13): 新增 `fixtures/codex/file_change_mcp.jsonl`、`fixtures/claude/tool_use_result.jsonl`；增补快照测试 `codex.snapshot.test.ts`、`claude.snapshot.test.ts`；新增文档 `docs/data-sources.md`、`docs/ui-tool-calls.md`。
 
 Acceptance: ≥80% coverage for parser modules; docs linked from `README.md` “Data Sources” section.
 

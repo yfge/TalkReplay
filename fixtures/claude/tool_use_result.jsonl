@@ -1,0 +1,5 @@
+{"type":"summary","summary":"Run ls via Bash"}
+{"timestamp":"2025-10-13T04:10:00.000Z","message":{"id":"u1","role":"user","content":"List files"}}
+{"timestamp":"2025-10-13T04:10:01.000Z","message":{"id":"a1","role":"assistant","model":"claude-sonnet","usage":{"input_tokens":5,"output_tokens":10,"total_tokens":15},"content":[{"type":"tool_use","id":"call-1","name":"Bash","input":{"command":"ls -la"}}]}}
+{"timestamp":"2025-10-13T04:10:02.000Z","uuid":"res-1","message":{"id":"a2","role":"assistant","content":[{"type":"tool_result","tool_use_id":"call-1","content":{"output":"README.md\nsrc\n","metadata":{"exit_code":0,"duration_seconds":0.2}}}]},"toolUseResult":{"stdout":"README.md\nsrc\n","stderr":"","interrupted":false,"isImage":false}}
+

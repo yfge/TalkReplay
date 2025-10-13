@@ -1,0 +1,5 @@
+{"type":"item.started","timestamp":"2025-10-13T04:00:00.000Z","payload":{"item":{"id":"it-1","type":"file_change","status":"in_progress","changes":[{"path":"README.md","kind":"update"},{"path":"src/main.ts","kind":"add"}]}}}
+{"type":"item.completed","timestamp":"2025-10-13T04:00:02.000Z","payload":{"item":{"id":"it-1","type":"file_change","status":"completed","changes":[{"path":"README.md","kind":"update"},{"path":"src/main.ts","kind":"add"}]}}}
+{"type":"item.started","timestamp":"2025-10-13T04:00:03.000Z","payload":{"item":{"id":"it-2","type":"mcp_tool_call","status":"in_progress","server":"sentry","tool":"search_logs"}}}
+{"type":"item.completed","timestamp":"2025-10-13T04:00:04.000Z","payload":{"item":{"id":"it-2","type":"mcp_tool_call","status":"completed","server":"sentry","tool":"search_logs"}}}
+

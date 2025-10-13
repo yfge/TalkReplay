@@ -1,6 +1,7 @@
 import type { Dirent } from "node:fs";
 import path from "node:path";
 
+import { parseUnifiedDiff } from "@/lib/diff";
 import type { ProviderLoadResult } from "@/lib/providers/types";
 import type {
   ChatMessage,
@@ -296,7 +297,13 @@ function buildCodexSession(
             metadata: {
               providerMessageType: "file_change",
               toolCallId: itemId,
-              toolResult: { callId: itemId, filesChanged, exitCode, diff },
+              toolResult: {
+                callId: itemId,
+                filesChanged,
+                exitCode,
+                diff,
+                diffFiles: diff ? parseUnifiedDiff(diff) : undefined,
+              },
               raw: entry,
             },
           };

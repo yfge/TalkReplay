@@ -5,7 +5,7 @@ import path from "node:path";
 import { parseCodexSessionFromString } from "@/lib/providers/codex";
 
 describe("codex file_change diff and web_search", () => {
-  it("captures diff in file_change result", async () => {
+  it("captures diff in file_change result with hunks", async () => {
     const file = path.resolve(
       process.cwd(),
       "fixtures/codex/file_change_with_diff.jsonl",
@@ -16,6 +16,9 @@ describe("codex file_change diff and web_search", () => {
     const res = session!.messages.find((m) => m.kind === "tool-result");
     expect(res?.metadata?.toolResult?.filesChanged).toEqual(["src/app.ts"]);
     expect(res?.metadata?.toolResult?.diff).toContain("+++ b/src/app.ts");
+    expect(
+      res?.metadata?.toolResult?.diffFiles?.[0]?.hunks?.length,
+    ).toBeGreaterThan(0);
   });
 
   it("maps web_search to tool-call/result with query/results", async () => {

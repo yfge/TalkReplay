@@ -47,6 +47,17 @@ export interface MessageMetadata {
     stderr?: string;
     filesChanged?: string[];
     diff?: string;
+    diffFiles?: Array<{
+      oldPath?: string;
+      newPath?: string;
+      hunks: Array<{
+        oldStart: number;
+        oldLines?: number;
+        newStart: number;
+        newLines?: number;
+        lines: Array<{ type: "context" | "add" | "del"; text: string }>;
+      }>;
+    }>;
   };
   reasoning?: {
     summary?: string;

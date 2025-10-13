@@ -43,26 +43,10 @@ export function AppShell({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <div className="hidden sm:block">
-                <Image
-                  src="/brand/wordmark-gradient.svg"
-                  alt="TalkReplay"
-                  width={160}
-                  height={44}
-                  priority
-                  className="dark:hidden"
-                />
-                <Image
-                  src="/brand/wordmark-mono.svg"
-                  alt="TalkReplay"
-                  width={160}
-                  height={44}
-                  priority
-                  className="hidden dark:block"
-                />
-              </div>
-              <h1 className="text-xl font-semibold sm:hidden">
-                {t("header.title")}
+              <h1 className="text-xl font-semibold text-foreground sm:text-2xl sm:font-bold sm:tracking-tight">
+                <span className="sm:bg-gradient-to-r sm:from-[hsl(var(--primary))] sm:to-[hsl(var(--secondary))] sm:bg-clip-text sm:text-transparent">
+                  {t("header.title")}
+                </span>
               </h1>
               <p className="text-sm text-muted-foreground">
                 {t("header.subtitle")}

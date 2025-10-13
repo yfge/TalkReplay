@@ -6,6 +6,18 @@ import type { ProviderKey } from "@/config/providerPaths";
 import { usePreferencesStore } from "@/store/preferences-store";
 
 const providerOrder: ProviderKey[] = ["claude", "codex", "gemini"];
+const windowsDrivePattern = /^[A-Za-z]:/;
+
+function hasInvalidPathCharacters(value: string): boolean {
+  if (windowsDrivePattern.test(value)) {
+    const rest = value.slice(2);
+    if (rest.includes(":")) {
+      return true;
+    }
+    return /[<>"|?*]/.test(rest);
+  }
+  return /[<>:"|?*]/.test(value);
+}
 
 interface ProviderSetupDialogProps {
   open: boolean;
@@ -67,7 +79,7 @@ export function ProviderSetupDialog({
       const value = localPaths[provider];
       if (value && value.trim().length > 0) {
         const trimmed = value.trim();
-        if (trimmed.length < 2 || /[<>:"|?*]/.test(trimmed)) {
+        if (trimmed.length < 2 || hasInvalidPathCharacters(trimmed)) {
           nextErrors[provider] = t("providerSetup.validationInvalid");
         } else {
           setProviderPath(provider, trimmed);

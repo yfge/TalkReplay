@@ -1,0 +1,22 @@
+{
+  "$id": "https://talkreplay.dev/schema/codex/item.file_change.completed",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "type": { "const": "item.completed" },
+    "timestamp": { "type": ["string", "null"] },
+    "item": {
+      "type": "object",
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "type": { "const": "file_change" },
+        "status": { "type": ["string", "null"] },
+        "changes": { "type": ["array", "null"] }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["type", "item"],
+  "additionalProperties": true
+}

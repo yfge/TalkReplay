@@ -1,0 +1,21 @@
+{
+  "$id": "https://talkreplay.dev/schema/codex/response_item.function_call",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "timestamp": { "type": ["string", "null"] },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "function_call" },
+        "id": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] },
+        "arguments": { "type": ["string", "null"] }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["payload"],
+  "additionalProperties": true
+}

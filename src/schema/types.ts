@@ -2,10 +2,17 @@ export type TransformName =
   | "iso-timestamp"
   | "exit-code"
   | "duration-ms"
+  | "seconds-to-ms"
   | "stringify"
   | "parse-json"
   | "parse-diff"
-  | "identity";
+  | "identity"
+  | "set-constant"
+  | "coalesce"
+  | "command-tool-type"
+  | "map-tool-name"
+  | "collect-file-change-paths"
+  | "extract-json-property";
 
 export interface TransformDefinition {
   name: TransformName;

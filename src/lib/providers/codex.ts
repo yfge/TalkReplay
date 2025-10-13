@@ -160,19 +160,29 @@ function buildCodexSession(
         const command =
           typeof item.command === "string" ? item.command : undefined;
         if (entry.type === "item.started") {
-          pushMessage("tool-call", command ?? null, {
-            providerMessageType: "command_execution",
-            toolCallId: itemId,
-            toolCall: {
-              id: itemId,
-              name: "command_execution",
-              arguments: { command },
-              toolType:
-                command && command.startsWith("bash ")
-                  ? "bash"
-                  : "command_execution",
+          const msg: ChatMessage = {
+            id: itemId,
+            role: "assistant",
+            kind: "tool-call",
+            timestamp,
+            content: command ?? null,
+            metadata: {
+              providerMessageType: "command_execution",
+              toolCallId: itemId,
+              toolCall: {
+                id: itemId,
+                name: "command_execution",
+                arguments: { command },
+                toolType:
+                  command && command.startsWith("bash ")
+                    ? "bash"
+                    : "command_execution",
+              },
+              raw: entry,
             },
-          });
+          };
+          messages.push(msg);
+          participants.add("assistant");
           return;
         }
 
@@ -221,16 +231,26 @@ function buildCodexSession(
           : [];
 
         if (entry.type === "item.started") {
-          pushMessage("tool-call", safeStringify({ changes }) ?? null, {
-            providerMessageType: "file_change",
-            toolCallId: itemId,
-            toolCall: {
-              id: itemId,
-              name: "file_change",
-              arguments: { changes },
-              toolType: "file_change",
+          const msg: ChatMessage = {
+            id: itemId,
+            role: "assistant",
+            kind: "tool-call",
+            timestamp,
+            content: safeStringify({ changes }),
+            metadata: {
+              providerMessageType: "file_change",
+              toolCallId: itemId,
+              toolCall: {
+                id: itemId,
+                name: "file_change",
+                arguments: { changes },
+                toolType: "file_change",
+              },
+              raw: entry,
             },
-          });
+          };
+          messages.push(msg);
+          participants.add("assistant");
           return;
         }
 
@@ -242,22 +262,46 @@ function buildCodexSession(
               if (typeof pathVal === "string") filesChanged.push(pathVal);
             }
           }
+          // Attempt to extract unified diff content if present on any change object or on item
+          let diff: string | undefined;
+          const pushDiff = (val: unknown) => {
+            if (typeof val === "string" && val.length > 0) {
+              diff = val;
+            }
+          };
+          for (const c of changes) {
+            if (c && typeof c === "object") {
+              const anyC = c as Record<string, unknown>;
+              pushDiff(anyC.diff);
+              // common alternative keys
+              pushDiff(anyC.patch);
+            }
+            if (diff) break;
+          }
+          if (!diff) {
+            const anyItem = item as Record<string, unknown> & {
+              diff?: unknown;
+              patch?: unknown;
+            };
+            if (typeof anyItem.diff === "string") pushDiff(anyItem.diff);
+            if (typeof anyItem.patch === "string") pushDiff(anyItem.patch);
+          }
           const exitCode = status === "completed" ? 0 : 1;
-          pushMessage(
-            "tool-result",
-            safeStringify({ status, filesChanged }),
-            {
+          const msg: ChatMessage = {
+            id: `${itemId}:result`,
+            role: "tool",
+            kind: "tool-result",
+            timestamp,
+            content: safeStringify({ status, filesChanged }),
+            metadata: {
               providerMessageType: "file_change",
               toolCallId: itemId,
-              toolResult: {
-                callId: itemId,
-                filesChanged,
-                exitCode,
-              },
+              toolResult: { callId: itemId, filesChanged, exitCode, diff },
+              raw: entry,
             },
-            undefined,
-            "tool",
-          );
+          };
+          messages.push(msg);
+          participants.add("tool");
           return;
         }
       }
@@ -273,34 +317,101 @@ function buildCodexSession(
         const status =
           typeof item.status === "string" ? item.status : undefined;
         if (entry.type === "item.started") {
-          pushMessage("tool-call", safeStringify({ server, tool }) ?? null, {
-            providerMessageType: "mcp_tool_call",
-            toolCallId: itemId,
-            toolCall: {
-              id: itemId,
-              name,
-              arguments: { server, tool },
-              toolType: "mcp",
+          const msg: ChatMessage = {
+            id: itemId,
+            role: "assistant",
+            kind: "tool-call",
+            timestamp,
+            content: safeStringify({ server, tool }),
+            metadata: {
+              providerMessageType: "mcp_tool_call",
+              toolCallId: itemId,
+              toolCall: {
+                id: itemId,
+                name,
+                arguments: { server, tool },
+                toolType: "mcp",
+              },
+              raw: entry,
             },
-          });
+          };
+          messages.push(msg);
+          participants.add("assistant");
           return;
         }
         if (entry.type === "item.completed") {
           const exitCode = status === "completed" ? 0 : 1;
-          pushMessage(
-            "tool-result",
-            safeStringify({ status }),
-            {
+          const msg: ChatMessage = {
+            id: `${itemId}:result`,
+            role: "tool",
+            kind: "tool-result",
+            timestamp,
+            content: safeStringify({ status }),
+            metadata: {
               providerMessageType: "mcp_tool_call",
+              toolCallId: itemId,
+              toolResult: { callId: itemId, exitCode },
+              raw: entry,
+            },
+          };
+          messages.push(msg);
+          participants.add("tool");
+          return;
+        }
+      }
+
+      if (itemType === "web_search") {
+        const anyItemWS = item as Record<string, unknown> & {
+          query?: unknown;
+          results?: unknown;
+        };
+        const queryVal = anyItemWS.query;
+        const query = typeof queryVal === "string" ? queryVal : undefined;
+        if (entry.type === "item.started") {
+          const msg: ChatMessage = {
+            id: itemId,
+            role: "assistant",
+            kind: "tool-call",
+            timestamp,
+            content: safeStringify({ query }),
+            metadata: {
+              providerMessageType: "web_search",
+              toolCallId: itemId,
+              toolCall: {
+                id: itemId,
+                name: "web_search",
+                arguments: { query },
+                toolType: "web_search",
+              },
+              raw: entry,
+            },
+          };
+          messages.push(msg);
+          participants.add("assistant");
+          return;
+        }
+        if (entry.type === "item.completed") {
+          // results may appear as 'results' or similar; include payload for now
+          const results = anyItemWS.results;
+          const msg: ChatMessage = {
+            id: `${itemId}:result`,
+            role: "tool",
+            kind: "tool-result",
+            timestamp,
+            content: safeStringify({ query, results }),
+            metadata: {
+              providerMessageType: "web_search",
               toolCallId: itemId,
               toolResult: {
                 callId: itemId,
-                exitCode,
+                output: { query, results },
+                exitCode: 0,
               },
+              raw: entry,
             },
-            undefined,
-            "tool",
-          );
+          };
+          messages.push(msg);
+          participants.add("tool");
           return;
         }
       }

@@ -105,7 +105,9 @@ Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See
 - Incremental import signatures prevent reprocessing unchanged files while surfacing parser errors in the UI.
 - Sample data in `fixtures/` mirrors real directory layouts for Claude and Codex, enabling offline demos.
 
-## Docker Workflow
+## Production Deployment
+
+### Option 1: Docker + Volume Mounts
 
 Build and run the production bundle inside Docker:
 
@@ -169,6 +171,34 @@ $env:CODEX_LOGS_PATH="C:\\Users\\<you>\\.codex\\sessions";
 $env:APP_PORT=3000;
 docker compose up --build
 ```
+
+### Option 2: Local Build + Host Paths
+
+If you prefer to run the production server directly on the host, build once and then launch with
+provider paths pointing to your local transcripts:
+
+```bash
+pnpm build
+CLAUDE_ROOT="$HOME/.claude/projects" \
+CODEX_ROOT="$HOME/.codex/sessions" \
+NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
+NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+pnpm start
+```
+
+On Windows PowerShell:
+
+```powershell
+pnpm build
+$env:CLAUDE_ROOT="C:\\Users\\<you>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<you>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+pnpm start
+```
+
+Adjust the paths if you store transcripts elsewhere. Using environment variables keeps the
+configuration aligned with Docker deployments and avoids hard-coding host-only paths inside the app.
 
 ## Testing & Quality Gates
 

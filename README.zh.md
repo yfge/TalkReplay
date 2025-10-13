@@ -102,7 +102,9 @@ WSL2 注意：从 WSL 里启动 Docker 时，使用 `/mnt/c/Users/<你>/.claude/
 - 增量导入基于文件签名，避免重复解析并在 UI 中呈现错误提醒。
 - `fixtures/` 目录提供与真实 Claude/Codex 目录结构一致的示例数据，便于离线演示。
 
-## Docker 运行
+## 生产部署
+
+### 方案一：Docker + 目录挂载
 
 ```bash
 docker build -t talk-replay .
@@ -164,6 +166,32 @@ $env:CODEX_LOGS_PATH="C:\\Users\\<你>\\.codex\\sessions";
 $env:APP_PORT=3000;
 docker compose up --build
 ```
+
+### 方案二：本机构建 + 本地路径
+
+如果直接在宿主机运行生产服务，可先构建再注入本地日志目录：
+
+```bash
+pnpm build
+CLAUDE_ROOT="$HOME/.claude/projects" \
+CODEX_ROOT="$HOME/.codex/sessions" \
+NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
+NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+pnpm start
+```
+
+Windows PowerShell：
+
+```powershell
+pnpm build
+$env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
+$env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
+$env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+pnpm start
+```
+
+根据实际存储位置调整路径。通过环境变量保持与 Docker 配置一致，避免在代码里写死宿主机专用路径。
 
 ## 测试与质量
 

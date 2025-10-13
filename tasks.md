@@ -159,6 +159,7 @@ Blocking risks: very large JSONL files, provider format drift, path permissions 
 ### 6. Quality, Docs, Release Ready
 
 - [x] Update `README.md` with local setup, supported browsers, known limitations (see "Browser Support & Limitations").
+- Progress (2025-10-13): Expanded production deployment docs with Docker volume guidance and host-based steps.
 - [x] Refactor Dockerfile for offline builds (no Corepack/pnpm), add `.dockerignore`, enable Next `output: "standalone"`.
 - [ ] Create troubleshooting guide (`docs/troubleshooting.md`) covering directory permissions and parsing failures.
 - [ ] Expand `agents_chat` template snippet for multi-locale work and parser testing.

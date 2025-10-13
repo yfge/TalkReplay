@@ -210,6 +210,100 @@ function buildCodexSession(
           return;
         }
       }
+
+      if (itemType === "file_change") {
+        const status =
+          typeof item.status === "string" ? item.status : undefined;
+        const itemAny: Record<string, unknown> = item;
+        const changesRaw = itemAny.changes;
+        const changes = Array.isArray(changesRaw)
+          ? (changesRaw as unknown[])
+          : [];
+
+        if (entry.type === "item.started") {
+          pushMessage("tool-call", safeStringify({ changes }) ?? null, {
+            providerMessageType: "file_change",
+            toolCallId: itemId,
+            toolCall: {
+              id: itemId,
+              name: "file_change",
+              arguments: { changes },
+              toolType: "file_change",
+            },
+          });
+          return;
+        }
+
+        if (entry.type === "item.completed") {
+          const filesChanged: string[] = [];
+          for (const c of changes) {
+            if (c && typeof c === "object") {
+              const pathVal = (c as { path?: unknown }).path;
+              if (typeof pathVal === "string") filesChanged.push(pathVal);
+            }
+          }
+          const exitCode = status === "completed" ? 0 : 1;
+          pushMessage(
+            "tool-result",
+            safeStringify({ status, filesChanged }),
+            {
+              providerMessageType: "file_change",
+              toolCallId: itemId,
+              toolResult: {
+                callId: itemId,
+                filesChanged,
+                exitCode,
+              },
+            },
+            undefined,
+            "tool",
+          );
+          return;
+        }
+      }
+
+      if (itemType === "mcp_tool_call") {
+        const server =
+          typeof item.server === "string" ? item.server : undefined;
+        const tool = typeof item.tool === "string" ? item.tool : undefined;
+        const name =
+          server && tool
+            ? `${server}.${tool}`
+            : (tool ?? server ?? "mcp_tool_call");
+        const status =
+          typeof item.status === "string" ? item.status : undefined;
+        if (entry.type === "item.started") {
+          pushMessage("tool-call", safeStringify({ server, tool }) ?? null, {
+            providerMessageType: "mcp_tool_call",
+            toolCallId: itemId,
+            toolCall: {
+              id: itemId,
+              name,
+              arguments: { server, tool },
+              toolType: "mcp",
+            },
+          });
+          return;
+        }
+        if (entry.type === "item.completed") {
+          const exitCode = status === "completed" ? 0 : 1;
+          pushMessage(
+            "tool-result",
+            safeStringify({ status }),
+            {
+              providerMessageType: "mcp_tool_call",
+              toolCallId: itemId,
+              toolResult: {
+                callId: itemId,
+                exitCode,
+              },
+            },
+            undefined,
+            "tool",
+          );
+          return;
+        }
+      }
     }
 
     if (entry.type === "session_meta" && entry.payload) {

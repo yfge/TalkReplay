@@ -81,7 +81,10 @@ export async function GET(request: Request) {
       );
     }
 
-    return new NextResponse(data, {
+    // Convert Node Buffer into a plain Uint8Array so the Response constructor accepts it.
+    const body = new Uint8Array(data);
+
+    return new NextResponse(body, {
       status: 200,
       headers: {
         "Content-Type": mime,

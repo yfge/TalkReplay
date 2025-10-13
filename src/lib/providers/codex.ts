@@ -133,6 +133,77 @@ function deriveProjectFromCwd(cwd?: string): {
   return { project, normalizedPath };
 }
 
+// Unified helpers for tool-call / tool-result messages so different Codex
+// item types (command_execution, file_change, mcp_tool_call, function_call, etc.)
+// are created consistently.
+function makeToolCall(params: {
+  id: string;
+  timestamp: string;
+  name: string;
+  args?: Record<string, unknown> | undefined;
+  toolType?: string | undefined;
+  providerMessageType?: string | undefined;
+  raw?: unknown;
+}): ChatMessage {
+  return {
+    id: params.id,
+    role: "assistant",
+    kind: "tool-call",
+    timestamp: params.timestamp,
+    content: safeStringify(params.args) ?? null,
+    metadata: {
+      providerMessageType:
+        params.providerMessageType ?? params.toolType ?? "tool_call",
+      toolCallId: params.id,
+      toolCall: {
+        id: params.id,
+        name: params.name,
+        arguments: params.args,
+        toolType: params.toolType ?? params.name,
+      },
+      raw: params.raw,
+    },
+  };
+}
+
+function makeToolResult(params: {
+  callId: string;
+  timestamp: string;
+  output?: unknown;
+  exitCode?: number;
+  durationMs?: number;
+  stdout?: string;
+  stderr?: string;
+  filesChanged?: string[];
+  diff?: string;
+  providerMessageType?: string | undefined;
+  raw?: unknown;
+}): ChatMessage {
+  return {
+    id: `${params.callId}:result`,
+    role: "tool",
+    kind: "tool-result",
+    timestamp: params.timestamp,
+    content: safeStringify(params.output) ?? null,
+    metadata: {
+      providerMessageType: params.providerMessageType ?? "tool_result",
+      toolCallId: params.callId,
+      toolResult: {
+        callId: params.callId,
+        output: params.output,
+        exitCode: params.exitCode,
+        durationMs: params.durationMs,
+        stdout: params.stdout,
+        stderr: params.stderr,
+        filesChanged: params.filesChanged,
+        diff: params.diff,
+        diffFiles: params.diff ? parseUnifiedDiff(params.diff) : undefined,
+      },
+      raw: params.raw,
+    },
+  };
+}
+
 function buildCodexSession(
   filePath: string,
   entries: CodexLogEntry[],
@@ -161,27 +232,18 @@ function buildCodexSession(
         const command =
           typeof item.command === "string" ? item.command : undefined;
         if (entry.type === "item.started") {
-          const msg: ChatMessage = {
+          const msg = makeToolCall({
             id: itemId,
-            role: "assistant",
-            kind: "tool-call",
             timestamp,
-            content: command ?? null,
-            metadata: {
-              providerMessageType: "command_execution",
-              toolCallId: itemId,
-              toolCall: {
-                id: itemId,
-                name: "command_execution",
-                arguments: { command },
-                toolType:
-                  command && command.startsWith("bash ")
-                    ? "bash"
-                    : "command_execution",
-              },
-              raw: entry,
-            },
-          };
+            name: "command_execution",
+            args: { command },
+            toolType:
+              command && command.startsWith("bash ")
+                ? "bash"
+                : "command_execution",
+            providerMessageType: "command_execution",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("assistant");
           return;
@@ -199,24 +261,15 @@ function buildCodexSession(
             typeof anyItem.exit_code === "number"
               ? anyItem.exit_code
               : undefined;
-          const message: ChatMessage = {
-            id: `${itemId}:result`,
-            role: "tool",
-            kind: "tool-result",
+          const result = makeToolResult({
+            callId: itemId,
             timestamp,
-            content: safeStringify(aggregated) ?? aggregated ?? null,
-            metadata: {
-              providerMessageType: "command_execution",
-              toolCallId: itemId,
-              toolResult: {
-                callId: itemId,
-                output: aggregated,
-                exitCode,
-              },
-              raw: entry,
-            },
-          };
-          messages.push(message);
+            output: aggregated,
+            exitCode,
+            providerMessageType: "command_execution",
+            raw: entry,
+          });
+          messages.push(result);
           participants.add("tool");
           return;
         }
@@ -232,24 +285,15 @@ function buildCodexSession(
           : [];
 
         if (entry.type === "item.started") {
-          const msg: ChatMessage = {
+          const msg = makeToolCall({
             id: itemId,
-            role: "assistant",
-            kind: "tool-call",
             timestamp,
-            content: safeStringify({ changes }),
-            metadata: {
-              providerMessageType: "file_change",
-              toolCallId: itemId,
-              toolCall: {
-                id: itemId,
-                name: "file_change",
-                arguments: { changes },
-                toolType: "file_change",
-              },
-              raw: entry,
-            },
-          };
+            name: "file_change",
+            args: { changes },
+            toolType: "file_change",
+            providerMessageType: "file_change",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("assistant");
           return;
@@ -288,25 +332,16 @@ function buildCodexSession(
             if (typeof anyItem.patch === "string") pushDiff(anyItem.patch);
           }
           const exitCode = status === "completed" ? 0 : 1;
-          const msg: ChatMessage = {
-            id: `${itemId}:result`,
-            role: "tool",
-            kind: "tool-result",
+          const msg = makeToolResult({
+            callId: itemId,
             timestamp,
-            content: safeStringify({ status, filesChanged }),
-            metadata: {
-              providerMessageType: "file_change",
-              toolCallId: itemId,
-              toolResult: {
-                callId: itemId,
-                filesChanged,
-                exitCode,
-                diff,
-                diffFiles: diff ? parseUnifiedDiff(diff) : undefined,
-              },
-              raw: entry,
-            },
-          };
+            output: { status, filesChanged },
+            exitCode,
+            filesChanged,
+            diff,
+            providerMessageType: "file_change",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("tool");
           return;
@@ -324,43 +359,29 @@ function buildCodexSession(
         const status =
           typeof item.status === "string" ? item.status : undefined;
         if (entry.type === "item.started") {
-          const msg: ChatMessage = {
+          const msg = makeToolCall({
             id: itemId,
-            role: "assistant",
-            kind: "tool-call",
             timestamp,
-            content: safeStringify({ server, tool }),
-            metadata: {
-              providerMessageType: "mcp_tool_call",
-              toolCallId: itemId,
-              toolCall: {
-                id: itemId,
-                name,
-                arguments: { server, tool },
-                toolType: "mcp",
-              },
-              raw: entry,
-            },
-          };
+            name,
+            args: { server, tool },
+            toolType: "mcp",
+            providerMessageType: "mcp_tool_call",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("assistant");
           return;
         }
         if (entry.type === "item.completed") {
           const exitCode = status === "completed" ? 0 : 1;
-          const msg: ChatMessage = {
-            id: `${itemId}:result`,
-            role: "tool",
-            kind: "tool-result",
+          const msg = makeToolResult({
+            callId: itemId,
             timestamp,
-            content: safeStringify({ status }),
-            metadata: {
-              providerMessageType: "mcp_tool_call",
-              toolCallId: itemId,
-              toolResult: { callId: itemId, exitCode },
-              raw: entry,
-            },
-          };
+            output: { status },
+            exitCode,
+            providerMessageType: "mcp_tool_call",
+            raw: entry,
+          });
           messages.push(msg);
           participants.add("tool");
           return;
@@ -658,13 +679,24 @@ function buildCodexSession(
         break;
       }
       default: {
-        pushMessage(
-          "system",
-          safeStringify(payload) ?? null,
-          {},
-          undefined,
-          "system",
-        );
+        // In Codex logs many "system"-like entries are actually tool-ish
+        // operational messages. Treat them as a generic tool-result so they
+        // are grouped consistently in the UI.
+        const callId =
+          (typeof payload.call_id === "string" ? payload.call_id : undefined) ||
+          (typeof payload.id === "string" ? payload.id : undefined) ||
+          `sys-${index}`;
+        const output =
+          payload.output ?? payload.content ?? payload.summary ?? payload;
+        const msg = makeToolResult({
+          callId: callId ?? `sys-${index}`,
+          timestamp,
+          output,
+          providerMessageType: "system-as-tool",
+          raw: entry,
+        });
+        messages.push(msg);
+        participants.add("tool");
         break;
       }
     }

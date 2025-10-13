@@ -115,6 +115,18 @@ export function ChatDetail({
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState<"markdown" | null>(null);
   const isStarred = useIsStarred(session?.id ?? "");
+  const nextDiffCard = React.useCallback(() => {
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(".toolcall-has-diff"),
+    );
+    if (cards.length === 0) return;
+    const y = window.scrollY || document.documentElement.scrollTop || 0;
+    const next = cards.find(
+      (el) => el.getBoundingClientRect().top + y > y + 10,
+    );
+    const target = next ?? cards[0];
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -383,6 +395,16 @@ export function ChatDetail({
           >
             <Download className="mr-2 size-4" />
             {t("detail.downloadJson")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={nextDiffCard}
+            title={t("detail.jump.nextDiffCard")}
+            aria-label={t("detail.jump.nextDiffCard")}
+          >
+            <span className="mr-2">⤵︎</span>
+            {t("detail.jump.nextDiffCard")}
           </Button>
         </div>
       </div>

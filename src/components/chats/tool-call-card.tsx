@@ -64,8 +64,13 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
         : `exit ${exitCode}`
       : undefined;
 
+  const hasDiff = Boolean(diff || (diffFiles && diffFiles.length > 0));
+
   return (
-    <div className="w-full overflow-hidden rounded-lg border bg-muted/50 text-foreground shadow-sm">
+    <div
+      className={`w-full overflow-hidden rounded-lg border bg-muted/50 text-foreground shadow-sm ${hasDiff ? "toolcall-has-diff" : ""}`}
+      data-has-diff={hasDiff ? "1" : undefined}
+    >
       <div className="flex items-center gap-2 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
         <span>{toolName}</span>
         {toolId ? (
@@ -89,6 +94,13 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
           variant="ghost"
           className="ml-auto h-6 px-2 text-xs"
           onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-label={
+            open ? t("detail.toggleCard.hide") : t("detail.toggleCard.show")
+          }
+          title={
+            open ? t("detail.toggleCard.hide") : t("detail.toggleCard.show")
+          }
         >
           {open ? "Hide" : "Show"}
         </Button>
@@ -192,6 +204,21 @@ function ResultTabs(props: {
             variant={active === k ? "default" : "outline"}
             className="h-6 px-2 text-xs"
             onClick={() => setTab(k)}
+            aria-pressed={active === k}
+            aria-label={
+              k === "stdout"
+                ? t("detail.tabsAria.stdout")
+                : k === "stderr"
+                  ? t("detail.tabsAria.stderr")
+                  : t("detail.tabsAria.diff")
+            }
+            title={
+              k === "stdout"
+                ? t("detail.tabs.stdout")
+                : k === "stderr"
+                  ? t("detail.tabs.stderr")
+                  : t("detail.tabs.diff")
+            }
           >
             {k === "stdout"
               ? t("detail.tabs.stdout")
@@ -208,6 +235,7 @@ function ResultTabs(props: {
               className="h-6 px-2 text-xs"
               onClick={prevHunk}
               aria-label={t("detail.prevHunk")}
+              title={t("detail.prevHunk")}
             >
               {t("detail.prevHunk")}
             </Button>
@@ -217,6 +245,7 @@ function ResultTabs(props: {
               className="h-6 px-2 text-xs"
               onClick={nextHunk}
               aria-label={t("detail.nextHunk")}
+              title={t("detail.nextHunk")}
             >
               {t("detail.nextHunk")}
             </Button>

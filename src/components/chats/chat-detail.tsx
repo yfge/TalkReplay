@@ -530,6 +530,15 @@ export function ChatDetail({
               }
             };
 
+            const exitCode = message.metadata?.toolResult?.exitCode;
+            const durationMs = message.metadata?.toolResult?.durationMs;
+            const statusLabel =
+              message.kind === "tool-result" && typeof exitCode === "number"
+                ? exitCode === 0
+                  ? "success"
+                  : `exit ${exitCode}`
+                : null;
+
             const metadataLine = [
               message.kind !== "content"
                 ? message.kind.replaceAll("-", " ")
@@ -539,6 +548,10 @@ export function ChatDetail({
                 : null,
               toolCallId
                 ? `${t("detail.metadata.toolCall")}: ${toolCallId}`
+                : null,
+              statusLabel,
+              typeof durationMs === "number"
+                ? `${Math.round(durationMs)} ms`
                 : null,
             ].filter(Boolean);
 

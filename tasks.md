@@ -62,6 +62,8 @@ Acceptance: Parsing produces stable `ChatSession` with correct `kind` and enrich
 
 Acceptance: For both providers’ fixtures, tool calls render as grouped cards with status/exit code and outputs; long outputs are collapsed by default; keyboard navigation preserved.
 
+Progress (2025-10-13): Display `exitCode` and duration (ms) in tool-result metadata line to improve scanability; full grouped card and collapse controls to follow.
+
 ### A5. Search, Filters, and Stats Enhancements
 
 - Filters: `has:tool-calls`, `has:errors`, `source:claude|codex`, `project:<name>`; surface as sidebar chips.

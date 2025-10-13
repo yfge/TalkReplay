@@ -431,7 +431,7 @@ export function ChatDetail({
               className="px-2"
             >
               {isStarred ? (
-                <Star className="size-4" />
+                <Star className="size-4 fill-yellow-300 text-yellow-500 dark:fill-yellow-200 dark:text-yellow-200" />
               ) : (
                 <StarOff className="size-4" />
               )}
@@ -962,7 +962,7 @@ export function ChatDetail({
                 <li
                   key={messageKey}
                   data-category={category}
-                  className="flex w-full max-w-full flex-col gap-3 overflow-hidden rounded-lg"
+                  className="flex min-w-0 w-full max-w-full flex-col gap-3 overflow-hidden rounded-lg"
                 >
                   <div
                     className={`flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide ${headerTone}`}
@@ -1012,7 +1012,7 @@ export function ChatDetail({
                     </div>
                   ) : null}
                   <div
-                    className={`relative w-full max-w-full overflow-hidden break-words rounded-xl px-4 py-3 leading-relaxed transition ${
+                    className={`relative w-full max-w-full overflow-hidden rounded-xl break-all sm:break-words px-4 py-3 leading-relaxed transition ${
                       roleStyles[message.role] ??
                       "border border-muted bg-muted text-foreground"
                     } ${isCollapsed ? "opacity-90" : ""}`}

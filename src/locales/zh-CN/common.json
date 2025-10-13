@@ -90,6 +90,19 @@
       "diff": "差异"
     },
     "nextHunk": "下一个块",
-    "prevHunk": "上一个块"
+    "prevHunk": "上一个块",
+    "toggleCard": {
+      "show": "展开工具卡片",
+      "hide": "收起工具卡片"
+    },
+    "tabsAria": {
+      "stdout": "切换到标准输出标签",
+      "stderr": "切换到错误输出标签",
+      "diff": "切换到差异标签"
+    },
+    "jump": {
+      "nextDiffCard": "跳到下一个差异卡片",
+      "prevDiffCard": "跳到上一个差异卡片"
+    }
   }
 }

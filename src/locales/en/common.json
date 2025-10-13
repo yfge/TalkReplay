@@ -90,6 +90,19 @@
       "diff": "diff"
     },
     "nextHunk": "Next Hunk",
-    "prevHunk": "Prev Hunk"
+    "prevHunk": "Prev Hunk",
+    "toggleCard": {
+      "show": "Show tool card",
+      "hide": "Hide tool card"
+    },
+    "tabsAria": {
+      "stdout": "Switch to stdout tab",
+      "stderr": "Switch to stderr tab",
+      "diff": "Switch to diff tab"
+    },
+    "jump": {
+      "nextDiffCard": "Next diff card",
+      "prevDiffCard": "Previous diff card"
+    }
   }
 }

@@ -17,14 +17,14 @@ export function ThemeToggle() {
     <Button
       aria-label={t("themeToggle.label")}
       variant="ghost"
-      className="px-2"
+      className="px-2 text-muted-foreground hover:text-foreground"
       type="button"
       onClick={toggle}
     >
       {theme === "dark" ? (
-        <Sun className="size-4" />
+        <Sun className="size-4 text-accent" />
       ) : (
-        <MoonStar className="size-4" />
+        <MoonStar className="size-4 text-primary" />
       )}
     </Button>
   );

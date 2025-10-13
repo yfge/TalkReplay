@@ -100,7 +100,7 @@ export function App() {
         isRefreshing={isRefreshing}
       >
         <div className="flex h-full min-h-0">
-          <div className="flex w-[22rem] flex-none flex-col border-r">
+          <div className="flex w-[22rem] flex-none flex-col border-r border-border/60 bg-background/70 backdrop-blur">
             <ChatList
               onConfigureProviders={() => setSetupOpen(true)}
               onRefresh={() => {

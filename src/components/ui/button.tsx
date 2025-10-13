@@ -4,11 +4,13 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = {
-  default: "bg-primary text-primary-foreground hover:bg-primary/90",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-  ghost: "hover:bg-accent hover:text-accent-foreground",
+  default:
+    "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-primary-foreground shadow-sm hover:from-[hsl(var(--primary))]/90 hover:to-[hsl(var(--secondary))]/90",
+  secondary:
+    "border border-secondary/40 bg-secondary/90 text-secondary-foreground shadow-sm hover:bg-secondary",
+  ghost: "hover:bg-accent/20 hover:text-accent-foreground focus-visible:ring-0",
   outline:
-    "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    "border border-input bg-background/80 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground",
 } as const;
 
 type Variant = keyof typeof buttonVariants;

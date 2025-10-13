@@ -1,9 +1,10 @@
 import type { AgentSource } from "@/types/chat";
 
 export const providerBadgeClass: Record<AgentSource, string> = {
-  claude: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
+  claude:
+    "bg-primary/15 text-primary dark:bg-primary/25 dark:text-primary-foreground",
   codex:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+    "bg-secondary/20 text-secondary dark:bg-secondary/25 dark:text-secondary-foreground",
   gemini:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200",
+    "bg-accent/20 text-accent dark:bg-accent/30 dark:text-accent-foreground",
 };

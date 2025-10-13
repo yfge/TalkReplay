@@ -89,10 +89,10 @@ export function ToolCallCard({ call, result }: ToolCallCardProps) {
 
   return (
     <div
-      className="w-full overflow-hidden rounded-xl border border-muted-foreground/20 bg-muted/70 text-foreground shadow-sm transition"
+      className="w-full overflow-hidden rounded-xl border border-primary/15 bg-background/80 text-foreground shadow-sm backdrop-blur transition"
       data-has-diff={hasDiff ? "1" : undefined}
     >
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 bg-gradient-to-r from-primary/10 via-background to-secondary/10 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
         <span>{toolName}</span>
         {toolId ? (
           <>

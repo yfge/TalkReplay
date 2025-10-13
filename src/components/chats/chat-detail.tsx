@@ -38,12 +38,12 @@ import type {
 } from "@/types/chat";
 
 const roleStyles: Record<string, string> = {
-  user: "bg-sky-500/10 dark:bg-sky-500/20 border border-sky-500/40 text-sky-950 dark:text-sky-50 shadow-sm ring-1 ring-sky-500/30",
+  user: "bg-secondary/15 border border-secondary/40 text-foreground shadow-sm ring-1 ring-secondary/25 dark:text-secondary-foreground",
   assistant:
-    "bg-primary/10 border border-primary/30 text-foreground shadow-sm ring-1 ring-primary/25",
+    "bg-primary/12 border border-primary/35 text-foreground shadow-sm ring-1 ring-primary/25",
   system:
-    "bg-muted/60 border border-muted-foreground/30 text-muted-foreground shadow-sm ring-1 ring-muted-foreground/20",
-  tool: "bg-muted/80 border border-muted-foreground/20 text-muted-foreground shadow-sm ring-1 ring-muted-foreground/20",
+    "bg-muted/70 border border-muted-foreground/25 text-muted-foreground shadow-sm ring-1 ring-muted-foreground/15",
+  tool: "bg-accent/12 border border-accent/30 text-foreground shadow-sm ring-1 ring-accent/20",
 };
 
 const mdComponents = {
@@ -283,7 +283,7 @@ export function ChatDetail({
     const model = session.metadata?.provider?.model ?? "-";
     const project = session.metadata?.project;
     return (
-      <div className="flex flex-col gap-2 rounded-lg border border-muted-foreground/20 bg-muted/40 p-3 text-sm text-muted-foreground shadow-sm">
+      <div className="flex flex-col gap-2 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background/90 to-secondary/10 p-3 text-sm text-muted-foreground shadow-sm">
         <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground/80">
           <Badge className={providerBadgeClass[session.source]}>
             {providerLabel}
@@ -371,7 +371,7 @@ export function ChatDetail({
       <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
         {isLoading ? (
           <>
-            <Info className="size-5 animate-pulse" />
+            <Info className="size-5 animate-pulse text-primary" />
             <p>{"Loading conversation..."}</p>
           </>
         ) : error ? (
@@ -386,7 +386,7 @@ export function ChatDetail({
           </>
         ) : (
           <>
-            <Info className="size-5" />
+            <Info className="size-5 text-muted-foreground" />
             <p>{"Select a conversation to view its messages."}</p>
           </>
         )}
@@ -413,7 +413,7 @@ export function ChatDetail({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b bg-background/80 px-6 py-4">
+      <div className="border-b border-border/60 bg-gradient-to-r from-background/80 via-background/70 to-muted/40 px-6 py-4 backdrop-blur">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">{session.topic}</h2>
@@ -499,7 +499,7 @@ export function ChatDetail({
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <Filter className="size-3" />
+            <Filter className="size-3 text-accent" />
             {t("detail.messageFilters.label")}
           </span>
           <div className="flex flex-wrap items-center gap-2">
@@ -513,8 +513,8 @@ export function ChatDetail({
                   aria-pressed={isActive}
                   className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     isActive
-                      ? "border-primary/40 bg-primary/10 text-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                      ? "border-secondary/40 bg-secondary/15 text-foreground"
+                      : "border-border text-muted-foreground hover:border-secondary/40 hover:text-foreground"
                   }`}
                 >
                   <Icon className="size-4" />

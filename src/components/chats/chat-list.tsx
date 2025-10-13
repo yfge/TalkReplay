@@ -41,7 +41,7 @@ export function ChatList({
   if (sessions.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
-        <Clock className="size-5" />
+        <Clock className="size-6 text-primary" />
         <div>
           <p className="font-medium text-foreground">{t("chats.emptyTitle")}</p>
           <p className="text-xs text-muted-foreground">
@@ -75,13 +75,13 @@ export function ChatList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="flex flex-col divide-y">
+      <div className="flex flex-col gap-3 p-3">
         {sessions.map((session) => {
           const isActive = session.id === activeSessionId;
           return (
             <Link
               key={session.id}
-              className="flex flex-col items-start gap-2 p-4 text-left transition hover:bg-accent data-[state=active]:bg-accent"
+              className="flex flex-col gap-2 rounded-xl border border-transparent bg-background/70 p-4 text-left shadow-sm transition hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 data-[state=active]:border-primary/50 data-[state=active]:bg-primary/10"
               href={`/chats/${session.id}`}
               onClick={() => {
                 // Keep in-app state in sync, navigation handled by Link
@@ -97,7 +97,7 @@ export function ChatList({
                 </span>
                 {starred.has(session.id) ? (
                   <Star
-                    className="size-4 fill-yellow-400 text-yellow-500"
+                    className="size-4 fill-secondary text-secondary"
                     aria-hidden
                   />
                 ) : null}

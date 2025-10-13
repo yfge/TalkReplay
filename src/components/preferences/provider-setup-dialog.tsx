@@ -104,8 +104,8 @@ export function ProviderSetupDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-xl rounded-lg border border-border bg-background p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-xl rounded-2xl border border-primary/20 bg-gradient-to-br from-background via-background/90 to-muted/40 p-6 shadow-xl backdrop-blur">
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">{t("providerSetup.title")}</h2>
           <p className="text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ export function ProviderSetupDialog({
                 {t(`providerSetup.providerLabel.${provider}`)}
               </label>
               <input
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="w-full rounded-lg border border-input bg-background/85 px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder={t("providerSetup.placeholder")}
                 value={localPaths[provider] ?? ""}
                 onChange={(event) => handleChange(provider, event.target.value)}

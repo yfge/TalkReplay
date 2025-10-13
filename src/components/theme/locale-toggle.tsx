@@ -34,11 +34,11 @@ export function LocaleToggle(): JSX.Element {
     <Button
       aria-label={t("localeToggle.label")}
       variant="ghost"
-      className="gap-2 px-3"
+      className="gap-2 px-3 text-muted-foreground hover:text-foreground"
       type="button"
       onClick={handleToggle}
     >
-      <Globe className="size-4" />
+      <Globe className="size-4 text-accent" />
       <span>{localeLabels[currentLocale]}</span>
     </Button>
   );

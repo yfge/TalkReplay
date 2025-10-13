@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6C5CE7" />
+      <stop offset="100%" stop-color="#00E5A8" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(20,32)">
+    <rect x="0" y="0" width="192" height="148" rx="28" fill="url(#grad)"/>
+    <path d="M64 148 L82 184 L94 148 Z" fill="url(#grad)"/>
+    <g fill="#FFFFFF">
+      <polygon points="132,74 100,50 100,98" />
+      <polygon points="168,74 136,50 136,98" />
+    </g>
+  </g>
+  <g font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-weight="700">
+    <text x="240" y="120" font-size="88" fill="#0B1221">Talk</text>
+    <text x="240" y="200" font-size="88" fill="url(#grad)">Replay</text>
+  </g>
+</svg>

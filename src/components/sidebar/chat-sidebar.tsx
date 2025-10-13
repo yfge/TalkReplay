@@ -33,8 +33,8 @@ export function ChatSidebar() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div>
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <Filter className="size-4" />
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <Filter className="size-4 text-accent" />
           {t("sidebar.filters")}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -47,8 +47,8 @@ export function ChatSidebar() {
           return (
             <Button
               key={source}
-              variant={active ? "default" : "outline"}
-              className="justify-start"
+              variant={active ? "default" : "ghost"}
+              className="justify-start rounded-lg px-3 py-2 text-sm"
               type="button"
               onClick={() => toggleSource(source)}
             >
@@ -57,8 +57,8 @@ export function ChatSidebar() {
           );
         })}
       </div>
-      <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm">
-        <Star className="size-4" />
+      <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-gradient-to-r from-secondary/15 to-accent/15 px-3 py-2 text-sm text-foreground">
+        <Star className="size-4 text-secondary" />
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -71,7 +71,7 @@ export function ChatSidebar() {
       <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {t("sidebar.search")}
         <input
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-1 w-full rounded-lg border border-input bg-background/80 px-3 py-2 text-sm shadow-sm backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           placeholder={t("sidebar.searchPlaceholder")}
           value={filters.query}
           onChange={(event) => setQuery(event.target.value)}
@@ -80,7 +80,7 @@ export function ChatSidebar() {
       <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {t("sidebar.project")}
         <select
-          className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="mt-1 w-full rounded-lg border border-input bg-background/80 px-3 py-2 text-sm shadow-sm backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           value={filters.project ?? ""}
           onChange={(e) => setProject(e.target.value || undefined)}
         >
@@ -92,9 +92,9 @@ export function ChatSidebar() {
           ))}
         </select>
       </label>
-      <div className="space-y-2 rounded-md border border-input bg-background px-3 py-2 text-xs text-muted-foreground">
+      <div className="space-y-2 rounded-xl border border-input bg-background/80 p-3 text-xs text-muted-foreground shadow-sm backdrop-blur">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <CalendarDays className="size-4" />
+          <CalendarDays className="size-4 text-primary" />
           {t("sidebar.dateRange")}
         </div>
         <div className="flex flex-col gap-2">
@@ -106,7 +106,7 @@ export function ChatSidebar() {
               onChange={(event) =>
                 setDateRange(event.target.value || undefined, filters.endDate)
               }
-              className="rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-lg border border-input bg-background/80 px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -117,14 +117,14 @@ export function ChatSidebar() {
               onChange={(event) =>
                 setDateRange(filters.startDate, event.target.value || undefined)
               }
-              className="rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="rounded-lg border border-input bg-background/80 px-2 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
           {(filters.startDate || filters.endDate) && (
             <Button
               variant="ghost"
               type="button"
-              className="self-start"
+              className="self-start text-xs text-muted-foreground hover:text-foreground"
               onClick={() => setDateRange(undefined, undefined)}
             >
               {t("sidebar.clearDates")}

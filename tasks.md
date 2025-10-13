@@ -139,10 +139,11 @@ Blocking risks: very large JSONL files, provider format drift, path permissions 
 
 - [x] Enhance chat list filtering (source toggles, search, date range, starred sessions) — added starred toggle and date range in sidebar.
 - [x] Implement session detail view improvements (message grouping, inline code formatting, copy button, metadata panel).
-- [x] Add provider badges, icons, and color accents for visual distinction.
-- [x] Stabilise chat list/detail layout so the message pane stays visible after refresh/import.
-- [ ] Support pagination/virtualisation for long conversation lists (e.g., `@tanstack/react-virtual`).
-- [ ] Implement quick navigation (keyboard shortcuts, breadcrumbs, recent sessions panel).
+  - [x] Add provider badges, icons, and color accents for visual distinction.
+  - [x] Stabilise chat list/detail layout so the message pane stays visible after refresh/import.
+  - Progress (2025-10-13): Applied refreshed TalkReplay branding (palette, gradients, logo usage) across shell, sidebar, chat list, and detail views.
+  - [ ] Support pagination/virtualisation for long conversation lists (e.g., `@tanstack/react-virtual`).
+  - [ ] Implement quick navigation (keyboard shortcuts, breadcrumbs, recent sessions panel).
 
   Progress (2025-10-02):
   - [x] Render images inline in chat detail (tool results + content) and add secure file proxy API for local image paths.

@@ -728,11 +728,30 @@ function buildCodexSession(
   const firstContent = messages.find(
     (message) => message.kind === "content" && message.content,
   );
+  const firstAssistantIndex = messages.findIndex(
+    (message) => message.role === "assistant",
+  );
+  let userPromptBeforeAssistant: string | undefined;
+  if (firstAssistantIndex > 0) {
+    for (let i = firstAssistantIndex - 1; i >= 0; i--) {
+      const candidate = messages[i];
+      if (
+        candidate.role === "user" &&
+        candidate.kind === "content" &&
+        typeof candidate.content === "string" &&
+        candidate.content.trim().length > 0
+      ) {
+        userPromptBeforeAssistant = candidate.content;
+        break;
+      }
+    }
+  }
 
   return {
     id: filePath,
     source: "codex",
     topic:
+      userPromptBeforeAssistant?.split("\n", 1)[0]?.slice(0, 80) ??
       instructions?.split("\n", 1)[0]?.slice(0, 80) ??
       firstContent?.content?.slice(0, 80) ??
       "Codex session",

@@ -19,6 +19,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 ### A3. Adapter Migration & Tests
 
 - [ ] Wire Codex adapter to the schema normaliser for tool events with a controlled fallback path.
+- [ ] _Update (2025-10-14): Codex session topic now prefers the user prompt preceding the first assistant message (including reasoning/tool preambles) to match UX expectations._
 - [ ] Wire Claude adapter to the same pipeline (tool_use/tool_result/text) while preserving raw payloads for audit.
 - [ ] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions.
 - [ ] Benchmark parsing performance on large logs and record baseline metrics.

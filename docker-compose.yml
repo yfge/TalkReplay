@@ -10,7 +10,7 @@ services:
         NEXT_PUBLIC_CODEX_ROOT: /app/data/codex
         NEXT_PUBLIC_GEMINI_ROOT: ""
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-8000}:3000"
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_CLAUDE_ROOT: /app/data/claude

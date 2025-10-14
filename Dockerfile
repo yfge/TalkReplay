@@ -10,8 +10,7 @@ ARG NEXT_PUBLIC_CODEX_ROOT=/app/data/codex
 ARG NEXT_PUBLIC_GEMINI_ROOT=
 
 # Environment
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
+ENV NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
     HOST=0.0.0.0 \
     HUSKY=0 \
@@ -24,12 +23,14 @@ ENV NODE_ENV=production \
 
 # Deps stage: install dependencies with pnpm (via Corepack)
 FROM base AS deps
+ENV NODE_ENV=development
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Build stage: copy source and build
 FROM deps AS build
+ENV NODE_ENV=production
 COPY . .
 RUN pnpm build
 

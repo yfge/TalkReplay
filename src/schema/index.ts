@@ -9,3 +9,4 @@ export type {
   MappingCondition,
 } from "./types";
 export * as codexSchema from "./providers/codex";
+export * as claudeSchema from "./providers/claude";

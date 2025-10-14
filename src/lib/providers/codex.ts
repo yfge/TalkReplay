@@ -100,6 +100,15 @@ function safeJsonParse(value: string | null | undefined): unknown {
   }
 }
 
+let codexSchemasReady = false;
+
+function ensureCodexSchemasRegistered() {
+  if (!codexSchemasReady) {
+    codexSchema.registerCodexSchemas();
+    codexSchemasReady = true;
+  }
+}
+
 function deriveProjectFromCwd(cwd?: string): {
   project?: string;
   normalizedPath?: string;
@@ -220,6 +229,7 @@ function buildCodexSession(
 
   entries.forEach((entry, index) => {
     if (process.env.NEXT_PUBLIC_SCHEMA_NORMALISER === "1") {
+      ensureCodexSchemasRegistered();
       const mappingId = codexSchema.resolveMappingId(entry);
       if (mappingId) {
         const normalised = normalise(mappingId, entry);

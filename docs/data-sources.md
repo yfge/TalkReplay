@@ -19,10 +19,12 @@ This document captures the normalisation rules mapping provider-native logs to t
 
 ## Claude Code
 
-- `message.content[]` items:
+- Schema mappings (`claude/message.*`) cover:
+  - `message.text` → `kind=content` for plain string payloads.
   - `text` → `kind=content`
   - `tool_use` → `kind=tool-call`, `toolCall.{id,name,arguments,toolType}` (Bash→bash)
   - `tool_result` → `kind=tool-result`, `toolResult.{callId,output,stdout,stderr}`
+- When `NEXT_PUBLIC_SCHEMA_NORMALISER=1`, the Claude adapter normalises via these mappings before falling back to legacy parsing.
 
 ## Schema extensions (v1)
 

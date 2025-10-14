@@ -1,0 +1,22 @@
+{
+  "$id": "https://talkreplay.dev/schema/claude/message.content.text",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "variant": { "const": "message.content.text" },
+    "id": { "type": ["string", "null"] },
+    "timestamp": { "type": ["string", "null"] },
+    "role": { "type": ["string", "null"] },
+    "contentItem": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "text" },
+        "text": { "type": ["string", "null"] }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["variant", "id", "role", "contentItem"],
+  "additionalProperties": true
+}

@@ -16,4 +16,17 @@ describe("parseClaudeSessionFromString", () => {
     expect(session?.messages?.[1]?.metadata?.tokens?.total).toBe(30);
     expect(session?.messages?.[0]?.kind).toBe("content");
   });
+
+  it("parses sessions via schema normaliser when enabled", () => {
+    process.env.NEXT_PUBLIC_SCHEMA_NORMALISER = "1";
+    const session = parseClaudeSessionFromString(
+      "/tmp/sample-schema.jsonl",
+      CLAUDE_SAMPLE,
+    );
+    expect(session).not.toBeNull();
+    expect(session?.messages).toHaveLength(2);
+    expect(session?.messages?.[0]?.kind).toBe("content");
+    expect(session?.messages?.[1]?.metadata?.providerMessageType).toBe("text");
+    delete process.env.NEXT_PUBLIC_SCHEMA_NORMALISER;
+  });
 });

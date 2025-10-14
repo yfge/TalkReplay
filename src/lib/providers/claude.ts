@@ -2,6 +2,8 @@ import type { Dirent } from "node:fs";
 import path from "node:path";
 
 import type { ProviderLoadResult } from "@/lib/providers/types";
+import { claudeSchema } from "@/schema";
+import { normalise } from "@/schema/normaliser";
 import type {
   ChatMessage,
   ChatRole,
@@ -113,6 +115,101 @@ function safeStringify(value: unknown): string | null {
   }
 }
 
+let claudeSchemasReady = false;
+
+function ensureClaudeSchemasRegistered() {
+  if (!claudeSchemasReady) {
+    claudeSchema.registerClaudeSchemas();
+    claudeSchemasReady = true;
+  }
+}
+
+function buildClaudeSchemaPayloads(params: {
+  entry: ClaudeLogEntry;
+  message: ClaudeLogMessage;
+  timestamp: string;
+  baseId: string;
+  defaultRole: ChatRole;
+}): Array<Record<string, unknown>> {
+  const { entry, message, timestamp, baseId, defaultRole } = params;
+  const payloads: Array<Record<string, unknown>> = [];
+  const originalTimestamp = entry.timestamp ?? timestamp;
+
+  if (typeof message.content === "string") {
+    payloads.push({
+      variant: "message.text",
+      id: baseId,
+      timestamp: originalTimestamp,
+      role: defaultRole,
+      content: message.content,
+    });
+    return payloads;
+  }
+
+  if (!Array.isArray(message.content)) {
+    return payloads;
+  }
+
+  let chunkIndex = 0;
+  for (const rawItem of message.content) {
+    if (!rawItem || typeof rawItem !== "object") {
+      chunkIndex += 1;
+      continue;
+    }
+
+    const itemType = (rawItem as { type?: string }).type;
+    const chunkId = `${baseId}:${chunkIndex}`;
+    if (itemType === "text") {
+      payloads.push({
+        variant: "message.content.text",
+        id: chunkId,
+        timestamp: originalTimestamp,
+        role: defaultRole,
+        contentItem: rawItem,
+      });
+    } else if (itemType === "tool_use") {
+      const tool = rawItem as ClaudeMessageContentToolUse;
+      const toolName = typeof tool.name === "string" ? tool.name : undefined;
+      const toolType =
+        toolName === "Bash" ? "bash" : toolName ? toolName : undefined;
+      payloads.push({
+        variant: "message.content.tool_use",
+        id: chunkId,
+        timestamp: originalTimestamp,
+        role: defaultRole,
+        contentItem: tool,
+        stringContent: safeStringify(tool.input),
+        toolType,
+      });
+    } else if (itemType === "tool_result") {
+      const result = rawItem as ClaudeMessageContentToolResult;
+      const output =
+        result.content !== undefined
+          ? result.content
+          : (entry.toolUseResult ?? null);
+      const contentString =
+        typeof result.content === "string"
+          ? result.content
+          : (safeStringify(result.content) ??
+            safeStringify(entry.toolUseResult) ??
+            null);
+      payloads.push({
+        variant: "message.content.tool_result",
+        id: chunkId,
+        timestamp: originalTimestamp,
+        role: "tool",
+        contentItem: result,
+        contentString,
+        output,
+        toolUseResult: entry.toolUseResult,
+      });
+    }
+    chunkIndex += 1;
+  }
+
+  return payloads;
+}
+
 function buildClaudeSession(
   filePath: string,
   entries: ClaudeLogEntry[],
@@ -192,6 +289,53 @@ function buildClaudeSession(
       messages.push(chatMessage);
       participants.add(finalRole);
     };
+
+    if (process.env.NEXT_PUBLIC_SCHEMA_NORMALISER === "1") {
+      ensureClaudeSchemasRegistered();
+      const schemaPayloads = buildClaudeSchemaPayloads({
+        entry,
+        message,
+        timestamp,
+        baseId,
+        defaultRole,
+      });
+      if (schemaPayloads.length > 0) {
+        const normalisedMessages: ChatMessage[] = [];
+        let valid = true;
+        for (const payload of schemaPayloads) {
+          const mappingId = claudeSchema.resolveMappingId(payload);
+          if (!mappingId) {
+            valid = false;
+            break;
+          }
+          const result = normalise(mappingId, payload);
+          if (!result) {
+            valid = false;
+            break;
+          }
+          normalisedMessages.push(result.message);
+        }
+        if (valid && normalisedMessages.length === schemaPayloads.length) {
+          normalisedMessages.forEach((normalisedMessage) => {
+            const metadata = attachUsage({
+              ...baseMetadata,
+              ...(normalisedMessage.metadata ?? {}),
+              raw: entry,
+            });
+            const finalMessage: ChatMessage = {
+              ...normalisedMessage,
+              metadata,
+            };
+            messages.push(finalMessage);
+            participants.add(finalMessage.role);
+          });
+          if (!providerModel && message.model) {
+            providerModel = message.model;
+          }
+          return;
+        }
+      }
+    }
 
     if (typeof message.content === "string") {
       pushMessage("content", message.content, { providerMessageType: "text" });

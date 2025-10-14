@@ -439,9 +439,15 @@ export const codexMappings: SchemaMapping[] = [
   },
 ];
 
+let codexSchemasRegistered = false;
+
 export function registerCodexSchemas() {
+  if (codexSchemasRegistered) {
+    return;
+  }
   codexSchemas.forEach((schema) => schemaRegistry.addSchema(schema));
   codexMappings.forEach((mapping) => schemaRegistry.registerMapping(mapping));
+  codexSchemasRegistered = true;
 }
 
 export function resolveMappingId(payload: unknown): string | null {

@@ -79,7 +79,7 @@ function mapKind(kind: NormalisedKind): ChatMessageKind {
   }
 }
 
-function serialiseContent(value: unknown): string | null {
+function serialiseContent(value: unknown): string | null | undefined {
   if (value == null) {
     return value === null ? null : undefined;
   }
@@ -113,14 +113,21 @@ function finaliseMessage(partial: Record<string, unknown>): ChatMessage {
       ? (partial.metadata as ChatMessage["metadata"])
       : undefined;
 
-  return {
+  const message: ChatMessage = {
     id,
     role,
     kind,
     timestamp,
-    content,
-    metadata,
   };
+
+  if (content !== undefined) {
+    message.content = content;
+  }
+  if (metadata !== undefined) {
+    message.metadata = metadata;
+  }
+
+  return message;
 }
 
 export function normalise(

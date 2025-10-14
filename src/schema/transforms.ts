@@ -110,9 +110,14 @@ const transforms: Record<TransformName, TransformFn> = {
   },
   "command-tool-type": (value) => {
     if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim().startsWith("bash") ? "bash" : "command_execution";
+      const trimmed = value.trim();
+      if (trimmed.startsWith("bash")) return "bash";
+      if (trimmed.startsWith("pnpm") || trimmed.startsWith("npm")) {
+        return "npm-script";
+      }
+      return "command_execution";
     }
-    return value ?? "command_execution";
+    return "command_execution";
   },
   "map-tool-name": (value, _options, context) => {
     const root = context.root as Record<string, unknown> | undefined;
@@ -126,6 +131,33 @@ const transforms: Record<TransformName, TransformFn> = {
     if (tool) return tool;
     return server ?? value;
   },
+  "join-text-array": (value, options) => {
+    const separator =
+      typeof options?.separator === "string" ? options.separator : "\n";
+    const collect = (input: unknown): string | undefined => {
+      if (typeof input === "string") {
+        return input;
+      }
+      if (input && typeof input === "object") {
+        const text = (input as { text?: unknown }).text;
+        return typeof text === "string" ? text : undefined;
+      }
+      return undefined;
+    };
+    if (Array.isArray(value)) {
+      const parts = value
+        .map((entry) => collect(entry))
+        .filter(
+          (entry): entry is string =>
+            typeof entry === "string" && entry.length > 0,
+        );
+      if (parts.length === 0) {
+        return undefined;
+      }
+      return parts.join(separator);
+    }
+    return collect(value);
+  },
   "collect-file-change-paths": (value) => {
     if (!Array.isArray(value)) return undefined;
     const paths: string[] = [];
@@ -137,14 +169,40 @@ const transforms: Record<TransformName, TransformFn> = {
     }
     return paths.length > 0 ? paths : undefined;
   },
-  "extract-json-property": (value, options) => {
-    if (!options?.property || typeof options.property !== "string") {
-      return undefined;
+  "extract-json-property": (value, options, context) => {
+    if (!options) return undefined;
+    let result: unknown;
+    const pointer =
+      typeof options.pointer === "string" ? options.pointer : undefined;
+    if (pointer && typeof value === "string") {
+      try {
+        value = JSON.parse(value);
+      } catch {
+        // keep original string
+      }
     }
-    if (value && typeof value === "object") {
-      return (value as Record<string, unknown>)[options.property];
+    if (pointer) {
+      result = getByPointer(value, pointer);
     }
-    return undefined;
+    const property =
+      typeof options.property === "string" ? options.property : undefined;
+    if (
+      result === undefined &&
+      property &&
+      value &&
+      typeof value === "object"
+    ) {
+      result = (value as Record<string, unknown>)[property];
+    }
+    if (options.transform) {
+      const inner = applyTransform(
+        options.transform as TransformName | TransformDefinition,
+        result,
+        context,
+      );
+      return inner;
+    }
+    return result;
   },
   "append-suffix": (value, options) => {
     const suffix = typeof options?.suffix === "string" ? options.suffix : "";

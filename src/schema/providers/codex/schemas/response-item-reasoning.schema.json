@@ -1,0 +1,32 @@
+{
+  "$id": "https://talkreplay.dev/schema/codex/response_item.reasoning",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "type": { "const": "response_item" },
+    "timestamp": { "type": ["string", "null"] },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "reasoning" },
+        "id": { "type": ["string", "null"] },
+        "summary": {
+          "type": ["array", "string", "null"],
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": ["string", "null"] }
+            },
+            "required": [],
+            "additionalProperties": true
+          }
+        },
+        "detail": { "type": ["string", "null"] }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["type", "payload"],
+  "additionalProperties": true
+}

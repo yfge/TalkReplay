@@ -11,8 +11,10 @@ export type TransformName =
   | "coalesce"
   | "command-tool-type"
   | "map-tool-name"
+  | "join-text-array"
   | "collect-file-change-paths"
-  | "extract-json-property";
+  | "extract-json-property"
+  | "append-suffix";
 
 export interface TransformDefinition {
   name: TransformName;

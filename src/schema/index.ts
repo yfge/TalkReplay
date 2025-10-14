@@ -8,3 +8,4 @@ export type {
   NormalisedKind,
   MappingCondition,
 } from "./types";
+export * as codexSchema from "./providers/codex";

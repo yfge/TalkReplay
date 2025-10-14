@@ -1,0 +1,21 @@
+{
+  "$id": "https://talkreplay.dev/schema/codex/item.reasoning.completed",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "type": { "const": "item.completed" },
+    "timestamp": { "type": ["string", "null"] },
+    "item": {
+      "type": "object",
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "type": { "const": "reasoning" },
+        "text": { "type": ["string", "null"] }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["type", "item"],
+  "additionalProperties": true
+}

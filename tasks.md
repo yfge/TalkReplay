@@ -13,15 +13,15 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 
 - [ ] Author JSON Schemas for Claude tool events (`tool_use`, `tool_result`, `text`) and Codex events (`item.started/updated/completed`, `response_item`, `function_call`, `function_call_output`).
 - [ ] Build an Ajv-based validator/normaliser that consumes schema + mapping definitions to emit `ChatMessage` objects.
-- [ ] Implement reusable transforms (ISO timestamps, exitCode/duration extraction, diff parsing, toolType inference, stdout/stderr capture).
+- [x] Implement reusable transforms (ISO timestamps, exitCode/duration extraction, diff parsing, toolType inference, stdout/stderr capture). _(2025-10-14: Added join-text-array, append-suffix, and nested property extraction for Codex schemas.)_
 - [ ] Document schema versioning, contribution workflow, and testing expectations.
 
 ### A3. Adapter Migration & Tests
 
-- [ ] Wire Codex adapter to the schema normaliser for tool events with a controlled fallback path.
+- [x] Wire Codex adapter to the schema normaliser for tool events with a controlled fallback path. _(2025-10-14: Provider switches to schema mappings when `NEXT_PUBLIC_SCHEMA_NORMALISER=1`.)_
 - [ ] _Update (2025-10-14): Codex session topic now prefers the user prompt preceding the first assistant message (including reasoning/tool preambles) to match UX expectations._
 - [ ] Wire Claude adapter to the same pipeline (tool_use/tool_result/text) while preserving raw payloads for audit.
-- [ ] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions.
+- [x] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions. _(2025-10-14: Added `src/schema/providers/codex/mappings.test.ts` to exercise new mappings.)_
 - [ ] Benchmark parsing performance on large logs and record baseline metrics.
 
 ### A4. Structured Tool Call UI

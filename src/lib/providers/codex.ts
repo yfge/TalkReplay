@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { parseUnifiedDiff } from "@/lib/diff";
 import type { ProviderLoadResult } from "@/lib/providers/types";
+import { codexSchema } from "@/schema";
+import { normalise } from "@/schema/normaliser";
 import type {
   ChatMessage,
   ChatRole,
@@ -217,6 +219,25 @@ function buildCodexSession(
   let cwdPath: string | undefined;
 
   entries.forEach((entry, index) => {
+    if (process.env.NEXT_PUBLIC_SCHEMA_NORMALISER === "1") {
+      const mappingId = codexSchema.resolveMappingId(entry);
+      if (mappingId) {
+        const normalised = normalise(mappingId, entry);
+        if (normalised) {
+          const message = normalised.message;
+          message.metadata = {
+            ...(message.metadata ?? {}),
+            raw: entry,
+          };
+          messages.push(message);
+          participants.add(message.role);
+          if (!firstTimestamp && entry.timestamp) {
+            firstTimestamp = toIsoTimestamp(entry.timestamp);
+          }
+          return;
+        }
+      }
+    }
     // Handle exec JSON mode item events
     if (entry.type && entry.type.startsWith("item.")) {
       const p = (entry.payload ?? {}) as Record<string, unknown>;

@@ -322,12 +322,70 @@ export function ChatDetail({
     );
   }, [session, t]);
 
+  const filteredMessages = useMemo(() => {
+    if (!session) return [] as ChatMessage[];
+    const resultByCallId = new Map<string, number>();
+    session.messages.forEach((m, idx) => {
+      const callId = m.metadata?.toolResult?.callId;
+      if (m.kind === "tool-result" && typeof callId === "string") {
+        resultByCallId.set(callId, idx);
+      }
+    });
+    const usedResult = new Set<number>();
+    const keep: ChatMessage[] = [];
+    for (let i = 0; i < session.messages.length; i++) {
+      const message = session.messages[i];
+      if (message.kind === "tool-call") {
+        if (activeFilterSet.has("tool")) {
+          keep.push(message);
+          const toolId =
+            message.metadata?.toolCallId ?? message.metadata?.toolCall?.id;
+          if (typeof toolId === "string") {
+            const pairIdx = resultByCallId.get(toolId);
+            if (
+              typeof pairIdx === "number" &&
+              pairIdx > i &&
+              !usedResult.has(pairIdx)
+            ) {
+              usedResult.add(pairIdx);
+              keep.push(session.messages[pairIdx]);
+            }
+          }
+        }
+        continue;
+      }
+      if (message.kind === "tool-result") {
+        if (usedResult.has(i)) continue;
+        if (activeFilterSet.has("tool")) {
+          keep.push(message);
+        }
+        continue;
+      }
+      const key = resolveMessageFilterKey(message);
+      if (activeFilterSet.has(key)) {
+        keep.push(message);
+      }
+    }
+    return keep;
+  }, [activeFilterSet, session]);
+
+  const filteredSession = useMemo(() => {
+    if (!session) return null;
+    if (filteredMessages.length === session.messages.length) {
+      return session;
+    }
+    return {
+      ...session,
+      messages: filteredMessages,
+    } satisfies ChatSession;
+  }, [filteredMessages, session]);
+
   const copyMarkdown = React.useCallback(async () => {
-    if (!session) {
+    if (!filteredSession) {
       return;
     }
     try {
-      const markdown = sessionToMarkdown(session);
+      const markdown = sessionToMarkdown(filteredSession);
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(markdown);
         setShareStatus("markdown");
@@ -337,31 +395,31 @@ export function ChatDetail({
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = sessionToFilename(session, "md");
+        link.download = sessionToFilename(filteredSession, "md");
         link.click();
         URL.revokeObjectURL(url);
       }
     } catch (error) {
       console.error("Failed to copy markdown", error);
     }
-  }, [session]);
+  }, [filteredSession]);
 
   const downloadFile = React.useCallback(
     (content: string, mime: string, extension: string) => {
-      if (!session) {
+      if (!filteredSession) {
         return;
       }
       const blob = new Blob([content], { type: mime });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = sessionToFilename(session, extension);
+      link.download = sessionToFilename(filteredSession, extension);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     },
-    [session],
+    [filteredSession],
   );
 
   if (!session) {
@@ -466,9 +524,14 @@ export function ChatDetail({
             <Button
               type="button"
               variant="ghost"
-              onClick={() =>
-                downloadFile(sessionToMarkdown(session), "text/markdown", "md")
-              }
+              onClick={() => {
+                if (!filteredSession) return;
+                downloadFile(
+                  sessionToMarkdown(filteredSession),
+                  "text/markdown",
+                  "md",
+                );
+              }}
             >
               <FileText className="mr-2 size-4" />
               {t("detail.downloadMarkdown")}
@@ -476,9 +539,14 @@ export function ChatDetail({
             <Button
               type="button"
               variant="ghost"
-              onClick={() =>
-                downloadFile(sessionToJson(session), "application/json", "json")
-              }
+              onClick={() => {
+                if (!filteredSession) return;
+                downloadFile(
+                  sessionToJson(filteredSession),
+                  "application/json",
+                  "json",
+                );
+              }}
             >
               <Download className="mr-2 size-4" />
               {t("detail.downloadJson")}

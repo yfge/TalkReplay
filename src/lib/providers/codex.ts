@@ -11,7 +11,6 @@ import type {
   ChatSession,
   MessageMetadata,
   SessionMetadata,
-  TokenUsage,
 } from "@/types/chat";
 import type { ProviderImportError } from "@/types/providers";
 
@@ -77,6 +76,7 @@ function parseCodexLines(lines: string[]): CodexLogEntry[] {
 
 function safeStringify(value: unknown): string | null {
   if (value === null || typeof value === "undefined") {
+    // eslint-disable-next-line no-console
     return null;
   }
   if (typeof value === "string") {
@@ -107,6 +107,133 @@ function ensureCodexSchemasRegistered() {
     codexSchema.registerCodexSchemas();
     codexSchemasReady = true;
   }
+}
+
+interface CodexSchemaPayloadResult {
+  payloads: Array<Record<string, unknown>>;
+  usage?: CodexPayload["usage"];
+  model?: string | undefined;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object";
+
+function buildCodexSchemaPayloads(
+  entry: CodexLogEntry,
+  index: number,
+): CodexSchemaPayloadResult | null {
+  const mappingId = codexSchema.resolveMappingId(entry);
+  if (mappingId) {
+    return { payloads: [entry] };
+  }
+  if (entry.type !== "response_item" || !entry.payload) {
+    return null;
+  }
+  const payload = entry.payload as CodexPayload;
+  if (payload.type !== "message") {
+    return null;
+  }
+  const roleKey = (payload.role ?? "").toLowerCase();
+  const defaultRole = ROLE_MAP[roleKey] ?? "assistant";
+  const baseId = payload.id ?? `${defaultRole}-${index}`;
+  const baseTimestamp = entry.timestamp;
+  const contentItems = Array.isArray(payload.content) ? payload.content : [];
+  const schemaPayloads: Array<Record<string, unknown>> = [];
+  let chunkIndex = 0;
+
+  for (const rawItem of contentItems) {
+    if (!isRecord(rawItem)) {
+      continue;
+    }
+    const item = rawItem;
+    const type = typeof item.type === "string" ? item.type : undefined;
+    const chunkId = `${baseId}:${chunkIndex}`;
+
+    if (type === "input_text") {
+      const text = typeof item.text === "string" ? item.text : undefined;
+      if (!text) {
+        return null;
+      }
+      const payloadRecord: Record<string, unknown> = {
+        variant: "codex/response_item.message.input_text",
+        id: chunkId,
+        role: defaultRole,
+        contentText: text,
+      };
+      if (baseTimestamp) {
+        payloadRecord.timestamp = baseTimestamp;
+      }
+      schemaPayloads.push(payloadRecord);
+      chunkIndex += 1;
+      continue;
+    }
+
+    if (type === "output_text" || type === "text") {
+      const text = typeof item.text === "string" ? item.text : undefined;
+      if (!text) {
+        return null;
+      }
+      const payloadRecord: Record<string, unknown> = {
+        variant: "codex/response_item.message.output_text",
+        id: chunkId,
+        role: defaultRole,
+        contentText: text,
+      };
+      if (baseTimestamp) {
+        payloadRecord.timestamp = baseTimestamp;
+      }
+      schemaPayloads.push(payloadRecord);
+      chunkIndex += 1;
+      continue;
+    }
+
+    if (type === "tool_use") {
+      const inputValue = item.input;
+      const input = isRecord(inputValue) ? inputValue : undefined;
+      const command =
+        input && typeof input.command === "string" ? input.command : undefined;
+      const payloadRecord: Record<string, unknown> = {
+        variant: "codex/response_item.message.tool_use",
+        id: chunkId,
+        role: "assistant",
+        item,
+        command,
+      };
+      if (baseTimestamp) {
+        payloadRecord.timestamp = baseTimestamp;
+      }
+      schemaPayloads.push(payloadRecord);
+      chunkIndex += 1;
+      continue;
+    }
+
+    if (type === "tool_result") {
+      const payloadRecord: Record<string, unknown> = {
+        variant: "codex/response_item.message.tool_result",
+        id: chunkId,
+        role: "tool",
+        item,
+      };
+      if (baseTimestamp) {
+        payloadRecord.timestamp = baseTimestamp;
+      }
+      schemaPayloads.push(payloadRecord);
+      chunkIndex += 1;
+      continue;
+    }
+
+    return null;
+  }
+
+  if (schemaPayloads.length === 0) {
+    return null;
+  }
+
+  return {
+    payloads: schemaPayloads,
+    usage: payload.usage,
+    model: payload.model,
+  };
 }
 
 function deriveProjectFromCwd(cwd?: string): {
@@ -230,6 +357,52 @@ function buildCodexSession(
   entries.forEach((entry, index) => {
     if (process.env.NEXT_PUBLIC_SCHEMA_NORMALISER === "1") {
       ensureCodexSchemasRegistered();
+      const schemaResult = buildCodexSchemaPayloads(entry, index);
+      if (schemaResult) {
+        const { payloads: schemaPayloads, usage, model } = schemaResult;
+        const normalisedMessages: ChatMessage[] = [];
+        let valid = true;
+        for (const schemaPayload of schemaPayloads) {
+          const mappingId = codexSchema.resolveMappingId(schemaPayload);
+          if (!mappingId) {
+            valid = false;
+            break;
+          }
+          const normalised = normalise(mappingId, schemaPayload);
+          if (!normalised) {
+            valid = false;
+            break;
+          }
+          normalisedMessages.push(normalised.message);
+        }
+        if (valid && normalisedMessages.length === schemaPayloads.length) {
+          let usageAttached = false;
+          normalisedMessages.forEach((message) => {
+            const metadata: MessageMetadata = {
+              ...(message.metadata ?? {}),
+              raw: entry,
+            };
+            if (usage && !usageAttached) {
+              metadata.tokens = {
+                prompt: usage.input_tokens,
+                completion: usage.output_tokens,
+                total: usage.total_tokens,
+              };
+              usageAttached = true;
+            }
+            message.metadata = metadata;
+            messages.push(message);
+            participants.add(message.role);
+            if (!firstTimestamp && entry.timestamp) {
+              firstTimestamp = toIsoTimestamp(entry.timestamp);
+            }
+          });
+          if (!providerModel && model) {
+            providerModel = model;
+          }
+          return;
+        }
+      }
       const mappingId = codexSchema.resolveMappingId(entry);
       if (mappingId) {
         const normalised = normalise(mappingId, entry);
@@ -523,7 +696,7 @@ function buildCodexSession(
           prompt: payload.usage.input_tokens,
           completion: payload.usage.output_tokens,
           total: payload.usage.total_tokens,
-        } satisfies TokenUsage;
+        };
         usageAttached = true;
       }
       return metadata;

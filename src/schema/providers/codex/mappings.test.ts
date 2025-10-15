@@ -102,6 +102,67 @@ describe("codex schema mappings", () => {
     );
   });
 
+  it("normalises response_item.message input_text", () => {
+    const payload = {
+      variant: "codex/response_item.message.input_text",
+      timestamp: "2025-01-01T00:00:05Z",
+      id: "msg-1:0",
+      role: "user",
+      contentText: "List files",
+    };
+    const mappingId = resolveMappingId(payload);
+    expect(mappingId).toBe("codex/response_item.message.input_text");
+    const result = normalise(mappingId!, payload);
+    expect(result?.message.kind).toBe("content");
+    expect(result?.message.role).toBe("user");
+    expect(result?.message.content).toBe("List files");
+  });
+
+  it("normalises response_item.message tool_use", () => {
+    const payload = {
+      variant: "codex/response_item.message.tool_use",
+      timestamp: "2025-01-01T00:00:06Z",
+      id: "msg-2:1",
+      item: {
+        type: "tool_use",
+        id: "call-1",
+        name: "Bash",
+        input: { command: "bash -lc ls" },
+      },
+      command: "bash -lc ls",
+    };
+    const mappingId = resolveMappingId(payload);
+    expect(mappingId).toBe("codex/response_item.message.tool_use");
+    const result = normalise(mappingId!, payload);
+    expect(result?.message.kind).toBe("tool-call");
+    expect(result?.message.metadata?.toolCall?.id).toBe("call-1");
+    expect(result?.message.metadata?.toolCall?.toolType).toBe("bash");
+  });
+
+  it("normalises response_item.message tool_result", () => {
+    const payload = {
+      variant: "codex/response_item.message.tool_result",
+      timestamp: "2025-01-01T00:00:07Z",
+      id: "msg-2:2",
+      item: {
+        type: "tool_result",
+        tool_use_id: "call-1",
+        content: {
+          stdout: "README.md\n",
+          stderr: "",
+          is_error: false,
+        },
+      },
+    };
+    const mappingId = resolveMappingId(payload);
+    expect(mappingId).toBe("codex/response_item.message.tool_result");
+    const result = normalise(mappingId!, payload);
+    expect(result?.message.kind).toBe("tool-result");
+    expect(result?.message.metadata?.toolResult?.callId).toBe("call-1");
+    expect(result?.message.metadata?.toolResult?.stdout).toBe("README.md\n");
+    expect(result?.message.metadata?.toolResult?.isError).toBe(false);
+  });
+
   it("registers schemas", () => {
     codexSchemas.forEach((schema) => {
       const validator = schemaRegistry.getValidator(schema.$id);

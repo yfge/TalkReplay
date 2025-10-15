@@ -12,6 +12,7 @@ This document captures the normalisation rules mapping provider-native logs to t
 - `response_item.type=reasoning` → `kind=reasoning`, `metadata.reasoning.summary`
 - `function_call` → `kind=tool-call`, `toolCall.{id,name,arguments,toolType}`
 - `function_call_output` → `kind=tool-result`, `toolResult.{callId,stdout,exitCode,durationMs,output}`
+- `response_item.message.*` → schema splits into `input_text`/`output_text` content and `tool_use`/`tool_result` events so normaliser emits the same chunks as the legacy adapter.
 - Exec JSON `item.*`:
   - `command_execution` → tool-call/result pair; aggregated stdout; `exitCode`
   - `file_change` → tool-call/result pair; `toolResult.filesChanged`

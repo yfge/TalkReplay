@@ -13,6 +13,10 @@ import webSearchCompletedSchema from "./schemas/item-web-search-completed.schema
 import webSearchStartedSchema from "./schemas/item-web-search-started.schema.json" assert { type: "json" };
 import functionCallOutputSchema from "./schemas/response-item-function-call-output.schema.json" assert { type: "json" };
 import functionCallSchema from "./schemas/response-item-function-call.schema.json" assert { type: "json" };
+import messageInputSchema from "./schemas/response-item-message-input.schema.json" assert { type: "json" };
+import messageOutputSchema from "./schemas/response-item-message-output.schema.json" assert { type: "json" };
+import messageToolResultSchema from "./schemas/response-item-message-tool-result.schema.json" assert { type: "json" };
+import messageToolUseSchema from "./schemas/response-item-message-tool-use.schema.json" assert { type: "json" };
 import reasoningResponseSchema from "./schemas/response-item-reasoning.schema.json" assert { type: "json" };
 
 export const codexSchemas = [
@@ -29,6 +33,10 @@ export const codexSchemas = [
   functionCallSchema,
   reasoningResponseSchema,
   functionCallOutputSchema,
+  messageInputSchema,
+  messageOutputSchema,
+  messageToolUseSchema,
+  messageToolResultSchema,
 ] as const;
 
 export const codexMappings: SchemaMapping[] = [
@@ -270,6 +278,135 @@ export const codexMappings: SchemaMapping[] = [
   },
   {
     provider: "codex",
+    id: "codex/response_item.message.input_text",
+    kind: "message",
+    schemaId: messageInputSchema.$id,
+    rules: [
+      { source: "/timestamp", target: "timestamp", transform: "iso-timestamp" },
+      { source: "/id", target: "id" },
+      { source: "/role", target: "role" },
+      { source: "/contentText", target: "content" },
+      {
+        source: "",
+        target: "metadata.providerMessageType",
+        transform: { name: "set-constant", options: { value: "message" } },
+      },
+    ],
+  },
+  {
+    provider: "codex",
+    id: "codex/response_item.message.output_text",
+    kind: "message",
+    schemaId: messageOutputSchema.$id,
+    rules: [
+      { source: "/timestamp", target: "timestamp", transform: "iso-timestamp" },
+      { source: "/id", target: "id" },
+      { source: "/role", target: "role" },
+      { source: "/contentText", target: "content" },
+      {
+        source: "",
+        target: "metadata.providerMessageType",
+        transform: { name: "set-constant", options: { value: "message" } },
+      },
+    ],
+  },
+  {
+    provider: "codex",
+    id: "codex/response_item.message.tool_use",
+    kind: "tool-call",
+    schemaId: messageToolUseSchema.$id,
+    rules: [
+      { source: "/timestamp", target: "timestamp", transform: "iso-timestamp" },
+      { source: "/id", target: "id" },
+      { source: "/item/id", target: "metadata.toolCallId" },
+      { source: "/item/id", target: "metadata.toolCall.id" },
+      { source: "/item/name", target: "metadata.toolCall.name" },
+      {
+        source: "/item/input",
+        target: "metadata.toolCall.arguments",
+      },
+      {
+        source: "/item/input",
+        target: "content",
+        transform: "stringify",
+      },
+      {
+        source: "/command",
+        target: "metadata.toolCall.toolType",
+        transform: "command-tool-type",
+      },
+      {
+        source: "",
+        target: "metadata.providerMessageType",
+        transform: { name: "set-constant", options: { value: "tool_use" } },
+      },
+      {
+        source: "",
+        target: "role",
+        transform: { name: "set-constant", options: { value: "assistant" } },
+      },
+    ],
+  },
+  {
+    provider: "codex",
+    id: "codex/response_item.message.tool_result",
+    kind: "tool-result",
+    schemaId: messageToolResultSchema.$id,
+    rules: [
+      { source: "/timestamp", target: "timestamp", transform: "iso-timestamp" },
+      { source: "/id", target: "id" },
+      { source: "/item/tool_use_id", target: "metadata.toolCallId" },
+      {
+        source: "/item/tool_use_id",
+        target: "metadata.toolResult.callId",
+      },
+      {
+        source: "/item/content",
+        target: "metadata.toolResult.output",
+      },
+      {
+        source: "/item/content",
+        target: "content",
+        transform: "stringify",
+      },
+      {
+        source: "/item/content",
+        target: "metadata.toolResult.stdout",
+        transform: {
+          name: "extract-json-property",
+          options: { property: "stdout" },
+        },
+      },
+      {
+        source: "/item/content",
+        target: "metadata.toolResult.stderr",
+        transform: {
+          name: "extract-json-property",
+          options: { property: "stderr" },
+        },
+      },
+      {
+        source: "/item/content",
+        target: "metadata.toolResult.isError",
+        transform: {
+          name: "extract-json-property",
+          options: { property: "is_error" },
+        },
+      },
+      {
+        source: "",
+        target: "metadata.providerMessageType",
+        transform: { name: "set-constant", options: { value: "tool_result" } },
+      },
+      {
+        source: "",
+        target: "role",
+        transform: { name: "set-constant", options: { value: "tool" } },
+      },
+    ],
+  },
+  {
+    provider: "codex",
     id: "codex/response_item.function_call",
     kind: "tool-call",
     schemaId: functionCallSchema.$id,
@@ -455,6 +592,10 @@ export function resolveMappingId(payload: unknown): string | null {
     return null;
   }
   const anyPayload = payload as Record<string, unknown>;
+  const variant = anyPayload.variant;
+  if (typeof variant === "string") {
+    return variant;
+  }
   const type = anyPayload.type;
   if (typeof type === "string" && type.startsWith("item.")) {
     const item = anyPayload.item as Record<string, unknown> | undefined;

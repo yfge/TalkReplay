@@ -719,8 +719,6 @@ export function ChatDetail({
               }
 
               const category = resolveMessageFilterKey(message);
-              const shouldOfferCollapseToggle =
-                category === "tool" && copyPayload.length > 0;
 
               const toFileServerUrl = (raw: string): string => {
                 if (/^https?:\/\//i.test(raw) || raw.startsWith("data:"))
@@ -768,28 +766,6 @@ export function ChatDetail({
                   ? `${Math.round(durationMs)} ms`
                   : null,
               ].filter(Boolean);
-
-              const messageKey = `${session.id}:${message.id ?? "message"}:${index}`;
-              const shouldDefaultCollapse =
-                shouldOfferCollapseToggle && Boolean(copyPayload);
-              const isCollapsed =
-                collapsedMessages[messageKey] ?? shouldDefaultCollapse;
-              const handleToggleCollapse = () => {
-                setCollapsedMessages((prev) => {
-                  const current = prev[messageKey];
-                  const nextValue =
-                    typeof current === "boolean"
-                      ? !current
-                      : !shouldDefaultCollapse;
-                  if (nextValue === shouldDefaultCollapse) {
-                    const next = { ...prev };
-                    delete next[messageKey];
-                    return next;
-                  }
-                  return { ...prev, [messageKey]: nextValue };
-                });
-              };
-              const isCopied = copiedMessageId === messageKey;
 
               const renderBody = () => {
                 switch (message.kind) {
@@ -948,6 +924,32 @@ export function ChatDetail({
                       previewFlat.length > 200 ? "…" : ""
                     }`
                   : t("detail.noOutput");
+              const shouldOfferCollapseToggle =
+                (category === "tool" && copyPayload.length > 0) ||
+                (category === "human" && previewFlat.length > 200);
+              const messageKey = `${session.id}:${
+                message.id ?? "message"
+              }:${index}`;
+              const shouldDefaultCollapse =
+                category === "tool" && shouldOfferCollapseToggle;
+              const isCollapsed =
+                collapsedMessages[messageKey] ?? shouldDefaultCollapse;
+              const handleToggleCollapse = () => {
+                setCollapsedMessages((prev) => {
+                  const current = prev[messageKey];
+                  const nextValue =
+                    typeof current === "boolean"
+                      ? !current
+                      : !shouldDefaultCollapse;
+                  if (nextValue === shouldDefaultCollapse) {
+                    const next = { ...prev };
+                    delete next[messageKey];
+                    return next;
+                  }
+                  return { ...prev, [messageKey]: nextValue };
+                });
+              };
+              const isCopied = copiedMessageId === messageKey;
               const headerTone =
                 category === "human"
                   ? "text-sky-600 dark:text-sky-300"

@@ -124,7 +124,8 @@ function buildCodexSchemaPayloads(
 ): CodexSchemaPayloadResult | null {
   const mappingId = codexSchema.resolveMappingId(entry);
   if (mappingId) {
-    return { payloads: [entry] };
+    const plainEntry: Record<string, unknown> = { ...entry };
+    return { payloads: [plainEntry] };
   }
   if (entry.type !== "response_item" || !entry.payload) {
     return null;

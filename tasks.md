@@ -14,7 +14,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 - [x] Author JSON Schemas for Claude tool events (`tool_use`, `tool_result`, `text`) and Codex events (`item.started/updated/completed`, `response_item`, `function_call`, `function_call_output`). _(2025-10-14: Added `claude/message.*` mappings alongside Codex coverage.)_
 - [x] Build an Ajv-based validator/normaliser that consumes schema + mapping definitions to emit `ChatMessage` objects. _(2025-10-14: `normalise()` now drives Codex & Claude providers behind the schema flag.)_
 - [x] Implement reusable transforms (ISO timestamps, exitCode/duration extraction, diff parsing, toolType inference, stdout/stderr capture). _(2025-10-14: Added join-text-array, append-suffix, and nested property extraction for Codex schemas.)_
-- [ ] Document schema versioning, contribution workflow, and testing expectations.
+- [x] Document schema versioning, contribution workflow, and testing expectations. _(2025-10-15: Added `docs/schema-contribution.md` and cross-linked from `docs/data-sources.md`.)_
 
 ### A3. Adapter Migration & Tests
 

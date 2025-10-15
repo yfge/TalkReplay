@@ -1,6 +1,6 @@
 # Data Sources & Mappings
 
-This document captures the normalisation rules mapping provider-native logs to the unified schema.
+This document captures the normalisation rules mapping provider-native logs to the unified schema. For authoring guidelines, versioning rules, and testing expectations see [schema-contribution.md](./schema-contribution.md).
 
 - Timestamps → ISO 8601
 - Roles → `user|assistant|system|tool`

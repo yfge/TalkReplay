@@ -1,3 +1,3 @@
-{"type":"item.started","timestamp":"2025-10-13T04:25:00.000Z","payload":{"item":{"id":"ws-1","type":"web_search","query":"codex cli docs"}}}
-{"type":"item.completed","timestamp":"2025-10-13T04:25:02.000Z","payload":{"item":{"id":"ws-1","type":"web_search","query":"codex cli docs","results":[{"title":"Docs","url":"https://github.com/openai/codex"}]}}}
-
+{"type":"summary","summary":"Fixture: Codex web_search item"}
+{"type":"item.started","timestamp":"2025-10-15T09:15:00.000Z","item":{"id":"ws-1","type":"web_search","query":"codex cli docs"},"payload":{"item":{"id":"ws-1","type":"web_search","query":"codex cli docs"}}}
+{"type":"item.completed","timestamp":"2025-10-15T09:15:02.000Z","item":{"id":"ws-1","type":"web_search","query":"codex cli docs","results":[{"title":"Docs","url":"https://example.com/codex"}]},"payload":{"item":{"id":"ws-1","type":"web_search","query":"codex cli docs","results":[{"title":"Docs","url":"https://example.com/codex"}]}}}

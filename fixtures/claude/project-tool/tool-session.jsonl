@@ -1,5 +1,5 @@
 {"type":"summary","summary":"Fixture: Claude tool session"}
 {"sessionId":"claude-fixture","timestamp":"2025-01-01T00:00:00.000Z","message":{"id":"msg-user","role":"user","content":"Run diagnostics"}}
 {"sessionId":"claude-fixture","timestamp":"2025-01-01T00:00:05.000Z","message":{"id":"msg-assistant","role":"assistant","model":"claude-sonnet-fixture","content":[{"type":"text","text":"Starting diagnostics."},{"type":"tool_use","id":"diag-call","name":"diagnostics.run","input":{"target":"core-system"}}],"usage":{"input_tokens":12,"output_tokens":24,"total_tokens":36}}}
-{"sessionId":"claude-fixture","timestamp":"2025-01-01T00:00:06.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"diag-call","content":{"status":"ok","duration_ms":1200}}]}}
+{"sessionId":"claude-fixture","timestamp":"2025-01-01T00:00:06.000Z","uuid":"diag-result","message":{"id":"msg-assistant","role":"assistant","content":[{"type":"tool_result","tool_use_id":"diag-call","content":{"status":"ok","duration_ms":1200,"stdout":"All checks passed","stderr":""}}]},"toolUseResult":{"stdout":"All checks passed\n","stderr":"","interrupted":false,"duration_ms":1200}}
 {"sessionId":"claude-fixture","timestamp":"2025-01-01T00:00:07.000Z","message":{"id":"msg-assistant-final","role":"assistant","content":[{"type":"text","text":"Diagnostics complete. All systems normal."}]}}

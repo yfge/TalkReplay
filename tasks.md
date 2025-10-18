@@ -6,7 +6,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 
 ### A1. Fixtures & Source Analysis
 
-- [ ] Refresh anonymised fixtures under `fixtures/{claude,codex}` covering current event types (tool_use/tool_result, item.\* events, response_item variants).
+- [x] Refresh anonymised fixtures under `fixtures/{claude,codex}` covering current event types (tool*use/tool_result, item.\* events, response_item variants). *(2025-10-15: Added schema-aligned Claude/Codex logs with command*execution, reasoning, and error cases.)*
 - [x] Document key field mappings and schema coverage notes in `docs/data-sources.md`. _(2025-10-14: Recorded Codex and Claude schema variants in `docs/data-sources.md`.)_
 
 ### A2. Schema Layer

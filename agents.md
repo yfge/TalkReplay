@@ -118,5 +118,6 @@
 ## 15. Development Conventions
 
 - Keep code changes and commits as small and focused as possible.
+- **Commit immediately after finishing each work item; ensure every commit stays atomic and fully traceable. Treat delayed commits as a blocker.**
 - Every commit must add a new `agents_chat/` record capturing the user prompts, interruptions, and key decisions for that work.
 - Update `tasks.md` in the same commit to reflect progress or new agreements.

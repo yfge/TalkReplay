@@ -99,6 +99,27 @@ WSL2 note: use `/mnt/c/Users/<you>/.claude/projects` and `/mnt/c/Users/<you>/.co
 
 Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
 
+### Automatic Defaults (No Settings/Env)
+
+When neither Settings nor environment variables provide explicit paths, the server attempts to auto-detect provider roots from common locations. The first existing directory in the list below is used per provider.
+
+- Claude defaults
+  - Docker: `/app/data/claude`
+  - macOS/Linux: `~/.claude/projects`
+  - Windows: `C:\Users\<you>\.claude\projects` (also tries `~/Documents/Claude/projects`)
+- Codex defaults
+  - Docker: `/app/data/codex`
+  - macOS/Linux: `~/.codex/sessions`
+  - Windows: `C:\Users\<you>\.codex\sessions` (also tries `~/Documents/Codex/sessions`)
+- Gemini (tentative; subject to change)
+  - macOS/Linux: `~/.gemini/logs` or `~/.gemini/sessions`
+
+Precedence
+
+1. Settings (in-app) > 2. Environment variables (`NEXT_PUBLIC_*` for UI, `CLAUDE_ROOT`/`CODEX_ROOT`/`GEMINI_ROOT` for server) > 3. Automatic defaults
+
+These defaults align with the Docker image’s volume layout and common CLI storage conventions, so most users can simply mount their local logs or let the app pick them up from `~`.
+
 ### Transcript Pipeline
 
 - Provider ingestion lives under `src/lib/providers/`; adapters share a unified message schema in `src/types/chat.ts`.

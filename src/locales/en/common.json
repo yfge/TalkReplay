@@ -4,7 +4,9 @@
     "subtitle": "Replay and curate your Claude and Codex vibe coding sessions.",
     "configureProviders": "Configure providers",
     "refresh": "Refresh",
-    "refreshing": "Refreshing\u2026"
+    "refreshing": "Refreshing\u2026",
+    "stats": "Stats",
+    "settings": "Settings"
   },
   "sidebar": {
     "filters": "Filters",
@@ -50,7 +52,13 @@
     "emptyDescription": "Add provider directories to import existing chat logs, then refresh.",
     "configureButton": "Configure providers",
     "untitled": "Untitled conversation",
-    "noPreview": "No preview available."
+    "noPreview": "No preview available.",
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{pages}}",
+      "perPage": "Per page"
+    }
   },
   "providers": {
     "claude": "Claude",
@@ -115,5 +123,31 @@
       "show": "Show message",
       "hide": "Hide message"
     }
+  },
+  "stats": {
+    "title": "Project stats",
+    "subtitle": "Counts by project based on imported transcripts.",
+    "search": "Search projects",
+    "searchPlaceholder": "Search projects...",
+    "loading": "Loading...",
+    "error": "Failed to load stats.",
+    "retry": "Retry",
+    "empty": "No projects found.",
+    "sessions": "{{count}} sessions",
+    "viewProject": "View",
+    "backToChats": "Back to chats",
+    "totals": "{{projects}} projects • {{sessions}} sessions"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage preferences and provider directories.",
+    "backToChats": "Back to chats",
+    "providers": {
+      "title": "Provider directories",
+      "description": "Paths used to discover and import transcripts for each provider."
+    },
+    "save": "Save",
+    "clear": "Clear",
+    "saved": "Saved"
   }
 }

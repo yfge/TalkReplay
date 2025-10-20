@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -10,7 +11,6 @@ import { cn } from "@/lib/utils";
 interface AppShellProps {
   sidebar: React.ReactNode;
   children: React.ReactNode;
-  onConfigureProviders: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
 }
@@ -18,7 +18,6 @@ interface AppShellProps {
 export function AppShell({
   sidebar,
   children,
-  onConfigureProviders,
   onRefresh,
   isRefreshing = false,
 }: AppShellProps) {
@@ -54,6 +53,12 @@ export function AppShell({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button asChild variant="outline" type="button">
+              <Link href="/stats">{t("header.stats")}</Link>
+            </Button>
+            <Button asChild variant="outline" type="button">
+              <Link href="/settings">{t("header.settings")}</Link>
+            </Button>
             {onRefresh ? (
               <Button
                 variant="secondary"
@@ -64,13 +69,6 @@ export function AppShell({
                 {isRefreshing ? t("header.refreshing") : t("header.refresh")}
               </Button>
             ) : null}
-            <Button
-              variant="outline"
-              type="button"
-              onClick={onConfigureProviders}
-            >
-              {t("header.configureProviders")}
-            </Button>
             <LocaleToggle />
             <ThemeToggle />
           </div>

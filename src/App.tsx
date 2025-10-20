@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ChatList } from "@/components/chats/chat-list";
 import { AppShell } from "@/components/layout/app-shell";
-import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { Button } from "@/components/ui/button";
 import { fetchSessionSummaries } from "@/lib/session-loader/client";
@@ -18,9 +17,7 @@ export function App() {
     (state) => state.setSessionSummaries,
   );
   // Active selection is handled by the list; details open in a separate route
-  const isSetupComplete = usePreferencesStore((state) => state.isSetupComplete);
   const providerPaths = usePreferencesStore((state) => state.providerPaths);
-  const [setupOpen, setSetupOpen] = useState(!isSetupComplete);
   const [isRefreshing, setIsRefreshing] = useState(false);
   // Inline detail state removed; details now open on /chats/[id]
 
@@ -47,16 +44,12 @@ export function App() {
   }, [fileSignatures, providerPaths, setImportResult, setSessionSummaries]);
 
   useEffect(() => {
-    if (isSetupComplete && sessionSummaries.length === 0) {
+    if (sessionSummaries.length === 0) {
       void refreshSessions();
     }
-  }, [isSetupComplete, sessionSummaries.length, refreshSessions]);
+  }, [sessionSummaries.length, refreshSessions]);
 
-  useEffect(() => {
-    if (!isSetupComplete) {
-      setSetupOpen(true);
-    }
-  }, [isSetupComplete]);
+  // Initial setup is now handled in Settings page; no modal dialog.
 
   // No inline detail fetching effect — navigation handles full-page detail view.
 
@@ -93,7 +86,6 @@ export function App() {
       {errorBanner}
       <AppShell
         sidebar={<ChatSidebar />}
-        onConfigureProviders={() => setSetupOpen(true)}
         onRefresh={() => {
           void refreshSessions();
         }}
@@ -102,7 +94,11 @@ export function App() {
         <div className="flex h-full min-h-0">
           <div className="flex w-[22rem] flex-none flex-col border-r border-border/60 bg-background/70 backdrop-blur">
             <ChatList
-              onConfigureProviders={() => setSetupOpen(true)}
+              onConfigureProviders={() => {
+                if (typeof window !== "undefined") {
+                  window.location.href = "/settings";
+                }
+              }}
               onRefresh={() => {
                 void refreshSessions();
               }}
@@ -112,10 +108,6 @@ export function App() {
           {/* Intentionally left blank: detail now opens on /chats/[id] */}
         </div>
       </AppShell>
-      <ProviderSetupDialog
-        open={setupOpen}
-        onClose={() => setSetupOpen(false)}
-      />
     </>
   );
 }

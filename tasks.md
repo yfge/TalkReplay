@@ -1,5 +1,13 @@
 # Project Task Plan
 
+## Milestone 0 – Spec Alignment & Decisions
+
+Context: The current app is built on Next.js 14 (App Router) with Vitest for tests, Tailwind, Radix primitives, and shadcn-style components. The original spec mentions Vite; we will keep Next.js for the integrated API/filesystem access and document SSR considerations. A Vite migration remains optional.
+
+- [x] Document decision to keep Next.js for now and why. _(2025-10-20: Added to README and this plan.)_
+- [ ] Evaluate Vite migration feasibility (benefits vs. effort); record decision in `docs/architecture.md`.
+- [ ] Document SSR/ISR considerations and static export trade-offs.
+
 ## Milestone 1.A – Schema-Based Log Normalisation
 
 Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land in a consistent UI with minimal provider-specific logic.
@@ -26,9 +34,64 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 
 ### A4. Structured Tool Call UI
 
-- [ ] Support pagination/virtualisation for long conversation lists (e.g., `@tanstack/react-virtual`).
+- [x] Support pagination for long conversation lists (client-side pager in ChatList). _(2025-10-20: Added page controls in `src/components/chats/chat-list.tsx`.)_
+- [ ] Add virtualisation for extra-large lists (e.g., `@tanstack/react-virtual`).
+- [x] Add page-size selector (10/20/50/100) to ChatList pager. _(2025-10-20.)_
 - [ ] Implement fast navigation affordances (keyboard shortcuts, breadcrumbs, recent sessions).
 - [ ] Enhance ToolCallCard diff navigation (previous/next hunk indicators, keyboard bindings).
+
+### 1.B – UI & Interaction
+
+Goal: Deliver the core SPA shell, responsive layouts, and conversation ergonomics.
+
+- [x] App shell with sidebar (filters), main list, and toolbar. _(2025-10-13: `AppShell`, `ChatSidebar`, `ChatList` landed.)_
+- [x] Route `/chats/[id]` for full-page detail view. _(2025-10-13: `src/app/chats/[id]/page.tsx`.)_
+- [x] Theming (light/dark) and locale switch. _(2025-10-13: `ThemeProvider`, `ThemeToggle`, i18n providers.)_
+- [x] Search, source filters, starred toggle, date range, project filter. _(2025-10-13: `useFilteredSessionSummaries` + `ChatSidebar` controls.)_
+- [x] Collapsible long outputs and tool-call/result pairing with diff jump. _(2025-10-13: `ToolCallCard`, collapse toggles, next-diff action.)_
+- [x] Add `/stats` page: basic counts by project/provider using `POST /api/projects`. _(2025-10-20: Implemented `src/app/stats/page.tsx` with search, totals, and project filter handoff.)_
+- [x] Add header navigation entry to `/stats`. _(2025-10-20: AppShell button linking to `/stats`.)_
+- [x] Add header navigation entry to `/settings`. _(2025-10-20: AppShell button linking to `/settings`.)_
+- [x] Add `/settings` page: surface provider path config + theme/locale. _(2025-10-20: Implemented `src/app/settings/page.tsx` with provider paths form, validation, Theme/Locale toggles.)_
+- [x] Remove provider setup dialog; move configuration to Settings. _(2025-10-20: Deleted `src/components/preferences/provider-setup-dialog.tsx`; header uses Settings.)_
+- [ ] Virtualise long lists (e.g. `@tanstack/react-virtual`) in `ChatList`.
+- [ ] Keyword highlighting within conversation view (respect current filters).
+- [ ] Keyboard navigation: list up/down, open detail, next/prev diff bindings; document shortcuts.
+- [ ] Accessibility pass: labels, contrast, focus rings, and tab order review; track fixes.
+
+### 1.C – Ingestion & Provider Setup
+
+Goal: Robust local import via server routes and in‑browser import with clear errors.
+
+- [x] Filesystem ingestion with provider roots from env/UI. _(2025-10-13: `src/app/api/sessions`, server loader normalises paths.)_
+- [x] Browser import via file selector + Web Worker. _(2025-10-13: `parseFile`, `parser.worker.ts`.)_
+- [x] Error surfacing: banner for import errors and retry on detail. _(2025-10-13: `App.tsx` + `ChatDetail`.)_
+- [x] Timestamp normalisation to ISO 8601 in adapters. _(2025-10-13: provider utilities.)_
+- [x] Docker defaults map to `/app/data/{claude,codex}`; UI respects `NEXT_PUBLIC_*` env. _(2025-10-10: Dockerfile, provider paths.)_
+- [x] Server-side auto-detect defaults for provider roots across OS (HOME-based + Docker path). _(2025-10-20: `loadSessionsOnServer` probes common paths for Claude/Codex; Gemini placeholder.)_
+- [ ] Add Gemini adapter parity once sample logs are ready.
+
+### 1.D – Quality Gates, Hooks, Testing
+
+Goal: Enforce reproducibility and ≥80% coverage with fast local feedback.
+
+- [x] Husky `pre-commit`: require `agents_chat` record, validate sections, block unstaged changes, run `pnpm lint` + `pnpm test`. _(2025-10-02: `.husky/pre-commit`.)_
+- [x] CI mirrors lint, tests, and build on pushes/PRs. _(2025-10-03: `.github/workflows/ci.yml`.)_
+- [ ] Add `commitlint` + `husky commit-msg` to enforce Conventional Commits.
+- [ ] Add `pre-push` hook to re-run integration/E2E (when defined).
+- [ ] Introduce Storybook for core components (`button`, `ToolCallCard`, `ChatList`); add smoke stories.
+- [ ] Add Stylelint config and wire into hooks/CI.
+- [ ] Enforce coverage ≥80% (configure thresholds in Vitest) and backfill tests for parsing edge cases.
+
+### 1.E – Packaging & Deployment
+
+Goal: Multi-stage Docker targeting <200MB; clear runbooks for macOS/Windows/Docker.
+
+- [x] Multi-stage Docker build on `node:18-alpine` using Next standalone output. _(2025-10-10: `Dockerfile`.)_
+- [x] `.dockerignore` tuned to reduce context size. _(2025-10-02.)_
+- [x] README documents Docker and host runtime flows (envs, volumes, Windows/WSL notes). _(2025-10-13.)_
+- [ ] Measure image size in CI; document size and optimise if >200MB (alpine libc, prune locales, strip dev deps from standalone if needed).
+- [ ] Optional NGINX/alpine scratch serving of static assets, document trade-offs.
 
 ## Milestone 2 – Collaborative Server Platform
 
@@ -80,3 +143,8 @@ Goal: Introduce a backend service that aggregates shared directories from team m
 - [ ] Periodically profile parsing/rendering performance on large transcripts.
 - [ ] Capture user feedback/feature requests and update backlog regularly.
 - [ ] Keep commits small and focused; reflect significant progress in `tasks.md`.
+
+Notes
+
+- Frontend currently uses Next.js 14 (App Router). We will revisit Vite if SSR/API needs change; document decisions in `docs/architecture.md`.
+- Environment toggles: schema mode via `NEXT_PUBLIC_SCHEMA_NORMALISER=1`; provider roots via `NEXT_PUBLIC_{CLAUDE,CODEX,GEMINI}_ROOT` with server fallbacks (`CLAUDE_ROOT`, etc.).

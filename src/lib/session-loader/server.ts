@@ -1,4 +1,4 @@
-import { homedir } from "node:os";
+import { homedir, platform } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 
 import type { ProviderPaths } from "@/config/providerPaths";
@@ -64,6 +64,55 @@ export async function normalizeProviderRoot(
   }
 }
 
+async function pathExists(dir: string): Promise<boolean> {
+  try {
+    const fs = await import("node:fs/promises");
+    const stats = await fs.stat(dir);
+    return stats.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function resolveDefaultProviderRoot(
+  provider: ProviderId,
+): Promise<string | undefined> {
+  const home = homedir();
+  const system = platform();
+  const candidates: string[] = [];
+
+  // Docker/Container defaults (also set in Dockerfile envs)
+  candidates.push(`/app/data/${provider === "claude" ? "claude" : provider}`);
+
+  // Generic home-based defaults per provider
+  if (provider === "claude") {
+    candidates.push(join(home, ".claude", "projects"));
+  } else if (provider === "codex") {
+    candidates.push(join(home, ".codex", "sessions"));
+  } else if (provider === "gemini") {
+    // Tentative default; adjust when canonical path is confirmed
+    candidates.push(join(home, ".gemini", "logs"));
+    candidates.push(join(home, ".gemini", "sessions"));
+  }
+
+  // Additional Windows-friendly mirrors (homedir already returns user profile)
+  if (system === "win32") {
+    if (provider === "claude") {
+      candidates.push(join(home, "Documents", "Claude", "projects"));
+    }
+    if (provider === "codex") {
+      candidates.push(join(home, "Documents", "Codex", "sessions"));
+    }
+  }
+
+  for (const dir of candidates) {
+    if (await pathExists(dir)) {
+      return dir;
+    }
+  }
+  return undefined;
+}
+
 export async function loadSessionsOnServer(
   paths: ProviderPaths,
   previousSignatures: Record<string, number>,
@@ -78,8 +127,10 @@ export async function loadSessionsOnServer(
 
   const previousByFile = new Map<string, ChatSession>();
 
+  const claudeCandidate =
+    paths.claude ?? (await resolveDefaultProviderRoot("claude"));
   const { path: claudeRoot, error: claudePathError } =
-    await normalizeProviderRoot(paths.claude);
+    await normalizeProviderRoot(claudeCandidate);
   if (claudePathError) {
     errors.push({ provider: "claude", reason: claudePathError });
   }
@@ -109,8 +160,10 @@ export async function loadSessionsOnServer(
     }
   }
 
+  const codexCandidate =
+    paths.codex ?? (await resolveDefaultProviderRoot("codex"));
   const { path: codexRoot, error: codexPathError } =
-    await normalizeProviderRoot(paths.codex);
+    await normalizeProviderRoot(codexCandidate);
   if (codexPathError) {
     errors.push({ provider: "codex", reason: codexPathError });
   }

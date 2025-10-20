@@ -4,7 +4,9 @@
     "subtitle": "复盘与整理 Claude、Codex 的 vibe coding 对话。",
     "configureProviders": "配置数据目录",
     "refresh": "刷新",
-    "refreshing": "正在刷新…"
+    "refreshing": "正在刷新…",
+    "stats": "统计",
+    "settings": "设置"
   },
   "sidebar": {
     "filters": "筛选",
@@ -50,7 +52,13 @@
     "emptyDescription": "请配置数据目录并刷新以导入已有的聊天记录。",
     "configureButton": "去配置目录",
     "untitled": "未命名会话",
-    "noPreview": "暂无预览内容。"
+    "noPreview": "暂无预览内容。",
+    "pagination": {
+      "prev": "上一页",
+      "next": "下一页",
+      "pageOf": "第 {{page}} / {{pages}} 页",
+      "perPage": "每页"
+    }
   },
   "providers": {
     "claude": "Claude",
@@ -115,5 +123,31 @@
       "show": "展开消息",
       "hide": "收起消息"
     }
+  },
+  "stats": {
+    "title": "项目统计",
+    "subtitle": "按项目汇总已导入的会话数量。",
+    "search": "搜索项目",
+    "searchPlaceholder": "搜索项目…",
+    "loading": "加载中…",
+    "error": "统计信息加载失败。",
+    "retry": "重试",
+    "empty": "暂无项目。",
+    "sessions": "{{count}} 条会话",
+    "viewProject": "查看",
+    "backToChats": "返回会话",
+    "totals": "{{projects}} 个项目 • {{sessions}} 条会话"
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "管理偏好与数据目录。",
+    "backToChats": "返回会话",
+    "providers": {
+      "title": "数据目录",
+      "description": "用于为各个提供方发现并导入聊天记录的本地路径。"
+    },
+    "save": "保存",
+    "clear": "清除",
+    "saved": "已保存"
   }
 }

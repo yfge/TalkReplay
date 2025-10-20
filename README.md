@@ -38,7 +38,7 @@ TalkReplay doubles as a living reference implementation for vibe coding teams:
 
 ### More Screens
 
-![Provider Setup Dialog](./docs/assets/provider-setup.png)
+![Settings – Provider Paths](./docs/assets/provider-setup.png)
 
 ![Previous Home](./docs/assets/app-home.png)
 
@@ -58,7 +58,7 @@ Key scripts:
 - `pnpm build` – Next.js production build
 - `pnpm format:fix` – Prettier write mode
 
-The first run launches a provider setup dialog. Point Claude/Codex to your transcript roots or rely on environment defaults (see below). Configuration persists via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+On first run, open Settings to configure provider directories (Claude/Codex). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
 
 ## Provider Roots & Configuration
 
@@ -193,7 +193,7 @@ $env:APP_PORT=3000;
 docker compose up --build
 ```
 
-Containers can only see paths mounted into the filesystem above. Use the in-app Provider Setup dialog
+Containers can only see paths mounted into the filesystem above. Open Settings
 to confirm the mapped `/app/data/**` directories once the container is running; host-only paths will not
 resolve inside Docker without the volume bindings shown here.
 
@@ -251,7 +251,7 @@ node .next/standalone/server.js
 ```
 
 Adjust the paths if you store transcripts elsewhere. When running directly on the host, you can also
-skip the environment variables and point the Provider Setup dialog to any readable directory on demand;
+skip the environment variables and use the Settings page to point to any readable directory on demand;
 the env vars simply provide sensible defaults that mirror the Docker layout.
 
 ## Testing & Quality Gates

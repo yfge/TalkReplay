@@ -91,6 +91,7 @@ Goal: Multi-stage Docker targeting <200MB; clear runbooks for macOS/Windows/Dock
 - [x] Multi-stage Docker build on `node:18-alpine` using Next standalone output. _(2025-10-10: `Dockerfile`.)_
 - [x] `.dockerignore` tuned to reduce context size. _(2025-10-02.)_
 - [x] README documents Docker and host runtime flows (envs, volumes, Windows/WSL notes). _(2025-10-13.)_
+- [x] Release workflow: auto-draft version PR + Docker publish on release. _(2025-10-22: revamped `prepare-release.yml`, `build-on-release.yml`, added docs.)_
 - [ ] Measure image size in CI; document size and optimise if >200MB (alpine libc, prune locales, strip dev deps from standalone if needed).
 - [ ] Optional NGINX/alpine scratch serving of static assets, document trade-offs.
 

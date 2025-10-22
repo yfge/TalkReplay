@@ -4,60 +4,169 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version tag (must start with v, e.g., v1.0.0)"
+        description: "Version tag (must start with v, e.g. v0.1.0)"
         required: true
         type: string
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.body }}
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Validate version input
-        id: ver
+        id: version
         run: |
           VERSION_INPUT="${{ github.event.inputs.version }}"
+
           if [[ ! $VERSION_INPUT =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
-            echo "Version must start with 'v' (e.g., v1.0.0)" >&2
+            echo "❌ Version must start with 'v' and follow semantic versioning (e.g. v1.0.0)" >&2
             exit 1
           fi
-          VERSION_NO_V="${VERSION_INPUT#v}"
-          echo "tag=$VERSION_INPUT" >> $GITHUB_OUTPUT
-          echo "version=$VERSION_NO_V" >> $GITHUB_OUTPUT
+
+          if git tag -l | grep -qx "$VERSION_INPUT"; then
+            echo "❌ Tag $VERSION_INPUT already exists" >&2
+            exit 1
+          fi
+
+          VERSION_STRIPPED="${VERSION_INPUT#v}"
+          echo "tag=$VERSION_INPUT" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION_STRIPPED" >> "$GITHUB_OUTPUT"
+
+      - name: Determine previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "prev_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "9"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update package version
+        run: |
+          node -e "const fs=require('fs');const file='package.json';const data=JSON.parse(fs.readFileSync(file,'utf8'));data.version='${{ steps.version.outputs.version }}';fs.writeFileSync(file,JSON.stringify(data,null,2)+'\n');"
+
+      - name: Run quality gates
+        run: |
+          pnpm lint
+          pnpm test
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          PREV_TAG="${{ steps.prev_tag.outputs.prev_tag }}"
+          RELEASE_DIR="docs/releases"
+          mkdir -p "$RELEASE_DIR"
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="$PREV_TAG..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          COMMITS=$(git log --pretty=format:'- %s (%h)' $RANGE || true)
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Initial release preparation"
+          fi
+
+          RELEASE_FILE="$RELEASE_DIR/$TAG.md"
+          {
+            echo "# Release $TAG"
+            echo ""
+            echo "- Date: $(date -u +"%Y-%m-%d")"
+            echo "- Version: $VERSION"
+            if [ -n "$PREV_TAG" ]; then
+              echo "- Previous Tag: $PREV_TAG"
+            else
+              echo "- Previous Tag: (none)"
+            fi
+            echo ""
+            echo "## Changes"
+            echo ""
+            echo "$COMMITS"
+          } > "$RELEASE_FILE"
+
+          BODY_CONTENT=$(cat "$RELEASE_FILE")
+          {
+            echo "body<<'EOF'"
+            echo "$BODY_CONTENT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure git user
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Bump package.json version
+      - name: Stage release artifacts
         run: |
-          node -e "const fs=require('fs');const f='package.json';const p=JSON.parse(fs.readFileSync(f,'utf8'));p.version='${{ steps.ver.outputs.version }}';fs.writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
-          git add package.json
-          git commit -m "chore(release): ${{ steps.ver.outputs.tag }}"
-          git tag ${{ steps.ver.outputs.tag }}
-          git push --follow-tags
+          git add package.json docs/releases
 
-      - name: Create draft GitHub Release (auto notes)
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create release PR
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
         with:
-          tag_name: ${{ steps.ver.outputs.tag }}
-          release_name: ${{ steps.ver.outputs.tag }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          commit-message: "chore(release): prepare ${{ steps.version.outputs.tag }}"
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          branch: release/${{ steps.version.outputs.tag }}
+          title: "chore: prepare release ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Summary
+            - bump project version to `${{ steps.version.outputs.version }}`
+            - record release notes under `docs/releases/${{ steps.version.outputs.tag }}.md`
+
+            ## Changelog
+            ${{ steps.changelog.outputs.body }}
+          labels: |
+            release
+            automated
+
+      - name: Create draft GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
           draft: true
           prerelease: false
-          generate_release_notes: true
-          body: |
-            Draft release for ${{ steps.ver.outputs.tag }}.
+          target_commitish: ${{ steps.cpr.outputs.pull-request-head-sha || github.sha }}
+          body: ${{ steps.changelog.outputs.body }}
 
-            - Auto-bumped package.json to ${{ steps.ver.outputs.version }}.
-            - When ready, publish this release to trigger the Docker build workflow.
+      - name: Summary
+        run: |
+          echo "## ✅ Release Preparation Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag**: ${{ steps.version.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Release PR**: ${{ steps.cpr.outputs.pull-request-url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Draft Release**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Review the PR, merge it, then publish the draft release to trigger Docker builds." >> "$GITHUB_STEP_SUMMARY"

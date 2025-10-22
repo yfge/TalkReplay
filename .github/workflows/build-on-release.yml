@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 env:
   DEFAULT_DOCKERHUB_USER: talkreplay
@@ -50,6 +51,32 @@ jobs:
         with:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - name: Prepare image targets
+        id: images
+        env:
+          DEFAULT_USER: ${{ env.DEFAULT_DOCKERHUB_USER }}
+          RELEASE_TAG: ${{ needs.validate-release.outputs.tag }}
+        run: |
+          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          GHCR_IMAGE="ghcr.io/${OWNER}/talkreplay"
+          IMAGES="$GHCR_IMAGE"
+
+          if [ -n "${DOCKERHUB_USER}" ] && [ -n "${DOCKERHUB_TOKEN}" ]; then
+            DOCKER_IMAGE="${DOCKERHUB_USER}/${IMAGE_NAME}"
+            IMAGES="${DOCKER_IMAGE}\n${IMAGES}"
+            echo "dockerhub_target=$DOCKER_IMAGE" >> "$GITHUB_OUTPUT"
+            echo "use_dockerhub=true" >> "$GITHUB_ENV"
+          else
+            echo "use_dockerhub=false" >> "$GITHUB_ENV"
+          fi
+
+          echo "ghcr_image=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "images<<'EOF'" >> "$GITHUB_OUTPUT"
+          echo -e "$IMAGES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "TAG_VERSION=${RELEASE_TAG}" >> "$GITHUB_ENV"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -57,17 +84,24 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        if: env.DOCKERHUB_USER && env.DOCKERHUB_TOKEN
+        if: env.use_dockerhub == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ env.DOCKERHUB_TOKEN }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKERHUB_USER && format('{0}/{1}', env.DOCKERHUB_USER, env.IMAGE_NAME) || '' }}
+          images: ${{ steps.images.outputs.images }}
           tags: |
             type=raw,value=latest,enable=true
             type=raw,value=${{ needs.validate-release.outputs.tag }},enable=true
@@ -87,3 +121,35 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build summary
+        run: |
+          echo "### 🐳 Docker Build Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Tag**: ${{ needs.validate-release.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Version**: ${{ needs.validate-release.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **GHCR Image**: `${{ steps.images.outputs.ghcr_image }}:${{ needs.validate-release.outputs.tag }}`" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ env.use_dockerhub }}" = "true" ]; then
+            echo "- **Docker Hub Image**: `${{ steps.images.outputs.dockerhub_target }}:${{ needs.validate-release.outputs.tag }}`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Docker Hub push skipped (credentials not provided)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deploy-summary:
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-docker]
+    if: always() && needs.validate-release.outputs.should_build == 'true'
+    steps:
+      - name: Release summary
+        run: |
+          RESULT="${{ needs.build-docker.result }}"
+          echo "## 🚀 Release Build Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Release**: ${{ needs.validate-release.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Status**: ${RESULT^^}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RESULT" = "success" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Images are available on the registries listed above." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Build failed. Review upstream job logs for details." >> "$GITHUB_STEP_SUMMARY"

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { POST as sessionDetailPost } from "@/app/api/sessions/detail/route";
 import { POST as sessionsPost } from "@/app/api/sessions/route";
+import type { ProviderPaths } from "@/config/providerPaths";
 import { encodeSessionId } from "@/lib/session-loader/ids";
 import { getSampleSessions } from "@/lib/session-loader/sample";
 import type { ChatSession, ChatSessionSummary } from "@/types/chat";
@@ -45,6 +46,7 @@ interface SessionsResponse {
   sessions: ChatSessionSummary[];
   signatures: Record<string, number>;
   errors: unknown[];
+  resolvedPaths: ProviderPaths;
 }
 
 interface SessionDetailResponse {
@@ -68,6 +70,7 @@ describe("/api/sessions", () => {
     );
 
     expect(result.sessions.length).toBeGreaterThan(0);
+    expect(result.resolvedPaths).toBeDefined();
     result.sessions.forEach((summary) => {
       expect(typeof summary.id).toBe("string");
       expect(summary.source).toMatch(/claude|codex/);

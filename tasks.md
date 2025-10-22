@@ -53,6 +53,7 @@ Goal: Deliver the core SPA shell, responsive layouts, and conversation ergonomic
 - [x] Add header navigation entry to `/stats`. _(2025-10-20: AppShell button linking to `/stats`.)_
 - [x] Add header navigation entry to `/settings`. _(2025-10-20: AppShell button linking to `/settings`.)_
 - [x] Add `/settings` page: surface provider path config + theme/locale. _(2025-10-20: Implemented `src/app/settings/page.tsx` with provider paths form, validation, Theme/Locale toggles.)_
+- [x] Hydrate settings form with resolved provider roots after session load so defaults surface automatically. _(2025-10-21: `loadSessionsOnServer` now returns `resolvedPaths`; client hydrates store via `hydrateProviderPaths`.)_
 - [x] Remove provider setup dialog; move configuration to Settings. _(2025-10-20: Deleted `src/components/preferences/provider-setup-dialog.tsx`; header uses Settings.)_
 - [ ] Virtualise long lists (e.g. `@tanstack/react-virtual`) in `ChatList`.
 - [ ] Keyword highlighting within conversation view (respect current filters).

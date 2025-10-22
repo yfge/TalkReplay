@@ -27,8 +27,29 @@ function toSummary(session: ChatSession) {
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  let payload: LoadSessionSummariesPayload;
   try {
-    const payload = (await request.json()) as LoadSessionSummariesPayload;
+    payload = (await request.json()) as LoadSessionSummariesPayload;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load chat sessions";
+    return NextResponse.json(
+      {
+        sessions: getSampleSessions().map(toSummary),
+        signatures: {},
+        errors: [
+          {
+            provider: "claude",
+            reason: message,
+          },
+        ],
+        resolvedPaths: {},
+      },
+      { status: 400 },
+    );
+  }
+
+  try {
     const result = await loadSessionsOnServer(
       payload.paths,
       payload.previousSignatures,
@@ -38,6 +59,7 @@ export async function POST(request: Request) {
       sessions: summaries,
       signatures: result.signatures,
       errors: result.errors,
+      resolvedPaths: result.resolvedPaths,
     });
   } catch (error) {
     const message =
@@ -52,6 +74,7 @@ export async function POST(request: Request) {
             reason: message,
           },
         ],
+        resolvedPaths: payload.paths,
       },
       { status: 500 },
     );

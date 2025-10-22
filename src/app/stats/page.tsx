@@ -1,20 +1,20 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePreferencesStore } from "@/store/preferences-store";
-import { useChatStore } from "@/store/chat-store";
 import type {
   LoadProjectsPayload,
   LoadProjectsResult,
   ProjectEntry,
 } from "@/lib/session-loader/types";
+import { useChatStore } from "@/store/chat-store";
+import { usePreferencesStore } from "@/store/preferences-store";
 
 export default function StatsPage() {
   const { t } = useTranslation();
@@ -41,7 +41,10 @@ export default function StatsPage() {
     },
   });
 
-  const projects: ProjectEntry[] = data?.projects ?? [];
+  const projects: ProjectEntry[] = useMemo(
+    () => data?.projects ?? [],
+    [data?.projects],
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

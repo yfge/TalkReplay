@@ -120,10 +120,12 @@ export async function loadSessionsOnServer(
   sessions: ChatSession[];
   signatures: Record<string, number>;
   errors: ProviderImportError[];
+  resolvedPaths: ProviderPaths;
 }> {
   const sessions: ChatSession[] = [];
   const signatures: Record<string, number> = {};
   const errors: ProviderImportError[] = [];
+  const resolvedPaths: ProviderPaths = {};
 
   const previousByFile = new Map<string, ChatSession>();
 
@@ -133,6 +135,11 @@ export async function loadSessionsOnServer(
     await normalizeProviderRoot(claudeCandidate);
   if (claudePathError) {
     errors.push({ provider: "claude", reason: claudePathError });
+  }
+  if (claudeRoot) {
+    resolvedPaths.claude = claudeRoot;
+  } else if (paths.claude) {
+    resolvedPaths.claude = paths.claude;
   }
   if (claudeRoot) {
     try {
@@ -168,6 +175,11 @@ export async function loadSessionsOnServer(
     errors.push({ provider: "codex", reason: codexPathError });
   }
   if (codexRoot) {
+    resolvedPaths.codex = codexRoot;
+  } else if (paths.codex) {
+    resolvedPaths.codex = paths.codex;
+  }
+  if (codexRoot) {
     try {
       const { loadCodexSessions } = await import("@/lib/providers/codex");
       const providerResult = await loadCodexSessions(
@@ -195,10 +207,15 @@ export async function loadSessionsOnServer(
 
   const usableSessions = sessions.length > 0 ? sessions : getSampleSessions();
 
+  if (paths.gemini && !resolvedPaths.gemini) {
+    resolvedPaths.gemini = paths.gemini;
+  }
+
   return {
     sessions: usableSessions,
     signatures,
     errors,
+    resolvedPaths,
   };
 }
 

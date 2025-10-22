@@ -18,6 +18,9 @@ export function App() {
   );
   // Active selection is handled by the list; details open in a separate route
   const providerPaths = usePreferencesStore((state) => state.providerPaths);
+  const hydrateProviderPaths = usePreferencesStore(
+    (state) => state.hydrateProviderPaths,
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   // Inline detail state removed; details now open on /chats/[id]
 
@@ -33,6 +36,7 @@ export function App() {
         paths: providerPaths,
         previousSignatures: fileSignatures,
       });
+      hydrateProviderPaths(result.resolvedPaths);
       setSessionSummaries(result.sessions);
       setImportResult({
         signatures: result.signatures,
@@ -41,7 +45,13 @@ export function App() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [fileSignatures, providerPaths, setImportResult, setSessionSummaries]);
+  }, [
+    fileSignatures,
+    hydrateProviderPaths,
+    providerPaths,
+    setImportResult,
+    setSessionSummaries,
+  ]);
 
   useEffect(() => {
     if (sessionSummaries.length === 0) {

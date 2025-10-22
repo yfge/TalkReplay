@@ -11,6 +11,7 @@ interface PreferencesState {
   setProviderPath: (provider: ProviderKey, path: string) => void;
   clearProviderPath: (provider: ProviderKey) => void;
   completeSetup: () => void;
+  hydrateProviderPaths: (paths?: ProviderPaths) => void;
 }
 
 const initialPaths = getProviderPaths();
@@ -40,6 +41,35 @@ export const usePreferencesStore = create<PreferencesState>()(
             state.isSetupComplete ||
             Object.values(state.providerPaths).some(Boolean),
         })),
+      hydrateProviderPaths: (paths) =>
+        set((state) => {
+          if (!paths) {
+            return state;
+          }
+          const next: ProviderPaths = { ...state.providerPaths };
+          let didUpdate = false;
+          (
+            Object.entries(paths) as [ProviderKey, string | undefined][]
+          ).forEach(([provider, value]) => {
+            if (!value) {
+              return;
+            }
+            const current = next[provider];
+            if (typeof current === "string" && current.trim().length > 0) {
+              return;
+            }
+            next[provider] = value;
+            didUpdate = true;
+          });
+          if (!didUpdate) {
+            return state;
+          }
+          return {
+            providerPaths: next,
+            isSetupComplete:
+              state.isSetupComplete || Object.values(next).some(Boolean),
+          };
+        }),
     }),
     {
       name: "agents-preferences",

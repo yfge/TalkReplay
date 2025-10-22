@@ -65,6 +65,7 @@ export async function fetchSessionSummaries(
           reason: error instanceof Error ? error.message : "Unknown error",
         },
       ],
+      resolvedPaths: payload.paths,
     } satisfies LoadSessionSummariesResult;
   }
 }

@@ -11,6 +11,7 @@ export interface LoadSessionSummariesResult {
   sessions: ChatSessionSummary[];
   signatures: Record<string, number>;
   errors: ProviderImportError[];
+  resolvedPaths: ProviderPaths;
 }
 
 export interface LoadSessionDetailPayload {

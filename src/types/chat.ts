@@ -1,6 +1,6 @@
 export type AgentSource = "claude" | "codex" | "gemini";
 
-export const SUPPORTED_SOURCES = ["claude", "codex"] as const;
+export const SUPPORTED_SOURCES = ["claude", "codex", "gemini"] as const;
 
 export type ChatRole = "user" | "assistant" | "system" | "tool";
 

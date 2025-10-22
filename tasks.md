@@ -70,7 +70,7 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Timestamp normalisation to ISO 8601 in adapters. _(2025-10-13: provider utilities.)_
 - [x] Docker defaults map to `/app/data/{claude,codex}`; UI respects `NEXT_PUBLIC_*` env. _(2025-10-10: Dockerfile, provider paths.)_
 - [x] Server-side auto-detect defaults for provider roots across OS (HOME-based + Docker path). _(2025-10-20: `loadSessionsOnServer` probes common paths for Claude/Codex; Gemini placeholder.)_
-- [ ] Add Gemini adapter parity once sample logs are ready.
+- [x] Add Gemini adapter parity once sample logs are ready. _(2025-10-22: Implemented `src/lib/providers/gemini.ts`, API wiring, tests, and default path detection.)_
 
 ### 1.D – Quality Gates, Hooks, Testing
 

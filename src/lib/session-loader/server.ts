@@ -93,6 +93,7 @@ async function resolveDefaultProviderRoot(
     // Tentative default; adjust when canonical path is confirmed
     candidates.push(join(home, ".gemini", "logs"));
     candidates.push(join(home, ".gemini", "sessions"));
+    candidates.push(join(home, ".gemini", "tmp"));
   }
 
   // Additional Windows-friendly mirrors (homedir already returns user profile)
@@ -205,6 +206,44 @@ export async function loadSessionsOnServer(
     }
   }
 
+  const geminiCandidate =
+    paths.gemini ?? (await resolveDefaultProviderRoot("gemini"));
+  const { path: geminiRoot, error: geminiPathError } =
+    await normalizeProviderRoot(geminiCandidate);
+  if (geminiPathError) {
+    errors.push({ provider: "gemini", reason: geminiPathError });
+  }
+  if (geminiRoot) {
+    resolvedPaths.gemini = geminiRoot;
+  } else if (paths.gemini) {
+    resolvedPaths.gemini = paths.gemini;
+  }
+  if (geminiRoot) {
+    try {
+      const { loadGeminiSessions } = await import("@/lib/providers/gemini");
+      const providerResult = await loadGeminiSessions(
+        geminiRoot,
+        filterProviderSignatures(previousSignatures, "gemini"),
+        previousByFile,
+      );
+      sessions.push(...providerResult.sessions);
+      errors.push(...providerResult.errors);
+      for (const [file, signature] of Object.entries(
+        providerResult.signatures,
+      )) {
+        signatures[signatureKey("gemini", file)] = signature;
+      }
+    } catch (error) {
+      errors.push({
+        provider: "gemini",
+        reason:
+          error instanceof Error
+            ? error.message
+            : "Failed to load Gemini sessions",
+      });
+    }
+  }
+
   const usableSessions = sessions.length > 0 ? sessions : getSampleSessions();
 
   if (paths.gemini && !resolvedPaths.gemini) {
@@ -281,6 +320,35 @@ export async function loadSessionDetail(
     }
   }
 
+  const { path: geminiRoot } = await normalizeProviderRoot(paths.gemini);
+  if (geminiRoot && filePath.startsWith(geminiRoot)) {
+    try {
+      const { loadGeminiSessionFromFile } = await import(
+        "@/lib/providers/gemini"
+      );
+      const session = await loadGeminiSessionFromFile(filePath);
+      if (!session) {
+        return {
+          error: {
+            provider: "gemini",
+            reason: "Session not found",
+          },
+        };
+      }
+      return { session: { ...session, id: encodeSessionId(filePath) } };
+    } catch (error) {
+      return {
+        error: {
+          provider: "gemini",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Failed to load session detail",
+        },
+      };
+    }
+  }
+
   // Fallback: attempt to load by probing both providers when roots are not configured/matching
   try {
     const fs = await import("node:fs/promises");
@@ -302,6 +370,17 @@ export async function loadSessionDetail(
           "@/lib/providers/codex"
         );
         const session = await loadCodexSessionFromFile(filePath);
+        if (session) {
+          return { session: { ...session, id: encodeSessionId(filePath) } };
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        const { loadGeminiSessionFromFile } = await import(
+          "@/lib/providers/gemini"
+        );
+        const session = await loadGeminiSessionFromFile(filePath);
         if (session) {
           return { session: { ...session, id: encodeSessionId(filePath) } };
         }

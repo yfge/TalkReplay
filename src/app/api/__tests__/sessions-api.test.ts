@@ -73,7 +73,7 @@ describe("/api/sessions", () => {
     expect(result.resolvedPaths).toBeDefined();
     result.sessions.forEach((summary) => {
       expect(typeof summary.id).toBe("string");
-      expect(summary.source).toMatch(/claude|codex/);
+      expect(summary.source).toMatch(/claude|codex|gemini/);
       expect(summary.topic).toBeTruthy();
       expect(summary.startedAt).toBeTruthy();
       expect(Array.isArray(summary.participants)).toBe(true);
@@ -184,9 +184,52 @@ describe("fixtures", () => {
         "utf8",
       );
 
+      const geminiSession = {
+        sessionId: "gemini-fixture-session",
+        projectHash: "project-gemini",
+        startTime: "2025-05-01T10:00:00.000Z",
+        lastUpdated: "2025-05-01T10:05:00.000Z",
+        messages: [
+          {
+            id: "user-1",
+            timestamp: "2025-05-01T10:00:00.000Z",
+            type: "user",
+            content: "Gemini integration test prompt",
+          },
+          {
+            id: "gemini-1",
+            timestamp: "2025-05-01T10:00:05.000Z",
+            type: "gemini",
+            content: "Gemini integration test response",
+            thoughts: [
+              {
+                subject: "Plan",
+                description: "Outline steps for Gemini parsing implementation.",
+                timestamp: "2025-05-01T10:00:02.000Z",
+              },
+            ],
+            tokens: {
+              input: 120,
+              output: 24,
+              total: 144,
+            },
+            model: "gemini-1.5-pro",
+          },
+        ],
+      };
+
+      const geminiDir = path.join(tempRoot, "gemini/project-gemini/chats");
+      await fs.mkdir(geminiDir, { recursive: true });
+      await fs.writeFile(
+        path.join(geminiDir, "session-gemini.json"),
+        JSON.stringify(geminiSession, null, 2),
+        "utf8",
+      );
+
       const paths = {
         claude: path.join(tempRoot, "claude"),
         codex: path.join(tempRoot, "codex"),
+        gemini: path.join(tempRoot, "gemini"),
       } as const;
 
       const result = await callRoute<SessionsResponse>(
@@ -256,6 +299,35 @@ describe("fixtures", () => {
           (message) => message.kind === "tool-result",
         ),
       ).toBe(true);
+
+      const geminiSummary = result.sessions.find(
+        (summary) =>
+          summary.source === "gemini" &&
+          summary.topic.includes("Gemini integration test prompt"),
+      );
+      expect(geminiSummary).toBeDefined();
+
+      if (!geminiSummary) {
+        throw new Error("Gemini summary not found");
+      }
+
+      const geminiDetail = await callRoute<SessionDetailResponse>(
+        sessionDetailPost,
+        "http://localhost/api/sessions/detail",
+        {
+          id: geminiSummary.id,
+          paths,
+        },
+      );
+
+      expect(
+        geminiDetail.session?.messages.some(
+          (message) => message.kind === "reasoning",
+        ),
+      ).toBe(true);
+      expect(geminiDetail.session?.metadata?.provider?.model).toBe(
+        "gemini-1.5-pro",
+      );
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }

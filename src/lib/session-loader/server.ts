@@ -35,6 +35,35 @@ function expandHomePath(rawPath: string): string {
   return rawPath;
 }
 
+function getDefaultProviderCandidates(provider: ProviderId): string[] {
+  const home = homedir();
+  const system = platform();
+  const candidates: string[] = [];
+
+  if (provider === "claude") {
+    candidates.push(join(home, ".claude", "projects"));
+  } else if (provider === "codex") {
+    candidates.push(join(home, ".codex", "sessions"));
+  } else if (provider === "gemini") {
+    candidates.push(join(home, ".gemini", "tmp"));
+    candidates.push(join(home, ".gemini", "logs"));
+    candidates.push(join(home, ".gemini", "sessions"));
+  }
+
+  if (system === "win32") {
+    if (provider === "claude") {
+      candidates.push(join(home, "Documents", "Claude", "projects"));
+    } else if (provider === "codex") {
+      candidates.push(join(home, "Documents", "Codex", "sessions"));
+    }
+  }
+
+  const dockerPath = `/app/data/${provider === "claude" ? "claude" : provider}`;
+  candidates.push(dockerPath);
+
+  return candidates;
+}
+
 export async function normalizeProviderRoot(
   rawPath?: string,
 ): Promise<{ path?: string; error?: string }> {
@@ -77,34 +106,7 @@ async function pathExists(dir: string): Promise<boolean> {
 async function resolveDefaultProviderRoot(
   provider: ProviderId,
 ): Promise<string | undefined> {
-  const home = homedir();
-  const system = platform();
-  const candidates: string[] = [];
-
-  // Docker/Container defaults (also set in Dockerfile envs)
-  candidates.push(`/app/data/${provider === "claude" ? "claude" : provider}`);
-
-  // Generic home-based defaults per provider
-  if (provider === "claude") {
-    candidates.push(join(home, ".claude", "projects"));
-  } else if (provider === "codex") {
-    candidates.push(join(home, ".codex", "sessions"));
-  } else if (provider === "gemini") {
-    // Tentative default; adjust when canonical path is confirmed
-    candidates.push(join(home, ".gemini", "logs"));
-    candidates.push(join(home, ".gemini", "sessions"));
-    candidates.push(join(home, ".gemini", "tmp"));
-  }
-
-  // Additional Windows-friendly mirrors (homedir already returns user profile)
-  if (system === "win32") {
-    if (provider === "claude") {
-      candidates.push(join(home, "Documents", "Claude", "projects"));
-    }
-    if (provider === "codex") {
-      candidates.push(join(home, "Documents", "Codex", "sessions"));
-    }
-  }
+  const candidates = getDefaultProviderCandidates(provider);
 
   for (const dir of candidates) {
     if (await pathExists(dir)) {
@@ -139,8 +141,16 @@ export async function loadSessionsOnServer(
   }
   if (claudeRoot) {
     resolvedPaths.claude = claudeRoot;
-  } else if (paths.claude) {
+  }
+  if (!resolvedPaths.claude && paths.claude) {
     resolvedPaths.claude = paths.claude;
+  }
+  if (!resolvedPaths.claude) {
+    const defaults = getDefaultProviderCandidates("claude");
+    const suggestion = defaults.find(Boolean);
+    if (suggestion) {
+      resolvedPaths.claude = suggestion;
+    }
   }
   if (claudeRoot) {
     try {
@@ -177,8 +187,16 @@ export async function loadSessionsOnServer(
   }
   if (codexRoot) {
     resolvedPaths.codex = codexRoot;
-  } else if (paths.codex) {
+  }
+  if (!resolvedPaths.codex && paths.codex) {
     resolvedPaths.codex = paths.codex;
+  }
+  if (!resolvedPaths.codex) {
+    const defaults = getDefaultProviderCandidates("codex");
+    const suggestion = defaults.find(Boolean);
+    if (suggestion) {
+      resolvedPaths.codex = suggestion;
+    }
   }
   if (codexRoot) {
     try {
@@ -215,8 +233,16 @@ export async function loadSessionsOnServer(
   }
   if (geminiRoot) {
     resolvedPaths.gemini = geminiRoot;
-  } else if (paths.gemini) {
+  }
+  if (!resolvedPaths.gemini && paths.gemini) {
     resolvedPaths.gemini = paths.gemini;
+  }
+  if (!resolvedPaths.gemini) {
+    const defaults = getDefaultProviderCandidates("gemini");
+    const suggestion = defaults.find(Boolean);
+    if (suggestion) {
+      resolvedPaths.gemini = suggestion;
+    }
   }
   if (geminiRoot) {
     try {
@@ -245,10 +271,6 @@ export async function loadSessionsOnServer(
   }
 
   const usableSessions = sessions.length > 0 ? sessions : getSampleSessions();
-
-  if (paths.gemini && !resolvedPaths.gemini) {
-    resolvedPaths.gemini = paths.gemini;
-  }
 
   return {
     sessions: usableSessions,

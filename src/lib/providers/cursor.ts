@@ -51,10 +51,6 @@ type SqlJsConfig = {
   locateFile?: (file: string) => string;
 };
 
-const initSqlJsTyped = initSqlJs as unknown as (
-  config?: SqlJsConfig,
-) => Promise<SqlJsModule>;
-
 interface CursorWorkspace {
   id: string;
   folderUri?: string;
@@ -84,8 +80,10 @@ async function getSqlModule(): Promise<SqlJsModule> {
   if (!sqlModulePromise) {
     const wasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
     const wasmDir = path.dirname(wasmPath);
-    sqlModulePromise = initSqlJsTyped({
-      locateFile: (file) => path.join(wasmDir, file),
+    sqlModulePromise = (
+      initSqlJs as unknown as (config?: SqlJsConfig) => Promise<SqlJsModule>
+    )({
+      locateFile: (file: string) => path.join(wasmDir, file),
     });
   }
   return sqlModulePromise;

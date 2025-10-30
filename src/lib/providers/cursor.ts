@@ -5,7 +5,14 @@ import initSqlJs from "sql.js";
 
 import type { ProviderLoadResult } from "@/lib/providers/types";
 import { encodeSessionId } from "@/lib/session-loader/ids";
-import type { ChatMessage, ChatSession, MessageAttachment } from "@/types/chat";
+import { cursorSchema } from "@/schema";
+import { normalise } from "@/schema/normaliser";
+import type {
+  ChatMessage,
+  ChatSession,
+  MessageAttachment,
+  MessageMetadata,
+} from "@/types/chat";
 
 interface CursorPrompt {
   text?: string;
@@ -69,6 +76,22 @@ interface ResolvedText {
   source: string;
 }
 
+interface CursorMessageBlueprint {
+  id: string;
+  role: ChatMessage["role"];
+  timestamp: string;
+  content: string;
+  metadata: MessageMetadata;
+}
+
+let cursorSchemasRegistered = false;
+
+function ensureCursorSchemasRegistered() {
+  if (!cursorSchemasRegistered) {
+    cursorSchema.registerCursorSchemas();
+    cursorSchemasRegistered = true;
+  }
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -966,6 +989,120 @@ function formatAssistantContent(
   return { content: formatted, attachments };
 }
 
+function buildUserMessageBlueprint(
+  sessionId: string,
+  generation: CursorGeneration,
+  prompt: ResolvedText | undefined,
+): CursorMessageBlueprint {
+  const timestamp = new Date(generation.unixMs).toISOString();
+  const content =
+    prompt?.text ??
+    extractTextFromRichContent(generation.textDescription) ??
+    "(empty prompt)";
+  return {
+    id: `${sessionId}:user`,
+    role: "user",
+    timestamp,
+    content,
+    metadata: {
+      providerMessageType: "cursor.user",
+      raw: {
+        source: prompt?.source ?? "textDescription",
+      },
+    },
+  };
+}
+
+function buildAssistantMessageBlueprint(
+  sessionId: string,
+  artifact: CursorArtifact,
+  workspace: CursorWorkspace,
+  assistant: ResolvedText | undefined,
+  assistantCandidate: ResolvedText | undefined,
+): CursorMessageBlueprint {
+  const relativePath =
+    artifact.resourcePath && workspace.folderPath
+      ? path.relative(workspace.folderPath, artifact.resourcePath)
+      : undefined;
+  const { content: snippetContent, attachments } = formatAssistantContent(
+    artifact,
+    relativePath,
+  );
+  const sections: string[] = [];
+  if (assistant?.text) {
+    sections.push(assistant.text);
+  }
+  if (snippetContent) {
+    sections.push(snippetContent);
+  }
+  const content =
+    sections.join("\n\n") ||
+    "Cursor did not include assistant content for this generation.";
+  return {
+    id: `${sessionId}:assistant`,
+    role: "assistant",
+    timestamp: new Date(artifact.timestampMs).toISOString(),
+    content,
+    metadata: {
+      attachments,
+      providerMessageType: "cursor.assistant",
+      raw: {
+        resourceUri: artifact.resourceUri,
+        snapshotPath: artifact.snapshotPath,
+        source: assistant?.source ?? assistantCandidate?.source ?? "artifact",
+      },
+    },
+  };
+}
+
+function messageFromBlueprint(blueprint: CursorMessageBlueprint): ChatMessage {
+  return {
+    id: blueprint.id,
+    role: blueprint.role,
+    kind: "content",
+    timestamp: blueprint.timestamp,
+    content: blueprint.content,
+    metadata: blueprint.metadata,
+  };
+}
+
+function buildCursorSchemaMessages(
+  blueprints: CursorMessageBlueprint[],
+): ChatMessage[] | null {
+  ensureCursorSchemasRegistered();
+  const messages: ChatMessage[] = [];
+  for (const blueprint of blueprints) {
+    const payload = {
+      variant: "cursor/chat.message",
+      id: blueprint.id,
+      role: blueprint.role,
+      timestamp: blueprint.timestamp,
+      content: blueprint.content,
+      providerMessageType: blueprint.metadata.providerMessageType,
+      attachments: blueprint.metadata.attachments,
+      raw: blueprint.metadata.raw,
+    };
+    const mappingId = cursorSchema.resolveMappingId(payload);
+    if (!mappingId) {
+      return null;
+    }
+    const normalised = normalise(mappingId, payload);
+    if (!normalised) {
+      return null;
+    }
+    const mergedMetadata = {
+      ...(normalised.message.metadata ?? {}),
+      ...blueprint.metadata,
+    };
+    messages.push({
+      ...normalised.message,
+      content: blueprint.content,
+      metadata: mergedMetadata,
+    });
+  }
+  return messages;
+}
+
 function findMatchingComposer(
   composers: CursorComposer[] | undefined,
   unixMs: number,
@@ -1031,73 +1168,6 @@ function matchArtifactForGeneration(
   return undefined;
 }
 
-function createUserMessage(
-  sessionId: string,
-  generation: CursorGeneration,
-  prompt: ResolvedText | undefined,
-): ChatMessage {
-  const timestamp = new Date(generation.unixMs).toISOString();
-  const content =
-    prompt?.text ??
-    extractTextFromRichContent(generation.textDescription) ??
-    "(empty prompt)";
-  return {
-    id: `${sessionId}:user`,
-    role: "user",
-    kind: "content",
-    timestamp,
-    content,
-    metadata: {
-      providerMessageType: "cursor.user",
-      raw: {
-        source: prompt?.source ?? "textDescription",
-      },
-    },
-  };
-}
-
-function createAssistantMessage(
-  sessionId: string,
-  artifact: CursorArtifact,
-  workspace: CursorWorkspace,
-  assistant: ResolvedText | undefined,
-): ChatMessage {
-  const relativePath =
-    artifact.resourcePath && workspace.folderPath
-      ? path.relative(workspace.folderPath, artifact.resourcePath)
-      : undefined;
-  const { content: snippetContent, attachments } = formatAssistantContent(
-    artifact,
-    relativePath,
-  );
-  const sections: string[] = [];
-  if (assistant?.text) {
-    sections.push(assistant.text);
-  }
-  if (snippetContent) {
-    sections.push(snippetContent);
-  }
-  const content =
-    sections.join("\n\n") ||
-    "Cursor did not include assistant content for this generation.";
-  return {
-    id: `${sessionId}:assistant`,
-    role: "assistant",
-    kind: "content",
-    timestamp: new Date(artifact.timestampMs).toISOString(),
-    content,
-    metadata: {
-      attachments,
-      providerMessageType: "cursor.assistant",
-      raw: {
-        resourceUri: artifact.resourceUri,
-        snapshotPath: artifact.snapshotPath,
-        source: assistant?.source ?? "artifact",
-      },
-    },
-  };
-}
-
 function createCursorSession(
   workspace: CursorWorkspace,
   generation: CursorGeneration,
@@ -1113,13 +1183,26 @@ function createCursorSession(
   const finalPrompt = promptCandidate ?? chatPair.prompt;
   const assistantCandidate = resolveAssistantText(generation);
   const finalAssistant = assistantCandidate ?? chatPair.assistant;
-  const userMessage = createUserMessage(sessionId, generation, finalPrompt);
-  const assistantMessage = createAssistantMessage(
+  const userBlueprint = buildUserMessageBlueprint(
+    sessionId,
+    generation,
+    finalPrompt,
+  );
+  const assistantBlueprint = buildAssistantMessageBlueprint(
     sessionId,
     artifact,
     workspace,
     finalAssistant,
+    assistantCandidate,
   );
+  const schemaEnabled = process.env.NEXT_PUBLIC_SCHEMA_NORMALISER === "1";
+  const schemaMessages = schemaEnabled
+    ? buildCursorSchemaMessages([userBlueprint, assistantBlueprint])
+    : null;
+  const messages = schemaMessages ?? [
+    messageFromBlueprint(userBlueprint),
+    messageFromBlueprint(assistantBlueprint),
+  ];
   const topic = truncate(
     finalPrompt?.text ??
       composer?.name ??
@@ -1127,14 +1210,15 @@ function createCursorSession(
       "Cursor session",
   );
   const participants = ["user", "assistant"];
-  const startedAt = userMessage.timestamp;
+  const startedAt =
+    messages[0]?.timestamp ?? new Date(generation.unixMs).toISOString();
   return {
     id: sessionId,
     source: "cursor",
     topic,
     startedAt,
     participants,
-    messages: [userMessage, assistantMessage],
+    messages,
     metadata: {
       sourceFile: artifact.snapshotPath,
       sourceDir: path.dirname(artifact.snapshotPath),
@@ -1233,7 +1317,7 @@ async function collectCursorSessions(
     errors.push({
       provider: "cursor",
       reason:
-        "No Cursor sessions detected. Cursor does not persist assistant responses; make sure history snapshots exist alongside prompts.",
+        "No Cursor sessions detected. Ensure Cursor chat data (`state.vscdb`) and history snapshots exist for the selected workspace.",
     });
   }
   return { sessions, signatures, errors };

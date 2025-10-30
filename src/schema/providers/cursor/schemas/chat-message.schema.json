@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://talkreplay.dev/schema/cursor/chat-message.schema.json",
+  "type": "object",
+  "properties": {
+    "variant": {
+      "const": "cursor/chat.message"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        }
+      ]
+    },
+    "role": {
+      "type": "string",
+      "enum": ["user", "assistant", "system", "tool"]
+    },
+    "content": {},
+    "providerMessageType": {
+      "type": "string"
+    },
+    "attachments": {},
+    "raw": {}
+  },
+  "required": ["variant", "id", "timestamp", "role"],
+  "additionalProperties": true
+}

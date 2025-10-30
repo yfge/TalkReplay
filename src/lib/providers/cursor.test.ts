@@ -30,4 +30,19 @@ describe("cursor provider", () => {
       expect(result.signatures[sourceFile]).toBeDefined();
     }
   });
+
+  it("parses via schema normaliser when enabled", async () => {
+    process.env.NEXT_PUBLIC_SCHEMA_NORMALISER = "1";
+    const result = await loadCursorSessions(cursorFixturesRoot, {}, new Map());
+    delete process.env.NEXT_PUBLIC_SCHEMA_NORMALISER;
+    expect(result.sessions.length).toBeGreaterThan(0);
+    const session = result.sessions[0];
+    expect(session.messages[0]?.metadata?.providerMessageType).toBe(
+      "cursor.user",
+    );
+    const assistant = session.messages.find(
+      (message) => message.role === "assistant",
+    );
+    expect(assistant?.metadata?.attachments?.length ?? 0).toBeGreaterThan(0);
+  });
 });

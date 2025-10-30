@@ -1,0 +1,24 @@
+{
+  "prompts": [
+    {
+      "text": "This file is missing a final newline; suggest the quickest way to fix it from the CLI.",
+      "commandType": 4
+    }
+  ],
+  "generations": [
+    {
+      "unixMs": 1756797158340,
+      "generationUUID": "cursor-sample-final-newline",
+      "type": "composer",
+      "textDescription": "This file is missing a final newline; suggest the quickest way to fix it from the CLI."
+    }
+  ],
+  "composers": [
+    {
+      "composerId": "cursor-sample-composer",
+      "name": "Add final newline for coding standards",
+      "createdAt": 1756797157028,
+      "lastUpdatedAt": 1756797158340
+    }
+  ]
+}

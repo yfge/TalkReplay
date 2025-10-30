@@ -77,7 +77,7 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings. _(2025-10-30: Server candidates & normaliser now cover Cursor for macOS/Linux/Windows.)_
 - [x] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration. _(2025-10-30: README variants + data-sources notes updated with storage paths.)_
 - [x] Parse Cursor `aiService.generations` / `workbench.panel.aichat` chat data to hydrate prompt + assistant transcripts, falling back to history snapshots when responses are absent. _(2025-10-30: Loader resolves prompt/assistant text from chatdata with history fallback.)_
-- [ ] Document the Cursor transcript extraction pipeline and add verification steps ensuring Cursor sessions appear in list/detail views.
+- [x] Document the Cursor transcript extraction pipeline and add verification steps ensuring Cursor sessions appear in list/detail views. _(2025-10-30: Revised `docs/cursor-storage.md` with chatdata/generation mapping + sqlite checklist.)_
 
 ### 1.D – Quality Gates, Hooks, Testing
 

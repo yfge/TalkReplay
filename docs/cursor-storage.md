@@ -8,7 +8,8 @@ This note captures where the macOS Cursor app persists data that we can reuse fo
 | -------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Workspace state (per repo) | `~/Library/Application Support/Cursor/User/workspaceStorage/<workspace-id>/state.vscdb` | SQLite DB following VS Code conventions                                                                    |
 | Prompt history             | `state.vscdb` key `aiService.prompts`                                                   | JSON array `[{"text": "...", "commandType": 4}, ...]` where `commandType=4` marks free-form chat prompts   |
-| Generation metadata        | `state.vscdb` key `aiService.generations`                                               | Optional array storing prompt UUIDs + timestamps (`type: "composer"`)                                      |
+| Generation metadata        | `state.vscdb` key `aiService.generations`                                               | Maps prompt UUIDs to assistant payloads (`content`, `rawMessage`) and timestamps                           |
+| Chat view state            | `state.vscdb` key `workbench.panel.aichat.view.aichat.chatdata`                         | Canonical chat threads with `messages[]` (user + assistant), used for the UI conversation timeline         |
 | Composer list              | `state.vscdb` key `composer.composerData`                                               | Tracks tab titles, IDs, and timestamps but **no message bodies**                                           |
 | Per-file history snapshots | `~/Library/Application Support/Cursor/User/History/<hash>/`                             | Each directory contains `entries.json` + companion files (`*.py`, `*.ts`, etc.) that mirror generated code |
 | Global configuration       | `~/Library/Application Support/Cursor/User/globalStorage/storage.json`                  | Mirrors VS Code `memento` data; no chat transcripts discovered                                             |
@@ -17,39 +18,86 @@ This note captures where the macOS Cursor app persists data that we can reuse fo
 ## Findings
 
 1. **User prompts are persisted**. `aiService.prompts` stores the raw text typed into the chat/composer along with a `commandType` discriminator. This is enough to populate the **user** side of the conversation schema.
-2. **Assistant responses are _not_ archived** in any obvious SQLite or JSON file. Neither `composer.composerData` nor `aiService.generations` contains the reply content.
-3. Cursor does write code artifacts produced by the assistant in `User/History/<hash>/`:
+2. **Assistant responses _are now present_** in the `workbench.panel.aichat.*.chatdata` tree and mirrored in `aiService.generations`. Each composer/chat thread keeps a `messages` array combining user prompts and assistant completions (with markdown payloads). `aiService.generations` links the prompt UUIDs to richer metadata (timestamps, truncation flags, streamed chunks).
+3. Cursor still writes code artifacts produced by the assistant in `User/History/<hash>/`:
    - `entries.json` lists the files touched in a session with millisecond timestamps.
    - Each `entries[].id` maps to a neighbouring file containing the assistant-authored code snapshot.
    - Example: see `fixtures/cursor/history-entry.json`.
-4. Renderer and telemetry logs (`logs/<timestamp>/window*/renderer.log`, `telemetry.log`, etc.) record command palette actions but not the streamed chat payloads.
+4. Renderer and telemetry logs (`logs/<timestamp>/window*/renderer.log`, `telemetry.log`, etc.) record command palette actions but remain unnecessary for transcript reconstruction.
 
 ## Recreating assistant messages
 
-Because Cursor does not persist the free-form assistant text, we need to synthesise a message stream for normalisation. The proposed approach:
+Cursor's desktop build now keeps both sides of the conversation. Our loader stitches the following sources:
 
-1. Read prompts from `aiService.prompts` (or the dated entries in `aiService.generations`) to reconstruct the **user** messages.
-2. For each prompt, locate the most recent history snapshot(s) in `User/History/<hash>/entries.json` and read the corresponding files. Treat the diff/code block as the assistant response body.
-3. Wrap the code artifact in a fenced block (language inferred from file extension) and attach metadata such as the source file path and timestamp.
+1. Read prompts from `aiService.prompts` to capture the raw text and composer IDs.
+2. Fetch the associated chat thread from `workbench.panel.aichat.view.aichat.chatdata`. Messages already arrive in chronological order with roles (`"user" | "assistant"`), markdown content, and ISO timestamps.
+3. Use `aiService.generations` as a secondary index keyed by `promptUuid` to add timing metadata and recover any assistant messages the chatdata snapshot missed (e.g. partial streams).
+4. When a generation references code artifacts, cross-check `User/History/<hash>/entries.json` to embed relevant files as attachments in our unified schema.
 
 ```ts
 interface CursorConversation {
   composerId: string;
-  prompts: Array<{ timestamp: string; text: string }>;
+  messages: Array<{
+    id: string;
+    role: "user" | "assistant";
+    timestamp: string;
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>;
   artifacts: Array<{ path: string; timestamp: string; content: string }>;
 }
 ```
 
-The synthetic fixture `fixtures/cursor/composer-session.json` demonstrates this mapping and can drive schema design until Cursor exposes true chat transcripts.
+The fixture `fixtures/cursor/composer-session.json` mirrors the shape emitted by the loader. `aiService.generations` contributes timing plus streaming metadata, while `chatdata` offers the rendered markdown used by the UI.
+
+### Verification checklist
+
+Run the following queries against `state.vscdb` to ensure the expected Cursor structures exist before importing a workspace:
+
+```bash
+sqlite3 state.vscdb "
+SELECT rowid, key, length(value)
+FROM ItemTable
+WHERE key IN (
+  'aiService.prompts',
+  'aiService.generations',
+  'workbench.panel.aichat.view.aichat.chatdata'
+);
+"
+```
+
+Inspect the chat payload with:
+
+```bash
+sqlite3 state.vscdb "
+.param set :composer 'workbench.panel.aichat.view.aichat.chatdata'
+SELECT json_tree.key, json_tree.value
+FROM ItemTable, json_tree(ItemTable.value)
+WHERE ItemTable.key = :composer
+  AND json_tree.path LIKE '%$.threads[%]%'
+LIMIT 10;
+"
+```
+
+If `chatdata` is absent (older Cursor build), fall back to `aiService.generations` and the history snapshots:
+
+```bash
+sqlite3 state.vscdb "
+SELECT rowid, key, json_extract(value, '$[0].rawMessage.content') AS firstAssistantReply
+FROM ItemTable
+WHERE key = 'aiService.generations'
+LIMIT 5;
+"
+```
 
 ## Outstanding questions
 
-- Cursor offers a `debug.logComposer` palette command; capturing its output might expose the full transcript. Worth exploring for future tooling.
-- LevelDB under `Local Storage/` might cache webview data for the composer. A focused LevelDB extraction could reveal the streamed assistant text.
-- We should confirm whether the Windows build stores prompts in the same SQLite keys or diverges.
+- Confirm whether Windows/Linux builds mirror the same `chatdata` keys or squash multiple composers into a single blob.
+- Determine how far back `chatdata` retains history before compaction and whether `aiService.generations` ever diverges.
+- Evaluate whether LevelDB still contains supplemental context (e.g. inline images) not exposed in the chat arrays.
 
 ### Latest investigation (2025-10-30)
 
-- Searched the Electron LevelDB cache at `Local Storage/leveldb` for known prompt strings and composer identifiers; no chat payloads were present.
-- Inspected renderer logs around `debug.logComposer` — only registration messages were emitted, with no dump of composer state.
-- Conclusion: neither LevelDB nor existing logs contain assistant responses. Capturing real output will likely require invoking `debug.logComposer` manually and recording its console output or instrumenting the renderer bundle.
+- Dumped `state.vscdb` via `sqlite3` and verified `workbench.panel.aichat.view.aichat.chatdata` contains both user prompts and assistant markdown.
+- Cross-referenced `aiService.generations` entries with loader output to ensure UUID/timestamp alignment.
+- Confirmed code artifacts in `User/History/<hash>/` are supplemental; primary assistant replies now reside in the chatdata structure.

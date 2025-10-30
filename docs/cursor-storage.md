@@ -47,3 +47,9 @@ The synthetic fixture `fixtures/cursor/composer-session.json` demonstrates this 
 - Cursor offers a `debug.logComposer` palette command; capturing its output might expose the full transcript. Worth exploring for future tooling.
 - LevelDB under `Local Storage/` might cache webview data for the composer. A focused LevelDB extraction could reveal the streamed assistant text.
 - We should confirm whether the Windows build stores prompts in the same SQLite keys or diverges.
+
+### Latest investigation (2025-10-30)
+
+- Searched the Electron LevelDB cache at `Local Storage/leveldb` for known prompt strings and composer identifiers; no chat payloads were present.
+- Inspected renderer logs around `debug.logComposer` — only registration messages were emitted, with no dump of composer state.
+- Conclusion: neither LevelDB nor existing logs contain assistant responses. Capturing real output will likely require invoking `debug.logComposer` manually and recording its console output or instrumenting the renderer bundle.

@@ -105,15 +105,67 @@ function normalizeSessionSummaries(
   };
 }
 
+function sanitizeSources(sources: unknown): AgentSource[] {
+  const allowed = new Set<AgentSource>(SUPPORTED_SOURCES);
+  if (!Array.isArray(sources) || sources.length === 0) {
+    return [...SUPPORTED_SOURCES];
+  }
+  const deduped: AgentSource[] = [];
+  sources.forEach((source) => {
+    if (typeof source !== "string") {
+      return;
+    }
+    const typedSource = source as AgentSource;
+    if (!allowed.has(typedSource)) {
+      return;
+    }
+    if (!deduped.includes(typedSource)) {
+      deduped.push(typedSource);
+    }
+  });
+  return deduped.length > 0 ? deduped : [...SUPPORTED_SOURCES];
+}
+
+function ensureSource(
+  sources: AgentSource[],
+  source: AgentSource,
+): AgentSource[] {
+  if (sources.includes(source)) {
+    return sources;
+  }
+  return [...sources, source];
+}
+
 const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
   name: "agents-chat-state",
-  version: 4,
+  version: 5,
   storage: createJSONStorage(() => safeStateStorage),
   partialize: (state) => ({
     filters: state.filters,
     activeSessionId: state.activeSessionId,
     starred: Array.from(state.starred),
   }),
+  migrate: (persisted, version) => {
+    if (!persisted) {
+      return persisted;
+    }
+    const next: ChatPersistedState = { ...persisted };
+    if (next.filters) {
+      const sanitized = sanitizeSources(next.filters.sources);
+      if (version < 5 && SUPPORTED_SOURCES.includes("cursor")) {
+        next.filters = {
+          ...next.filters,
+          sources: ensureSource(sanitized, "cursor"),
+        };
+      } else {
+        next.filters = {
+          ...next.filters,
+          sources: sanitized,
+        };
+      }
+    }
+    return next;
+  },
   merge: (persisted, current) => {
     const incoming: ChatPersistedState = persisted ?? {};
     const mergedFilters: ChatFilterState = {
@@ -122,6 +174,7 @@ const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
       showStarredOnly:
         incoming.filters?.showStarredOnly ?? current.filters.showStarredOnly,
     };
+    mergedFilters.sources = sanitizeSources(mergedFilters.sources);
 
     const activeSessionId = incoming.activeSessionId ?? current.activeSessionId;
     const starred = new Set<string>(

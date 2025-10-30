@@ -17,6 +17,15 @@ interface CursorGeneration {
   generationUUID: string;
   type?: string;
   textDescription?: string;
+  promptText?: string;
+  promptMarkdown?: string;
+  promptHtml?: string;
+  request?: unknown;
+  responseText?: string;
+  responseMarkdown?: string;
+  responseHtml?: string;
+  response?: unknown;
+  messages?: unknown;
 }
 
 interface CursorComposer {
@@ -40,6 +49,221 @@ type SqlDatabase = {
 type SqlJsModule = {
   Database: new (data: Uint8Array) => SqlDatabase;
 };
+
+interface ResolvedText {
+  text: string;
+  source: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function toTrimmedString(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function extractTextFromRichContent(content: unknown): string | undefined {
+  const direct = toTrimmedString(content);
+  if (direct) {
+    return direct;
+  }
+  if (Array.isArray(content)) {
+    const parts: string[] = [];
+    content.forEach((item) => {
+      if (typeof item === "string") {
+        const part = toTrimmedString(item);
+        if (part) {
+          parts.push(part);
+        }
+        return;
+      }
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const part =
+          toTrimmedString(record.text) ??
+          toTrimmedString(record.content) ??
+          extractTextFromRichContent(record.content);
+        if (part) {
+          parts.push(part);
+        }
+      }
+    });
+    if (parts.length > 0) {
+      return parts.join("\n");
+    }
+  }
+  if (content && typeof content === "object") {
+    const record = content as Record<string, unknown>;
+    return (
+      toTrimmedString(record.text) ??
+      toTrimmedString(record.markdown) ??
+      toTrimmedString(record.html) ??
+      (Array.isArray(record.messageParts)
+        ? extractTextFromRichContent(record.messageParts)
+        : undefined)
+    );
+  }
+  return undefined;
+}
+
+function extractTextField(
+  record: Record<string, unknown>,
+  keys: string[],
+): string | undefined {
+  for (const key of keys) {
+    if (!(key in record)) {
+      continue;
+    }
+    const value = record[key];
+    const text = extractTextFromRichContent(value);
+    if (text) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
+function extractFromMessages(
+  messages: unknown,
+  targetRole: string,
+): string | undefined {
+  if (!Array.isArray(messages)) {
+    return undefined;
+  }
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const rawEntry = messages[index];
+    if (!isRecord(rawEntry)) {
+      continue;
+    }
+    const roleValue = "role" in rawEntry ? rawEntry.role : undefined;
+    const role = toTrimmedString(roleValue)?.toLowerCase();
+    if (role !== targetRole.toLowerCase()) {
+      continue;
+    }
+    const contentValue = "content" in rawEntry ? rawEntry.content : undefined;
+    const content = extractTextFromRichContent(contentValue);
+    if (content) {
+      return content;
+    }
+  }
+  return undefined;
+}
+
+function resolvePromptText(
+  generation: CursorGeneration,
+): ResolvedText | undefined {
+  const candidates: Array<{ value: unknown; source: string }> = [
+    { value: generation.textDescription, source: "textDescription" },
+    { value: generation.promptText, source: "promptText" },
+    { value: generation.promptMarkdown, source: "promptMarkdown" },
+    { value: generation.promptHtml, source: "promptHtml" },
+  ];
+  for (const candidate of candidates) {
+    const text = extractTextFromRichContent(candidate.value);
+    if (text) {
+      return { text, source: candidate.source };
+    }
+  }
+  if (isRecord(generation.request)) {
+    const requestRecord = generation.request;
+    const text = extractTextField(requestRecord, [
+      "prompt",
+      "text",
+      "markdown",
+      "html",
+    ]);
+    if (text) {
+      return { text, source: "request" };
+    }
+  }
+  const fromMessages = extractFromMessages(
+    "messages" in generation ? generation.messages : undefined,
+    "user",
+  );
+  if (fromMessages) {
+    return { text: fromMessages, source: "messages.user" };
+  }
+  if (isRecord(generation.response)) {
+    const responseRecord = generation.response;
+    const promptViaResponse = extractFromMessages(
+      responseRecord.messages,
+      "user",
+    );
+    if (promptViaResponse) {
+      return { text: promptViaResponse, source: "response.messages.user" };
+    }
+  }
+  return undefined;
+}
+
+function resolveAssistantText(
+  generation: CursorGeneration,
+): ResolvedText | undefined {
+  const directCandidates: Array<{ value: unknown; source: string }> = [
+    { value: generation.responseText, source: "responseText" },
+    { value: generation.responseMarkdown, source: "responseMarkdown" },
+    { value: generation.responseHtml, source: "responseHtml" },
+  ];
+  for (const candidate of directCandidates) {
+    const text = extractTextFromRichContent(candidate.value);
+    if (text) {
+      return { text, source: candidate.source };
+    }
+  }
+  if (isRecord(generation.response)) {
+    const responseRecord = generation.response;
+    const direct = extractTextField(responseRecord, [
+      "text",
+      "markdown",
+      "html",
+    ]);
+    if (direct) {
+      return { text: direct, source: "response" };
+    }
+    if (Array.isArray(responseRecord.choices)) {
+      for (const choice of responseRecord.choices as unknown[]) {
+        if (!choice || typeof choice !== "object") {
+          continue;
+        }
+        const choiceRecord = choice as Record<string, unknown>;
+        const messageValue =
+          "message" in choiceRecord && isRecord(choiceRecord.message)
+            ? choiceRecord.message
+            : undefined;
+        const text =
+          (messageValue &&
+            extractTextFromRichContent(
+              "content" in messageValue ? messageValue.content : undefined,
+            )) ??
+          extractTextField(choiceRecord, ["text", "markdown", "html"]);
+        if (text) {
+          return { text, source: "response.choices" };
+        }
+      }
+    }
+    const responseMessages = extractFromMessages(
+      "messages" in responseRecord ? responseRecord.messages : undefined,
+      "assistant",
+    );
+    if (responseMessages) {
+      return { text: responseMessages, source: "response.messages" };
+    }
+  }
+  const fromGenerationMessages = extractFromMessages(
+    "messages" in generation ? generation.messages : undefined,
+    "assistant",
+  );
+  if (fromGenerationMessages) {
+    return { text: fromGenerationMessages, source: "messages.assistant" };
+  }
+  return undefined;
+}
 
 interface CursorWorkspaceState {
   prompts?: CursorPrompt[];
@@ -506,16 +730,24 @@ function matchArtifactForGeneration(
 function createUserMessage(
   sessionId: string,
   generation: CursorGeneration,
+  prompt: ResolvedText | undefined,
 ): ChatMessage {
   const timestamp = new Date(generation.unixMs).toISOString();
+  const content =
+    prompt?.text ??
+    extractTextFromRichContent(generation.textDescription) ??
+    "(empty prompt)";
   return {
     id: `${sessionId}:user`,
     role: "user",
     kind: "content",
     timestamp,
-    content: generation.textDescription?.trim() ?? "(empty prompt)",
+    content,
     metadata: {
       providerMessageType: "cursor.user",
+      raw: {
+        source: prompt?.source ?? "textDescription",
+      },
     },
   };
 }
@@ -524,15 +756,26 @@ function createAssistantMessage(
   sessionId: string,
   artifact: CursorArtifact,
   workspace: CursorWorkspace,
+  assistant: ResolvedText | undefined,
 ): ChatMessage {
   const relativePath =
     artifact.resourcePath && workspace.folderPath
       ? path.relative(workspace.folderPath, artifact.resourcePath)
       : undefined;
-  const { content, attachments } = formatAssistantContent(
+  const { content: snippetContent, attachments } = formatAssistantContent(
     artifact,
     relativePath,
   );
+  const sections: string[] = [];
+  if (assistant?.text) {
+    sections.push(assistant.text);
+  }
+  if (snippetContent) {
+    sections.push(snippetContent);
+  }
+  const content =
+    sections.join("\n\n") ||
+    "Cursor did not include assistant content for this generation.";
   return {
     id: `${sessionId}:assistant`,
     role: "assistant",
@@ -545,6 +788,7 @@ function createAssistantMessage(
       raw: {
         resourceUri: artifact.resourceUri,
         snapshotPath: artifact.snapshotPath,
+        source: assistant?.source ?? "artifact",
       },
     },
   };
@@ -557,14 +801,20 @@ function createCursorSession(
   artifact: CursorArtifact,
 ): ChatSession {
   const sessionId = encodeSessionId(artifact.snapshotPath);
-  const userMessage = createUserMessage(sessionId, generation);
+  const promptInfo = resolvePromptText(generation);
+  const assistantInfo = resolveAssistantText(generation);
+  const userMessage = createUserMessage(sessionId, generation, promptInfo);
   const assistantMessage = createAssistantMessage(
     sessionId,
     artifact,
     workspace,
+    assistantInfo,
   );
   const topic = truncate(
-    composer?.name ?? generation.textDescription ?? "Cursor session",
+    promptInfo?.text ??
+      composer?.name ??
+      generation.textDescription ??
+      "Cursor session",
   );
   const participants = ["user", "assistant"];
   const startedAt = userMessage.timestamp;
@@ -590,6 +840,8 @@ function createCursorSession(
           generationUUID: generation.generationUUID,
           composerId: composer?.composerId,
           resourcePath: artifact.resourcePath,
+          promptSource: promptInfo?.source,
+          assistantSource: assistantInfo?.source,
         },
       },
     },

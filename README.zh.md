@@ -4,7 +4,7 @@ TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 C
 
 - **语言切换：** [English](README.md) · [中文说明](README.zh.md)
 - **技术栈：** Next.js 14（App Router）、React、TypeScript、Tailwind CSS、shadcn/ui、Zustand、React Query
-- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`）、Cursor（`~/Library/Application Support/Cursor`，macOS 默认）、Gemini（`~/.gemini/logs`）
+- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`）、Cursor（macOS：`~/Library/Application Support/Cursor`，Linux：`~/.config/Cursor`，Windows：`C:\Users\<你>\AppData\Roaming\Cursor`）、Gemini（`~/.gemini/logs`）
 - **部署环境：** macOS、Windows、本地浏览器导入、Docker
 - **协作方式：** 按 vibe coding 最佳实践组织，配套 `agents_chat/` 日志、`tasks.md` 任务板以及 Husky 强制检查
 

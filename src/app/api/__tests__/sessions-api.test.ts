@@ -73,7 +73,7 @@ describe("/api/sessions", () => {
     expect(result.resolvedPaths).toBeDefined();
     result.sessions.forEach((summary) => {
       expect(typeof summary.id).toBe("string");
-      expect(summary.source).toMatch(/claude|codex|gemini/);
+      expect(summary.source).toMatch(/claude|codex|cursor|gemini/);
       expect(summary.topic).toBeTruthy();
       expect(summary.startedAt).toBeTruthy();
       expect(Array.isArray(summary.participants)).toBe(true);

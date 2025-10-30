@@ -48,6 +48,12 @@ function getDefaultProviderCandidates(provider: ProviderId): string[] {
     candidates.push(join(home, ".gemini", "tmp"));
     candidates.push(join(home, ".gemini", "logs"));
     candidates.push(join(home, ".gemini", "sessions"));
+  } else if (provider === "cursor") {
+    if (system === "darwin") {
+      candidates.push(join(home, "Library", "Application Support", "Cursor"));
+    } else {
+      candidates.push(join(home, ".config", "Cursor"));
+    }
   }
 
   if (system === "win32") {
@@ -55,6 +61,8 @@ function getDefaultProviderCandidates(provider: ProviderId): string[] {
       candidates.push(join(home, "Documents", "Claude", "projects"));
     } else if (provider === "codex") {
       candidates.push(join(home, "Documents", "Codex", "sessions"));
+    } else if (provider === "cursor") {
+      candidates.push(join(home, "AppData", "Roaming", "Cursor"));
     }
   }
 
@@ -224,6 +232,52 @@ export async function loadSessionsOnServer(
     }
   }
 
+  const cursorCandidate =
+    paths.cursor ?? (await resolveDefaultProviderRoot("cursor"));
+  const { path: cursorRoot, error: cursorPathError } =
+    await normalizeProviderRoot(cursorCandidate);
+  if (cursorPathError) {
+    errors.push({ provider: "cursor", reason: cursorPathError });
+  }
+  if (cursorRoot) {
+    resolvedPaths.cursor = cursorRoot;
+  }
+  if (!resolvedPaths.cursor && paths.cursor) {
+    resolvedPaths.cursor = paths.cursor;
+  }
+  if (!resolvedPaths.cursor) {
+    const defaults = getDefaultProviderCandidates("cursor");
+    const suggestion = defaults.find(Boolean);
+    if (suggestion) {
+      resolvedPaths.cursor = suggestion;
+    }
+  }
+  if (cursorRoot) {
+    try {
+      const { loadCursorSessions } = await import("@/lib/providers/cursor");
+      const providerResult = await loadCursorSessions(
+        cursorRoot,
+        filterProviderSignatures(previousSignatures, "cursor"),
+        previousByFile,
+      );
+      sessions.push(...providerResult.sessions);
+      errors.push(...providerResult.errors);
+      for (const [file, signature] of Object.entries(
+        providerResult.signatures,
+      )) {
+        signatures[signatureKey("cursor", file)] = signature;
+      }
+    } catch (error) {
+      errors.push({
+        provider: "cursor",
+        reason:
+          error instanceof Error
+            ? error.message
+            : "Failed to load Cursor sessions",
+      });
+    }
+  }
+
   const geminiCandidate =
     paths.gemini ?? (await resolveDefaultProviderRoot("gemini"));
   const { path: geminiRoot, error: geminiPathError } =
@@ -342,6 +396,35 @@ export async function loadSessionDetail(
     }
   }
 
+  const { path: cursorRoot } = await normalizeProviderRoot(paths.cursor);
+  if (cursorRoot && filePath.startsWith(cursorRoot)) {
+    try {
+      const { loadCursorSessionFromFile } = await import(
+        "@/lib/providers/cursor"
+      );
+      const session = await loadCursorSessionFromFile(filePath);
+      if (!session) {
+        return {
+          error: {
+            provider: "cursor",
+            reason: "Session not found",
+          },
+        };
+      }
+      return { session: { ...session, id: encodeSessionId(filePath) } };
+    } catch (error) {
+      return {
+        error: {
+          provider: "cursor",
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Failed to load session detail",
+        },
+      };
+    }
+  }
+
   const { path: geminiRoot } = await normalizeProviderRoot(paths.gemini);
   if (geminiRoot && filePath.startsWith(geminiRoot)) {
     try {
@@ -403,6 +486,17 @@ export async function loadSessionDetail(
           "@/lib/providers/gemini"
         );
         const session = await loadGeminiSessionFromFile(filePath);
+        if (session) {
+          return { session: { ...session, id: encodeSessionId(filePath) } };
+        }
+      } catch {
+        // ignore
+      }
+      try {
+        const { loadCursorSessionFromFile } = await import(
+          "@/lib/providers/cursor"
+        );
+        const session = await loadCursorSessionFromFile(filePath);
         if (session) {
           return { session: { ...session, id: encodeSessionId(filePath) } };
         }

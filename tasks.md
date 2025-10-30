@@ -73,8 +73,8 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Add Gemini adapter parity once sample logs are ready. _(2025-10-22: Implemented `src/lib/providers/gemini.ts`, API wiring, tests, and default path detection.)_
 - [x] Surface Cursor provider directory alongside others in config/state so settings/localisation include it. _(2025-10-30: Added `cursor` entries across provider paths, store, and settings UI.)_
 - [ ] Research Cursor log format and collect anonymised fixtures; capture schema differences.
-- [ ] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events.
-- [ ] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings.
+- [ ] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events. _(Placeholder loader stubbed; awaiting schema fixtures.)_
+- [x] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings. _(2025-10-30: Server candidates & normaliser now cover Cursor for macOS/Linux/Windows.)_
 - [ ] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration.
 
 ### 1.D – Quality Gates, Hooks, Testing

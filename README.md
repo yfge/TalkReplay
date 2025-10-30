@@ -120,6 +120,7 @@ When neither Settings nor environment variables provide explicit paths, the serv
   - Windows: `C:\Users\<you>\.codex\sessions` (also tries `~/Documents/Codex/sessions`)
 - Cursor defaults
   - macOS: `~/Library/Application Support/Cursor`
+  - Linux: `~/.config/Cursor`
   - Windows: `C:\Users\<you>\AppData\Roaming\Cursor`
   - Docker: `/app/data/cursor`
 - Gemini (tentative; subject to change)

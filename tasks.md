@@ -71,6 +71,10 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Docker defaults map to `/app/data/{claude,codex}`; UI respects `NEXT_PUBLIC_*` env. _(2025-10-10: Dockerfile, provider paths.)_
 - [x] Server-side auto-detect defaults for provider roots across OS (HOME-based + Docker path). _(2025-10-20: `loadSessionsOnServer` probes common paths for Claude/Codex; Gemini placeholder.)_
 - [x] Add Gemini adapter parity once sample logs are ready. _(2025-10-22: Implemented `src/lib/providers/gemini.ts`, API wiring, tests, and default path detection.)_
+- [ ] Research Cursor log format and collect anonymised fixtures; capture schema differences.
+- [ ] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events.
+- [ ] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings.
+- [ ] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration.
 
 ### 1.D – Quality Gates, Hooks, Testing
 

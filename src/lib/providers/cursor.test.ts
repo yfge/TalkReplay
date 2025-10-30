@@ -15,16 +15,36 @@ const cursorFixturesRoot = path.resolve(
 describe("cursor provider", () => {
   it("parses workspace storage and history artifacts", async () => {
     const result = await loadCursorSessions(cursorFixturesRoot, {}, new Map());
-    expect(result.sessions.length).toBeGreaterThan(0);
-    const session = result.sessions[0];
-    expect(session.source).toBe("cursor");
-    expect(session.messages[0]?.role).toBe("user");
-    expect(session.messages[0]?.content).toContain("final newline");
-    expect(session.messages[1]?.role).toBe("assistant");
-    expect(session.messages[1]?.content).toContain(
+    expect(result.sessions.length).toBeGreaterThan(1);
+
+    const firstSession = result.sessions.find(
+      (session) =>
+        session.metadata?.extra?.cursor?.generationUUID ===
+        "cursor-sample-final-newline",
+    );
+    expect(firstSession).toBeDefined();
+    expect(firstSession?.messages[0]?.role).toBe("user");
+    expect(firstSession?.messages[0]?.content).toContain("final newline");
+    expect(firstSession?.messages[1]?.role).toBe("assistant");
+    expect(firstSession?.messages[1]?.content).toContain(
       "Cursor generated an update",
     );
-    const sourceFile = session.metadata?.sourceFile;
+
+    const toolSession = result.sessions.find(
+      (session) =>
+        session.metadata?.extra?.cursor?.generationUUID ===
+        "cursor-sample-tool-invoke",
+    );
+    expect(toolSession).toBeDefined();
+    const assistantMessage = toolSession?.messages.find(
+      (message) => message.role === "assistant",
+    );
+    expect(assistantMessage?.content ?? "").toContain(
+      "printf '\\n' >> \"$FILE\"",
+    );
+    expect(assistantMessage?.metadata?.attachments?.[0]?.language).toBe("py");
+
+    const sourceFile = toolSession?.metadata?.sourceFile;
     expect(sourceFile).toBeDefined();
     if (sourceFile) {
       expect(result.signatures[sourceFile]).toBeDefined();
@@ -44,5 +64,16 @@ describe("cursor provider", () => {
       (message) => message.role === "assistant",
     );
     expect(assistant?.metadata?.attachments?.length ?? 0).toBeGreaterThan(0);
+    expect(
+      result.sessions
+        .map((s) =>
+          s.messages
+            .filter((m) => m.role === "assistant")
+            .some((m) =>
+              (m.content ?? "").includes("printf '\\n' >> \"$FILE\""),
+            ),
+        )
+        .some(Boolean),
+    ).toBe(true);
   });
 });

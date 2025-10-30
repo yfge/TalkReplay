@@ -78,6 +78,7 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration. _(2025-10-30: README variants + data-sources notes updated with storage paths.)_
 - [x] Parse Cursor `aiService.generations` / `workbench.panel.aichat` chat data to hydrate prompt + assistant transcripts, falling back to history snapshots when responses are absent. _(2025-10-30: Loader resolves prompt/assistant text from chatdata with history fallback.)_
 - [x] Document the Cursor transcript extraction pipeline and add verification steps ensuring Cursor sessions appear in list/detail views. _(2025-10-30: Revised `docs/cursor-storage.md` with chatdata/generation mapping + sqlite checklist.)_
+- [x] Capture multi-turn Cursor fixtures with tool metadata to exercise schema normaliser. _(2025-10-30: Expanded sample workspace/history with chatdata threads and tool invocation artifacts.)_
 
 ### 1.D – Quality Gates, Hooks, Testing
 

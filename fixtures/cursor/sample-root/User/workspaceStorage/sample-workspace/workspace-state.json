@@ -2,7 +2,13 @@
   "prompts": [
     {
       "text": "This file is missing a final newline; suggest the quickest way to fix it from the CLI.",
-      "commandType": 4
+      "commandType": 4,
+      "timestamp": 1756797157340
+    },
+    {
+      "text": "Generate a bash command that appends a newline without touching the rest of the file.",
+      "commandType": 4,
+      "timestamp": 1756797161340
     }
   ],
   "generations": [
@@ -10,7 +16,61 @@
       "unixMs": 1756797158340,
       "generationUUID": "cursor-sample-final-newline",
       "type": "composer",
-      "textDescription": "This file is missing a final newline; suggest the quickest way to fix it from the CLI."
+      "textDescription": "This file is missing a final newline; suggest the quickest way to fix it from the CLI.",
+      "response": {
+        "messages": [
+          {
+            "id": "gen-1-user",
+            "role": "user",
+            "content": "This file is missing a final newline; suggest the quickest way to fix it from the CLI."
+          },
+          {
+            "id": "gen-1-assistant",
+            "role": "assistant",
+            "content": "Use `printf '\\n' >> file` or run an editor command to append a newline."
+          }
+        ]
+      }
+    },
+    {
+      "unixMs": 1756797162340,
+      "generationUUID": "cursor-sample-tool-invoke",
+      "type": "composer",
+      "textDescription": "Generate a bash command that appends a newline without touching the rest of the file.",
+      "response": {
+        "messages": [
+          {
+            "id": "gen-2-user",
+            "role": "user",
+            "content": "Generate a bash command that appends a newline without touching the rest of the file."
+          },
+          {
+            "id": "gen-2-assistant",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "markdown",
+                "text": "Run the following command to append a newline safely:"
+              },
+              {
+                "type": "code",
+                "language": "bash",
+                "text": "printf '\\n' >> \"$FILE\""
+              }
+            ],
+            "metadata": {
+              "toolInvocations": [
+                {
+                  "kind": "terminal",
+                  "status": "completed",
+                  "command": "printf '\\n' >> \"$FILE\"",
+                  "durationMs": 420
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
   ],
   "composers": [
@@ -18,7 +78,56 @@
       "composerId": "cursor-sample-composer",
       "name": "Add final newline for coding standards",
       "createdAt": 1756797157028,
-      "lastUpdatedAt": 1756797158340
+      "lastUpdatedAt": 1756797162340
     }
-  ]
+  ],
+  "chatData": {
+    "workbench.panel.aichat.view.aichat.chatdata": {
+      "threads": [
+        {
+          "id": "thread-sample-1",
+          "composerId": "cursor-sample-composer",
+          "messages": [
+            {
+              "id": "thread-msg-1-user",
+              "role": "user",
+              "content": "This file is missing a final newline; suggest the quickest way to fix it from the CLI."
+            },
+            {
+              "id": "thread-msg-2-assistant",
+              "role": "assistant",
+              "content": "You can run `printf '\\n' >> file` from the terminal to append the newline."
+            },
+            {
+              "id": "thread-msg-3-user",
+              "role": "user",
+              "content": "Generate a bash command that appends a newline without touching the rest of the file."
+            },
+            {
+              "id": "thread-msg-4-assistant",
+              "role": "assistant",
+              "content": [
+                "Here's a command that appends a newline:",
+                {
+                  "type": "code",
+                  "language": "bash",
+                  "text": "printf '\\n' >> \"$FILE\""
+                }
+              ],
+              "metadata": {
+                "toolInvocations": [
+                  {
+                    "kind": "terminal",
+                    "status": "completed",
+                    "command": "printf '\\n' >> \"$FILE\"",
+                    "durationMs": 420
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
 }

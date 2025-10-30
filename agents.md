@@ -34,7 +34,7 @@
 ## 5. Data Source & Schema Guidelines
 
 - Default directories: `data/claude/` and `data/codex/` containing JSON or Markdown transcripts.
-- **Cursor provider planning:** Milestone 1 adds ingestion support targeting the default workspace (`~/Library/Application Support/Cursor` on macOS, roaming profile on Windows) with schema-parity fixtures and adapter coverage.
+- **Cursor provider planning:** Milestone 1 adds ingestion support targeting the default workspace (`~/Library/Application Support/Cursor` on macOS, roaming profile on Windows) with schema-parity fixtures and adapter coverage; settings now surface Cursor paths alongside other providers.
 - Unified interface per conversation: `id`, `timestamp`, `participants`, `messages` array.
 - Normalise timestamps to ISO 8601 strings regardless of original format (ISO or Unix epoch).
 - File ingestion strategy:

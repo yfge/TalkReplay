@@ -1,10 +1,10 @@
 # TalkReplay 简介
 
-TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 Claude 与 Codex 的聊天记录转化为可浏览、可搜索、可分享的会话时间线，帮助你整理灵感、总结经验并回放协作过程。
+TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 Claude、Codex、Cursor 等聊天记录转化为可浏览、可搜索、可分享的会话时间线，帮助你整理灵感、总结经验并回放协作过程。
 
 - **语言切换：** [English](README.md) · [中文说明](README.zh.md)
 - **技术栈：** Next.js 14（App Router）、React、TypeScript、Tailwind CSS、shadcn/ui、Zustand、React Query
-- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`），Gemini 规划中
+- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`）、Cursor（`~/Library/Application Support/Cursor`，macOS 默认）、Gemini（`~/.gemini/logs`）
 - **部署环境：** macOS、Windows、本地浏览器导入、Docker
 - **协作方式：** 按 vibe coding 最佳实践组织，配套 `agents_chat/` 日志、`tasks.md` 任务板以及 Husky 强制检查
 
@@ -55,7 +55,7 @@ pnpm dev -- --port 3002
 - `pnpm build`：Next.js 生产构建
 - `pnpm format:fix`：Prettier 自动排版
 
-首次启动会弹出目录配置向导，可直接填写 Claude/Codex 日志目录，或通过环境变量自动填充（见下）。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
+首次启动会弹出目录配置向导，可直接填写 Claude/Codex/Cursor/Gemini 日志目录，或通过环境变量自动填充（见下）。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
 
 ## 提供者目录配置
 
@@ -64,6 +64,7 @@ pnpm dev -- --port 3002
 ```bash
 NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects   # macOS/Linux 默认
 NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions     # macOS/Linux 默认
+NEXT_PUBLIC_CURSOR_ROOT="/Users/you/Library/Application Support/Cursor" # macOS 默认
 NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # 可选
 ```
 
@@ -73,14 +74,18 @@ Windows 示例
 # PowerShell
 $env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
 $env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:CURSOR_ROOT="C:\\Users\\<你>\\AppData\\Roaming\\Cursor"
 $env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
 $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:NEXT_PUBLIC_CURSOR_ROOT=$env:CURSOR_ROOT
 
 # Cmd
 set CLAUDE_ROOT=C:\Users\<你>\.claude\projects
 set CODEX_ROOT=C:\Users\<你>\.codex\sessions
+set CURSOR_ROOT=C:\Users\<你>\AppData\Roaming\Cursor
 set NEXT_PUBLIC_CLAUDE_ROOT=%CLAUDE_ROOT%
 set NEXT_PUBLIC_CODEX_ROOT=%CODEX_ROOT%
+set NEXT_PUBLIC_CURSOR_ROOT=%CURSOR_ROOT%
 ```
 
 Linux/macOS 示例
@@ -88,19 +93,21 @@ Linux/macOS 示例
 ```bash
 export CLAUDE_ROOT="$HOME/.claude/projects"
 export CODEX_ROOT="$HOME/.codex/sessions"
+export CURSOR_ROOT="$HOME/.config/Cursor"
 export NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT"
 export NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT"
+export NEXT_PUBLIC_CURSOR_ROOT="$CURSOR_ROOT"
 ```
 
 WSL2 注意：从 WSL 里启动 Docker 时，使用 `/mnt/c/Users/<你>/.claude/projects` 与 `/mnt/c/Users/<你>/.codex/sessions` 挂载。
 
-后端同样支持 `CLAUDE_ROOT`、`CODEX_ROOT`、`GEMINI_ROOT` 环境变量；归一化逻辑位于 `src/config/providerPaths.ts`。
+后端同样支持 `CLAUDE_ROOT`、`CODEX_ROOT`、`CURSOR_ROOT`、`GEMINI_ROOT` 环境变量；归一化逻辑位于 `src/config/providerPaths.ts`。
 
 ### 会话管线
 
 - Provider 适配器存放在 `src/lib/providers/`，共享的会话模型定义在 `src/types/chat.ts`。
 - 增量导入基于文件签名，避免重复解析并在 UI 中呈现错误提醒。
-- `fixtures/` 目录提供与真实 Claude/Codex 目录结构一致的示例数据，便于离线演示。
+- `fixtures/` 目录提供与真实 Claude/Codex 目录结构一致的示例数据（Cursor 示例筹备中），便于离线演示。
 
 ## 生产部署
 
@@ -112,10 +119,13 @@ docker run \
   -p 3000:3000 \
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor \
   -e CLAUDE_ROOT=/app/data/claude \
   -e CODEX_ROOT=/app/data/codex \
+  -e CURSOR_ROOT=/app/data/cursor \
   -v "$HOME/.claude/projects":/app/data/claude:ro \
   -v "$HOME/.codex/sessions":/app/data/codex:ro \
+  -v "$HOME/Library/Application Support/Cursor":/app/data/cursor:ro \
   talk-replay
 ```
 
@@ -126,10 +136,13 @@ docker run `
   -p 3000:3000 `
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude `
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex `
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor `
   -e CLAUDE_ROOT=/app/data/claude `
   -e CODEX_ROOT=/app/data/codex `
+  -e CURSOR_ROOT=/app/data/cursor `
   -v C:\Users\<你>\.claude\projects:/app/data/claude:ro `
   -v C:\Users\<你>\.codex\sessions:/app/data/codex:ro `
+  -v C:\Users\<你>\AppData\Roaming\Cursor:/app/data/cursor:ro `
   talk-replay
 ```
 
@@ -140,10 +153,13 @@ docker run \
   -p 3000:3000 \
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor \
   -e CLAUDE_ROOT=/app/data/claude \
   -e CODEX_ROOT=/app/data/codex \
+  -e CURSOR_ROOT=/app/data/cursor \
   -v /mnt/c/Users/<你>/.claude/projects:/app/data/claude:ro \
   -v /mnt/c/Users/<你>/.codex/sessions:/app/data/codex:ro \
+  -v /mnt/c/Users/<你>/AppData/Roaming/Cursor:/app/data/cursor:ro \
   talk-replay
 ```
 
@@ -152,17 +168,19 @@ docker run \
 ```bash
 CLAUDE_LOGS_PATH="$HOME/.claude/projects" \
 CODEX_LOGS_PATH="$HOME/.codex/sessions" \
+CURSOR_LOGS_PATH="$HOME/Library/Application Support/Cursor" \
 APP_PORT=3000 \
 docker compose up --build
 ```
 
-如需演示内置样例，可将 `CLAUDE_LOGS_PATH=./fixtures/claude`、`CODEX_LOGS_PATH=./fixtures/codex` 再执行 compose。容器会同时注入运行时与 `NEXT_PUBLIC_*` 环境变量，免去手动配置。
+如需演示内置样例，可将 `CLAUDE_LOGS_PATH=./fixtures/claude`、`CODEX_LOGS_PATH=./fixtures/codex`（Cursor 示例将稍后加入）再执行 compose。容器会同时注入运行时与 `NEXT_PUBLIC_*` 环境变量，免去手动配置。
 
 Windows compose（PowerShell）
 
 ```powershell
 $env:CLAUDE_LOGS_PATH="C:\\Users\\<你>\\.claude\\projects";
 $env:CODEX_LOGS_PATH="C:\\Users\\<你>\\.codex\\sessions";
+$env:CURSOR_LOGS_PATH="C:\\Users\\<你>\\AppData\\Roaming\\Cursor";
 $env:APP_PORT=3000;
 docker compose up --build
 ```
@@ -178,8 +196,10 @@ docker compose up --build
 pnpm build
 CLAUDE_ROOT="$HOME/.claude/projects" \
 CODEX_ROOT="$HOME/.codex/sessions" \
+CURSOR_ROOT="$HOME/.config/Cursor" \
 NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
 NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+NEXT_PUBLIC_CURSOR_ROOT="$CURSOR_ROOT" \
 pnpm start
 ```
 
@@ -187,10 +207,12 @@ Windows PowerShell：
 
 ```powershell
 pnpm build
-$env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
-$env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:CLAUDE_ROOT="C\\Users\\<你>\\.claude\\projects"
+$env:CODEX_ROOT="C\\Users\\<你>\\.codex\\sessions"
+$env:CURSOR_ROOT="C\\Users\\<你>\\AppData\\Roaming\\Cursor"
 $env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
 $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:NEXT_PUBLIC_CURSOR_ROOT=$env:CURSOR_ROOT
 pnpm start
 ```
 
@@ -202,8 +224,10 @@ pnpm start
 pnpm build
 CLAUDE_ROOT="$HOME/.claude/projects" \
 CODEX_ROOT="$HOME/.codex/sessions" \
+CURSOR_ROOT="$HOME/.config/Cursor" \
 NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT" \
 NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT" \
+NEXT_PUBLIC_CURSOR_ROOT="$CURSOR_ROOT" \
 PORT=3000 \
 NODE_ENV=production \
 node .next/standalone/server.js
@@ -215,8 +239,10 @@ Windows PowerShell：
 pnpm build
 $env:CLAUDE_ROOT="C:\\Users\\<你>\\.claude\\projects"
 $env:CODEX_ROOT="C:\\Users\\<你>\\.codex\\sessions"
+$env:CURSOR_ROOT="C:\\Users\\<你>\\AppData\\Roaming\\Cursor"
 $env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
 $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:NEXT_PUBLIC_CURSOR_ROOT=$env:CURSOR_ROOT
 $env:PORT=3000
 $env:NODE_ENV="production"
 node .next/standalone/server.js

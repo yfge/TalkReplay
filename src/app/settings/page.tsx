@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { ProviderKey } from "@/config/providerPaths";
 import { usePreferencesStore } from "@/store/preferences-store";
 
-const providerOrder: ProviderKey[] = ["claude", "codex", "gemini"];
+const providerOrder: ProviderKey[] = ["claude", "codex", "cursor", "gemini"];
 const windowsDrivePattern = /^[A-Za-z]:/;
 
 function hasInvalidPathCharacters(value: string): boolean {
@@ -36,6 +36,7 @@ export default function SettingsPage() {
     {
       claude: undefined,
       codex: undefined,
+      cursor: undefined,
       gemini: undefined,
     },
   );
@@ -70,6 +71,7 @@ export default function SettingsPage() {
     const nextErrors: Record<ProviderKey, string | undefined> = {
       claude: undefined,
       codex: undefined,
+      cursor: undefined,
       gemini: undefined,
     };
     providerOrder.forEach((provider) => {

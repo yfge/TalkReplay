@@ -1,4 +1,4 @@
-export type ProviderId = "claude" | "codex" | "gemini";
+export type ProviderId = "claude" | "codex" | "gemini" | "cursor";
 
 export interface ProviderImportError {
   provider: ProviderId;

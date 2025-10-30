@@ -34,10 +34,11 @@
   },
   "providerSetup": {
     "title": "配置各助手的本地目录",
-    "description": "填写 Claude、Codex、Gemini 聊天记录所在的本地文件夹，便于应用读取。",
+    "description": "填写 Claude、Codex、Cursor、Gemini 聊天记录所在的本地文件夹，便于应用读取。",
     "providerLabel": {
       "claude": "Claude 目录",
       "codex": "Codex 目录",
+      "cursor": "Cursor 目录",
       "gemini": "Gemini 目录"
     },
     "placeholder": "输入或粘贴本地目录路径",
@@ -63,6 +64,7 @@
   "providers": {
     "claude": "Claude",
     "codex": "Codex",
+    "cursor": "Cursor",
     "gemini": "Gemini"
   },
   "detail": {

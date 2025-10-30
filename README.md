@@ -4,7 +4,7 @@ TalkReplay is a vibe coding companion that turns your Claude and Codex transcrip
 
 - **Languages:** [English](README.md) · [中文说明](README.zh.md)
 - **Tech stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · Zustand · React Query
-- **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`) with Gemini planned
+- **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`), Cursor (`~/Library/Application Support/Cursor` on macOS), Gemini (`~/.gemini/logs`)
 - **Deployment targets:** macOS, Windows, Docker, optional browser-only imports
 - **Workflow:** Opinionated vibe-coding blueprint featuring timestamped `agents_chat/` logs, `tasks.md` milestones, and Husky-enforced quality gates
 
@@ -58,7 +58,7 @@ Key scripts:
 - `pnpm build` – Next.js production build
 - `pnpm format:fix` – Prettier write mode
 
-On first run, open Settings to configure provider directories (Claude/Codex). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+On first run, open Settings to configure provider directories (Claude/Codex/Cursor/Gemini). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
 
 ## Provider Roots & Configuration
 
@@ -67,6 +67,7 @@ Environment variables drive autodiscovery (defaults by OS):
 ```bash
 NEXT_PUBLIC_CLAUDE_ROOT=/Users/you/.claude/projects   # macOS/Linux default
 NEXT_PUBLIC_CODEX_ROOT=/Users/you/.codex/sessions     # macOS/Linux default
+NEXT_PUBLIC_CURSOR_ROOT="/Users/you/Library/Application Support/Cursor" # macOS default
 NEXT_PUBLIC_GEMINI_ROOT=/path/to/gemini/logs # optional
 ```
 
@@ -76,14 +77,18 @@ Windows paths
 # PowerShell
 $env:CLAUDE_ROOT="C:\\Users\\<you>\\.claude\\projects"
 $env:CODEX_ROOT="C:\\Users\\<you>\\.codex\\sessions"
+$env:CURSOR_ROOT="C:\\Users\\<you>\\AppData\\Roaming\\Cursor"
 $env:NEXT_PUBLIC_CLAUDE_ROOT=$env:CLAUDE_ROOT
 $env:NEXT_PUBLIC_CODEX_ROOT=$env:CODEX_ROOT
+$env:NEXT_PUBLIC_CURSOR_ROOT=$env:CURSOR_ROOT
 
 # Cmd
 set CLAUDE_ROOT=C:\Users\<you>\.claude\projects
 set CODEX_ROOT=C:\Users\<you>\.codex\sessions
+set CURSOR_ROOT=C:\Users\<you>\AppData\Roaming\Cursor
 set NEXT_PUBLIC_CLAUDE_ROOT=%CLAUDE_ROOT%
 set NEXT_PUBLIC_CODEX_ROOT=%CODEX_ROOT%
+set NEXT_PUBLIC_CURSOR_ROOT=%CURSOR_ROOT%
 ```
 
 Linux/macOS paths
@@ -91,13 +96,15 @@ Linux/macOS paths
 ```bash
 export CLAUDE_ROOT="$HOME/.claude/projects"
 export CODEX_ROOT="$HOME/.codex/sessions"
+export CURSOR_ROOT="$HOME/.config/Cursor"
 export NEXT_PUBLIC_CLAUDE_ROOT="$CLAUDE_ROOT"
 export NEXT_PUBLIC_CODEX_ROOT="$CODEX_ROOT"
+export NEXT_PUBLIC_CURSOR_ROOT="$CURSOR_ROOT"
 ```
 
 WSL2 note: use `/mnt/c/Users/<you>/.claude/projects` and `/mnt/c/Users/<you>/.codex/sessions` when launching Docker from WSL.
 
-Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
+Server-side fallbacks honour `CLAUDE_ROOT`, `CODEX_ROOT`, `CURSOR_ROOT`, and `GEMINI_ROOT`. See `src/config/providerPaths.ts` for normalisation logic.
 
 ### Automatic Defaults (No Settings/Env)
 
@@ -111,6 +118,10 @@ When neither Settings nor environment variables provide explicit paths, the serv
   - Docker: `/app/data/codex`
   - macOS/Linux: `~/.codex/sessions`
   - Windows: `C:\Users\<you>\.codex\sessions` (also tries `~/Documents/Codex/sessions`)
+- Cursor defaults
+  - macOS: `~/Library/Application Support/Cursor`
+  - Windows: `C:\Users\<you>\AppData\Roaming\Cursor`
+  - Docker: `/app/data/cursor`
 - Gemini (tentative; subject to change)
   - macOS/Linux: `~/.gemini/logs` or `~/.gemini/sessions`
 
@@ -124,7 +135,7 @@ These defaults align with the Docker image’s volume layout and common CLI stor
 
 - Provider ingestion lives under `src/lib/providers/`; adapters share a unified message schema in `src/types/chat.ts`.
 - Incremental import signatures prevent reprocessing unchanged files while surfacing parser errors in the UI.
-- Sample data in `fixtures/` mirrors real directory layouts for Claude and Codex, enabling offline demos.
+- Sample data in `fixtures/` mirrors real directory layouts for Claude, Codex (Cursor coming soon), enabling offline demos.
 
 ## Production Deployment
 
@@ -138,10 +149,13 @@ docker run \
   -p 3000:3000 \
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor \
   -e CLAUDE_ROOT=/app/data/claude \
   -e CODEX_ROOT=/app/data/codex \
+  -e CURSOR_ROOT=/app/data/cursor \
   -v "$HOME/.claude/projects":/app/data/claude:ro \
   -v "$HOME/.codex/sessions":/app/data/codex:ro \
+  -v "$HOME/Library/Application Support/Cursor":/app/data/cursor:ro \
   talk-replay
 ```
 
@@ -152,10 +166,13 @@ docker run `
   -p 3000:3000 `
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude `
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex `
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor `
   -e CLAUDE_ROOT=/app/data/claude `
   -e CODEX_ROOT=/app/data/codex `
+  -e CURSOR_ROOT=/app/data/cursor `
   -v C:\Users\<you>\.claude\projects:/app/data/claude:ro `
   -v C:\Users\<you>\.codex\sessions:/app/data/codex:ro `
+  -v C:\Users\<you>\AppData\Roaming\Cursor:/app/data/cursor:ro `
   talk-replay
 ```
 
@@ -166,10 +183,13 @@ docker run \
   -p 3000:3000 \
   -e NEXT_PUBLIC_CLAUDE_ROOT=/app/data/claude \
   -e NEXT_PUBLIC_CODEX_ROOT=/app/data/codex \
+  -e NEXT_PUBLIC_CURSOR_ROOT=/app/data/cursor \
   -e CLAUDE_ROOT=/app/data/claude \
   -e CODEX_ROOT=/app/data/codex \
+  -e CURSOR_ROOT=/app/data/cursor \
   -v /mnt/c/Users/<you>/.claude/projects:/app/data/claude:ro \
   -v /mnt/c/Users/<you>/.codex/sessions:/app/data/codex:ro \
+  -v /mnt/c/Users/<you>/AppData/Roaming/Cursor:/app/data/cursor:ro \
   talk-replay
 ```
 
@@ -178,6 +198,7 @@ Or use docker-compose:
 ```bash
 CLAUDE_LOGS_PATH="$HOME/.claude/projects" \
 CODEX_LOGS_PATH="$HOME/.codex/sessions" \
+CURSOR_LOGS_PATH="$HOME/Library/Application Support/Cursor" \
 APP_PORT=3000 \
 docker compose up --build
 ```
@@ -189,6 +210,7 @@ Windows compose (PowerShell)
 ```powershell
 $env:CLAUDE_LOGS_PATH="C:\\Users\\<you>\\.claude\\projects";
 $env:CODEX_LOGS_PATH="C:\\Users\\<you>\\.codex\\sessions";
+$env:CURSOR_LOGS_PATH="C:\\Users\\<you>\\AppData\\Roaming\\Cursor";
 $env:APP_PORT=3000;
 docker compose up --build
 ```

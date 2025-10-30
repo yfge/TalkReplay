@@ -35,6 +35,20 @@ interface CursorComposer {
   lastUpdatedAt?: number;
 }
 
+type CursorChatView = Record<string, unknown> | unknown[];
+
+interface CursorWorkspaceState {
+  prompts?: CursorPrompt[];
+  generations?: CursorGeneration[];
+  composers?: CursorComposer[];
+  chatData?: Record<string, CursorChatView>;
+}
+
+interface ChatMessageGroup {
+  messages: unknown[];
+  source: string;
+}
+
 type SqlStatement = {
   step(): boolean;
   getAsObject(): Record<string, unknown>;
@@ -65,6 +79,10 @@ function toTrimmedString(value: unknown): string | undefined {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function extractTextFromRichContent(content: unknown): string | undefined {
@@ -109,6 +127,251 @@ function extractTextFromRichContent(content: unknown): string | undefined {
     );
   }
   return undefined;
+}
+
+function extractTextFromMessage(
+  entry: Record<string, unknown>,
+): string | undefined {
+  const candidates: unknown[] = [
+    entry.content,
+    entry.text,
+    entry.markdown,
+    entry.html,
+    entry.body,
+    entry.value,
+  ];
+  if ("message" in entry && isRecord(entry.message)) {
+    candidates.push(entry.message);
+    if ("content" in entry.message) {
+      candidates.push(entry.message.content);
+    }
+  }
+  if ("data" in entry && isRecord(entry.data)) {
+    candidates.push(entry.data);
+    if ("content" in entry.data) {
+      candidates.push(entry.data.content);
+    }
+  }
+  if (Array.isArray(entry.parts)) {
+    candidates.push(entry.parts);
+  }
+  for (const candidate of candidates) {
+    const text = extractTextFromRichContent(candidate);
+    if (text) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
+function getMessageRole(entry: Record<string, unknown>): string | undefined {
+  const roleCandidates = [
+    "role",
+    "sender",
+    "author",
+    "speaker",
+    "participant",
+    "source",
+  ];
+  for (const key of roleCandidates) {
+    if (key in entry) {
+      const role = toTrimmedString(entry[key]);
+      if (role) {
+        return role.toLowerCase();
+      }
+    }
+  }
+  if ("message" in entry && isRecord(entry.message)) {
+    const nested = getMessageRole(entry.message);
+    if (nested) {
+      return nested;
+    }
+  }
+  if ("metadata" in entry && isRecord(entry.metadata)) {
+    const nested = getMessageRole(entry.metadata);
+    if (nested) {
+      return nested;
+    }
+  }
+  if ("meta" in entry && isRecord(entry.meta)) {
+    const nested = getMessageRole(entry.meta);
+    if (nested) {
+      return nested;
+    }
+  }
+  return undefined;
+}
+
+function collectMessagesFromChatView(
+  view: CursorChatView,
+  baseKey: string,
+): ChatMessageGroup[] {
+  const groups: ChatMessageGroup[] = [];
+  const addGroup = (candidate: unknown, suffix: string) => {
+    if (Array.isArray(candidate)) {
+      groups.push({ messages: candidate, source: `${baseKey}${suffix}` });
+    }
+  };
+  if (Array.isArray(view)) {
+    addGroup(view, "");
+    return groups;
+  }
+  if (!isRecord(view)) {
+    return groups;
+  }
+  addGroup(view.messages, "");
+  if ("data" in view && isRecord(view.data)) {
+    addGroup(view.data.messages, ".data");
+  }
+  if ("chat" in view && isRecord(view.chat)) {
+    addGroup(view.chat.messages, ".chat");
+  }
+  if ("conversation" in view && isRecord(view.conversation)) {
+    addGroup(view.conversation.messages, ".conversation");
+  }
+  const viewRecord: Record<string, unknown> = view;
+  const sessionsValue = viewRecord.sessions;
+  if (Array.isArray(sessionsValue)) {
+    sessionsValue.forEach((session, index) => {
+      if (isRecord(session)) {
+        addGroup(session.messages, `.sessions[${index}]`);
+      }
+    });
+  }
+  const conversationsValue = viewRecord.conversations;
+  if (Array.isArray(conversationsValue)) {
+    conversationsValue.forEach((conversation, index) => {
+      if (isRecord(conversation)) {
+        addGroup(conversation.messages, `.conversations[${index}]`);
+      }
+    });
+  }
+  const logsValue = viewRecord.logs;
+  if (Array.isArray(logsValue)) {
+    logsValue.forEach((log, index) => {
+      if (isRecord(log)) {
+        addGroup(log.messages, `.logs[${index}]`);
+      }
+    });
+  }
+  return groups;
+}
+
+function findAssistantAfterIndex(
+  messages: unknown[],
+  startIndex: number,
+  source: string,
+): ResolvedText | undefined {
+  for (let idx = startIndex; idx < messages.length; idx += 1) {
+    const candidate = messages[idx];
+    if (!isRecord(candidate)) {
+      continue;
+    }
+    const role = getMessageRole(candidate);
+    if (role !== "assistant") {
+      continue;
+    }
+    const text = extractTextFromMessage(candidate);
+    if (text) {
+      return { text, source: `${source}[${idx}]` };
+    }
+  }
+  return undefined;
+}
+
+function resolveChatDataPair(
+  chatData: Record<string, CursorChatView> | undefined,
+  promptCandidate?: string | null,
+): { prompt?: ResolvedText; assistant?: ResolvedText } {
+  if (!chatData) {
+    return {};
+  }
+  const normalizedTarget = promptCandidate
+    ? normalizeText(promptCandidate)
+    : undefined;
+  let fallbackPair:
+    | { prompt?: ResolvedText; assistant?: ResolvedText }
+    | undefined;
+
+  for (const [key, view] of Object.entries(chatData)) {
+    const groups = collectMessagesFromChatView(view, key);
+    for (const group of groups) {
+      const { messages, source } = group;
+      if (!Array.isArray(messages) || messages.length === 0) {
+        continue;
+      }
+      let lastUser: ResolvedText | undefined;
+      let latestPair:
+        | { prompt?: ResolvedText; assistant?: ResolvedText }
+        | undefined;
+      for (let idx = 0; idx < messages.length; idx += 1) {
+        const rawMessage = messages[idx];
+        if (!isRecord(rawMessage)) {
+          continue;
+        }
+        const role = getMessageRole(rawMessage);
+        const text = extractTextFromMessage(rawMessage);
+        if (!role || !text) {
+          continue;
+        }
+        const normalized = normalizeText(text);
+        if (role === "user") {
+          const user: ResolvedText = { text, source: `${source}[${idx}]` };
+          lastUser = user;
+          if (normalizedTarget && normalized === normalizedTarget) {
+            const assistant = findAssistantAfterIndex(
+              messages,
+              idx + 1,
+              source,
+            );
+            if (assistant) {
+              return { prompt: user, assistant };
+            }
+            return { prompt: user };
+          }
+          if (!normalizedTarget && !fallbackPair?.prompt) {
+            fallbackPair = { prompt: user };
+          }
+        } else if (role === "assistant") {
+          const assistant: ResolvedText = { text, source: `${source}[${idx}]` };
+          if (lastUser) {
+            latestPair = { prompt: lastUser, assistant };
+            if (!normalizedTarget) {
+              fallbackPair = latestPair;
+            } else if (normalizeText(lastUser.text) === normalizedTarget) {
+              return latestPair;
+            }
+          } else if (!normalizedTarget && !fallbackPair?.assistant) {
+            fallbackPair = { assistant };
+          }
+        }
+      }
+      if (!normalizedTarget && latestPair) {
+        fallbackPair = latestPair;
+      }
+    }
+  }
+
+  return fallbackPair ?? {};
+}
+
+function normaliseChatData(
+  value: unknown,
+): Record<string, CursorChatView> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    return undefined;
+  }
+  const map: Record<string, CursorChatView> = {};
+  entries.forEach(([key, item]) => {
+    if (Array.isArray(item) || isRecord(item)) {
+      map[key] = item as CursorChatView;
+    }
+  });
+  return Object.keys(map).length > 0 ? map : undefined;
 }
 
 function extractTextField(
@@ -265,12 +528,6 @@ function resolveAssistantText(
   return undefined;
 }
 
-interface CursorWorkspaceState {
-  prompts?: CursorPrompt[];
-  generations?: CursorGeneration[];
-  composers?: CursorComposer[];
-}
-
 type SqlJsConfig = {
   locateFile?: (file: string) => string;
 };
@@ -396,6 +653,7 @@ async function readWorkspaceStateFromSqlite(
     );
     const stmt = db.prepare("SELECT key, value FROM ItemTable");
     const state: CursorWorkspaceState = {};
+    const chatDataKeyPattern = /^workbench\.panel\.aichat\.view\..+\.chatdata$/;
     while (stmt.step()) {
       const row = stmt.getAsObject() as { key?: string; value?: string };
       if (!row.key || typeof row.value !== "string") {
@@ -403,6 +661,13 @@ async function readWorkspaceStateFromSqlite(
       }
       try {
         const parsed = JSON.parse(row.value) as unknown;
+        if (chatDataKeyPattern.test(row.key)) {
+          if (Array.isArray(parsed) || isRecord(parsed)) {
+            state.chatData = state.chatData ?? {};
+            state.chatData[row.key] = parsed as CursorChatView;
+          }
+          continue;
+        }
         if (row.key === "aiService.prompts" && Array.isArray(parsed)) {
           state.prompts = parsed as CursorPrompt[];
         } else if (
@@ -422,6 +687,14 @@ async function readWorkspaceStateFromSqlite(
     }
     stmt.free();
     db.close();
+    if (
+      !state.prompts &&
+      !state.generations &&
+      !state.composers &&
+      !state.chatData
+    ) {
+      return null;
+    }
     return state;
   } catch {
     return null;
@@ -450,8 +723,39 @@ async function readWorkspaceStateFallback(
       try {
         // eslint-disable-next-line no-await-in-loop
         const raw = await fs.readFile(fullPath, "utf8");
-        const parsed = JSON.parse(raw) as CursorWorkspaceState;
-        return parsed;
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        const state: CursorWorkspaceState = {};
+        const promptsValue = (parsed as { prompts?: unknown }).prompts;
+        if (Array.isArray(promptsValue)) {
+          state.prompts = promptsValue as CursorPrompt[];
+        }
+        const generationsValue = (parsed as { generations?: unknown })
+          .generations;
+        if (Array.isArray(generationsValue)) {
+          state.generations = generationsValue as CursorGeneration[];
+        }
+        if (isComposerContainer(parsed)) {
+          state.composers = parsed.allComposers as CursorComposer[];
+        } else {
+          const composersValue = (parsed as { composers?: unknown }).composers;
+          if (Array.isArray(composersValue)) {
+            state.composers = composersValue as CursorComposer[];
+          }
+        }
+        const chatData = normaliseChatData(
+          (parsed as { chatData?: unknown }).chatData,
+        );
+        if (chatData) {
+          state.chatData = chatData;
+        }
+        if (
+          state.prompts ||
+          state.generations ||
+          state.composers ||
+          state.chatData
+        ) {
+          return state;
+        }
       } catch {
         return null;
       }
@@ -801,17 +1105,23 @@ function createCursorSession(
   artifact: CursorArtifact,
 ): ChatSession {
   const sessionId = encodeSessionId(artifact.snapshotPath);
-  const promptInfo = resolvePromptText(generation);
-  const assistantInfo = resolveAssistantText(generation);
-  const userMessage = createUserMessage(sessionId, generation, promptInfo);
+  const promptCandidate = resolvePromptText(generation);
+  const chatPair = resolveChatDataPair(
+    workspace.state.chatData,
+    promptCandidate?.text ?? generation.textDescription ?? undefined,
+  );
+  const finalPrompt = promptCandidate ?? chatPair.prompt;
+  const assistantCandidate = resolveAssistantText(generation);
+  const finalAssistant = assistantCandidate ?? chatPair.assistant;
+  const userMessage = createUserMessage(sessionId, generation, finalPrompt);
   const assistantMessage = createAssistantMessage(
     sessionId,
     artifact,
     workspace,
-    assistantInfo,
+    finalAssistant,
   );
   const topic = truncate(
-    promptInfo?.text ??
+    finalPrompt?.text ??
       composer?.name ??
       generation.textDescription ??
       "Cursor session",
@@ -840,8 +1150,8 @@ function createCursorSession(
           generationUUID: generation.generationUUID,
           composerId: composer?.composerId,
           resourcePath: artifact.resourcePath,
-          promptSource: promptInfo?.source,
-          assistantSource: assistantInfo?.source,
+          promptSource: finalPrompt?.source,
+          assistantSource: finalAssistant?.source ?? assistantCandidate?.source,
         },
       },
     },

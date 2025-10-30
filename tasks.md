@@ -72,10 +72,10 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Server-side auto-detect defaults for provider roots across OS (HOME-based + Docker path). _(2025-10-20: `loadSessionsOnServer` probes common paths for Claude/Codex; Gemini placeholder.)_
 - [x] Add Gemini adapter parity once sample logs are ready. _(2025-10-22: Implemented `src/lib/providers/gemini.ts`, API wiring, tests, and default path detection.)_
 - [x] Surface Cursor provider directory alongside others in config/state so settings/localisation include it. _(2025-10-30: Added `cursor` entries across provider paths, store, and settings UI.)_
-- [ ] Research Cursor log format and collect anonymised fixtures; capture schema differences.
+- [x] Research Cursor log format and collect anonymised fixtures; capture schema differences. _(2025-10-30: Added `fixtures/cursor`, documented state.vscdb + history layout.)_
 - [ ] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events. _(Placeholder loader stubbed; awaiting schema fixtures.)_
 - [x] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings. _(2025-10-30: Server candidates & normaliser now cover Cursor for macOS/Linux/Windows.)_
-- [ ] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration.
+- [x] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration. _(2025-10-30: README variants + data-sources notes updated with storage paths.)_
 
 ### 1.D – Quality Gates, Hooks, Testing
 

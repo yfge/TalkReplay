@@ -579,6 +579,9 @@ function createCursorSession(
       sourceFile: artifact.snapshotPath,
       sourceDir: path.dirname(artifact.snapshotPath),
       summary: topic,
+      project: workspace.folderPath
+        ? path.basename(workspace.folderPath)
+        : undefined,
       provider: {
         model: "cursor",
       },

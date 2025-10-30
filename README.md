@@ -287,6 +287,7 @@ the env vars simply provide sensible defaults that mirror the Docker layout.
 
 - `tasks.md` – milestone tracking (Milestone 1 focuses on local replay, Milestone 2 on shared backend)
 - `docs/browser-file-access.md` – browser capabilities for local imports
+- `docs/cursor-storage.md` – notes on Cursor prompt storage and reconstructing assistant outputs
 - `agents.md` – collaboration rules for vibe coding workflows
 - `README.zh.md` – Chinese overview for bilingual teams
 

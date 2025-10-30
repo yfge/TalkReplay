@@ -39,3 +39,4 @@ This document captures the normalisation rules mapping provider-native logs to t
 - Editor history is captured in `User/History/<session-hash>/entries.json`, mapping `resource` URIs to `entries` that list snapshot IDs with millisecond timestamps. Each snapshot lives beside the manifest as a plain-text file (`*.py`, `*.ts`, etc.).
 - Cursor responses are not captured alongside `aiService.prompts`; further research must correlate prompts with streamed output logs before the adapter can emit assistant messages.
 - Default auto-detected paths now include `/app/data/cursor` for Docker images so containers mirror desktop directory layout.
+- See [cursor-storage.md](./cursor-storage.md) for a deep dive and a plan to reconstruct messages from prompts + history artifacts.

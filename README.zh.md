@@ -262,6 +262,7 @@ node .next/standalone/server.js
 
 - `tasks.md`：里程碑进度（阶段 1 专注本地复盘，阶段 2 引入共享后端）
 - `docs/browser-file-access.md`：浏览器本地导入能力对比
+- `docs/cursor-storage.md`：Cursor 桌面版存储结构与重建助手回复的方案
 - `agents.md`：vibe coding 协作规范
 
 未来计划：Gemini 会话、虚拟化列表、键盘快捷键、团队协作后端、导出分享工具等。

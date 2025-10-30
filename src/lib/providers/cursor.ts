@@ -73,17 +73,68 @@ interface CursorContext {
 }
 
 let sqlModulePromise: Promise<SqlJsModule> | null = null;
+let wasmPathCache: string | null = null;
 
 const require = createRequire(import.meta.url);
 
+function isUrl(value: string): boolean {
+  return (
+    value.startsWith("file:") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/")
+  );
+}
+
+function ensureAbsolutePath(p: string): string {
+  if (p.startsWith("/node_modules/")) {
+    return path.join(process.cwd(), p.slice(1));
+  }
+  if (path.isAbsolute(p)) {
+    return p;
+  }
+  return path.resolve(process.cwd(), p);
+}
+
+async function resolveWasmPath(): Promise<string> {
+  if (wasmPathCache) {
+    return wasmPathCache;
+  }
+  const isNodeRuntime =
+    typeof process !== "undefined" && !!process.versions?.node;
+
+  if (!isNodeRuntime && typeof window !== "undefined") {
+    try {
+      const wasmModule = await import("sql.js/dist/sql-wasm.wasm?url");
+      const wasmUrl = (wasmModule as { default: string }).default;
+      if (typeof wasmUrl === "string" && wasmUrl.length > 0) {
+        wasmPathCache = wasmUrl;
+        return wasmUrl;
+      }
+    } catch {
+      // Fall through to Node resolution.
+    }
+  }
+  const pkgPath = ensureAbsolutePath(require.resolve("sql.js/package.json"));
+  const wasmPath = path.join(path.dirname(pkgPath), "dist/sql-wasm.wasm");
+  wasmPathCache = wasmPath;
+  return wasmPath;
+}
+
 async function getSqlModule(): Promise<SqlJsModule> {
   if (!sqlModulePromise) {
-    const wasmPath = require.resolve("sql.js/dist/sql-wasm.wasm");
-    const wasmDir = path.dirname(wasmPath);
+    const wasmPath = await resolveWasmPath();
+    const wasmDir = isUrl(wasmPath) ? undefined : path.dirname(wasmPath);
     sqlModulePromise = (
       initSqlJs as unknown as (config?: SqlJsConfig) => Promise<SqlJsModule>
     )({
-      locateFile: (file: string) => path.join(wasmDir, file),
+      locateFile: (file: string) => {
+        if (isUrl(wasmPath)) {
+          return wasmPath;
+        }
+        const dir = wasmDir ?? path.dirname(wasmPath);
+        return path.join(dir, file);
+      },
     });
   }
   return sqlModulePromise;

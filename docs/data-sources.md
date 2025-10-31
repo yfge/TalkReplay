@@ -31,3 +31,12 @@ This document captures the normalisation rules mapping provider-native logs to t
 
 - `toolCall.toolType?: string`
 - `toolResult` optional fields: `exitCode`, `durationMs`, `stdout`, `stderr`, `filesChanged`, `diff`
+
+## Cursor (Desktop app)
+
+- Local assets live under `~/Library/Application Support/Cursor/` on macOS (or `%APPDATA%\Cursor` on Windows, `~/.config/Cursor` on Linux). Workspaces appear as hashed directories in `User/workspaceStorage/<workspace-id>/`.
+- Chat prompts are stored in the workspace SQLite store (`state.vscdb`) under the key `aiService.prompts`. Values serialise to a JSON array of `{ "text": string, "commandType": number }`, where `commandType=4` marks free-form chat requests.
+- Editor history is captured in `User/History/<session-hash>/entries.json`, mapping `resource` URIs to `entries` that list snapshot IDs with millisecond timestamps. Each snapshot lives beside the manifest as a plain-text file (`*.py`, `*.ts`, etc.).
+- Cursor responses are not captured alongside `aiService.prompts`; further research must correlate prompts with streamed output logs before the adapter can emit assistant messages.
+- Default auto-detected paths now include `/app/data/cursor` for Docker images so containers mirror desktop directory layout.
+- See [cursor-storage.md](./cursor-storage.md) for a deep dive and a plan to reconstruct messages from prompts + history artifacts.

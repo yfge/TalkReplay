@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "resource": "file:///Users/example/dev/project/app/services/llm_service.py",
+  "entries": [
+    {
+      "id": "abc1.py",
+      "timestamp": 1755775219743,
+      "snippet": [
+        "async def chat_completion(message: str) -> str:",
+        "    \"\"\"Forward a prompt to the primary LLM and return the reply.\"\"\"",
+        "    return await _client.send(message)"
+      ]
+    },
+    {
+      "id": "abc2.py",
+      "timestamp": 1755776989442,
+      "snippet": [
+        "async def chat_completion(message: str, context: list[str] | None = None) -> str:",
+        "    payload = {\"message\": message, \"context\": context or []}",
+        "    return await _client.send(payload)"
+      ]
+    }
+  ],
+  "notes": "Derived from User/History/<hash>/entries.json plus the neighbouring snapshot files. Cursor tracks per-file edits as individual Python modules; we inline excerpts for readability."
+}

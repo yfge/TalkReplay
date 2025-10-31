@@ -1,0 +1,39 @@
+{
+  "source": "workspaceStorage/<workspace-id>/state.vscdb#aiService.prompts",
+  "capturedAt": "2025-10-30T04:10:00.000Z",
+  "prompts": [
+    {
+      "text": "Explain how to temporarily silence the React Hook dependency warning for a callback in useEffect.",
+      "commandType": 4
+    },
+    {
+      "text": "Show the ESLint rule that enforces dependency arrays so I can document it.",
+      "commandType": 4
+    },
+    {
+      "text": "This file is missing a trailing newline; suggest the quickest way to fix it from the CLI.",
+      "commandType": 4
+    },
+    {
+      "text": "Can I ignore the formatter warnings for this commit, or should I add a lint-staged hook?",
+      "commandType": 4
+    }
+  ],
+  "generations": [
+    {
+      "unixMs": 1756797158340,
+      "generationUUID": "cursor-generation-final-newline",
+      "type": "composer",
+      "textDescription": "This file is missing a final newline, which contradicts the insert_final_newline = true rule defined on line 9."
+    }
+  ],
+  "composers": [
+    {
+      "composerId": "cursor-composer-final-newline",
+      "name": "Add final newline for coding standards",
+      "createdAt": 1756797157028,
+      "lastUpdatedAt": 1756797158340
+    }
+  ],
+  "notes": "Cursor stores prompt history as a JSON array (aiService.prompts) where commandType identifies the command palette entry (4 = chat prompt)."
+}

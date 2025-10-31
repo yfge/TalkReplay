@@ -10,3 +10,4 @@ export type {
 } from "./types";
 export * as codexSchema from "./providers/codex";
 export * as claudeSchema from "./providers/claude";
+export * as cursorSchema from "./providers/cursor";

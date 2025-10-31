@@ -1,0 +1,34 @@
+{
+  "composerId": "1880f9ea-b83a-4f57-9cda-213d8c8eeb32",
+  "title": "Handle missing newline warning",
+  "createdAt": "2025-10-02T07:33:16.000Z",
+  "promptHistory": [
+    {
+      "timestamp": "2025-10-02T07:33:16.000Z",
+      "text": "Explain how to temporarily silence the React Hook dependency warning for a callback in useEffect."
+    },
+    {
+      "timestamp": "2025-10-02T07:33:40.000Z",
+      "text": "This file is missing a trailing newline; suggest the quickest way to fix it from the CLI."
+    }
+  ],
+  "artifactHistory": [
+    {
+      "id": "abc1.py",
+      "timestamp": "2025-10-02T07:34:00.000Z",
+      "content": [
+        "\"\"\"Utility helpers produced by Cursor.\"\"\"",
+        "",
+        "from pathlib import Path",
+        "",
+        "def ensure_trailing_newline(path: Path) -> None:",
+        "    \"\"\"Append a single newline when the file does not already end with one.\"\"\"",
+        "    text = path.read_text(encoding=\"utf-8\")",
+        "    if text.endswith(\"\\n\"):",
+        "        return",
+        "    path.write_text(text + \"\\n\", encoding=\"utf-8\")"
+      ]
+    }
+  ],
+  "notes": "Artifacts are derived from User/History/<hash>/snapshot files; prompts originate from aiService.prompts."
+}

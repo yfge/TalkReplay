@@ -4,9 +4,20 @@ import { resolve } from "node:path";
 const nextConfig = {
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ["sql.js"],
   },
   output: "standalone",
   webpack: (config) => {
+    config.experiments = {
+      ...(config.experiments ?? {}),
+      asyncWebAssembly: true,
+    };
+    config.module = config.module ?? {};
+    config.module.rules = config.module.rules ?? [];
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: "webassembly/async",
+    });
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),

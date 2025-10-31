@@ -123,6 +123,15 @@ When neither Settings nor environment variables provide explicit paths, the serv
   - Linux: `~/.config/Cursor`
   - Windows: `C:\Users\<you>\AppData\Roaming\Cursor`
   - Docker: `/app/data/cursor`
+
+Quick check: confirm Cursor ingestion with
+
+```bash
+pnpm dlx tsx scripts/check-cursor.ts \
+  "/Users/<you>/Library/Application Support/Cursor"
+```
+
+- omit the argument to rely on `CURSOR_ROOT` / automatic defaults.
 - Gemini (tentative; subject to change)
   - macOS/Linux: `~/.gemini/logs` or `~/.gemini/sessions`
 
@@ -287,6 +296,7 @@ the env vars simply provide sensible defaults that mirror the Docker layout.
 
 - `tasks.md` – milestone tracking (Milestone 1 focuses on local replay, Milestone 2 on shared backend)
 - `docs/browser-file-access.md` – browser capabilities for local imports
+- `docs/cursor-storage.md` – notes on Cursor prompt storage and reconstructing assistant outputs
 - `agents.md` – collaboration rules for vibe coding workflows
 - `README.zh.md` – Chinese overview for bilingual teams
 

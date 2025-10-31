@@ -9,6 +9,7 @@ import type { AgentSource } from "@/types/chat";
 const sourceLabels: Record<AgentSource, string> = {
   claude: "Claude",
   codex: "Codex",
+  cursor: "Cursor",
   gemini: "Gemini",
 };
 

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "resource": "file:///Users/example/dev/project/src/app/utils/formatter.py",
+  "entries": [
+    {
+      "id": "entry.py",
+      "timestamp": 1756797160000
+    },
+    {
+      "id": "entry-tool.py",
+      "timestamp": 1756797162340
+    }
+  ]
+}

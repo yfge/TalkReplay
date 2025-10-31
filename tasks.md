@@ -31,6 +31,9 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 - [x] Wire Claude adapter to the same pipeline (`tool_use`/`tool_result`/`text`) while preserving raw payloads for audit. _(2025-10-14: Adapter emits schema-derived messages when `NEXT_PUBLIC_SCHEMA_NORMALISER=1`, with legacy fallback.)_
 - [x] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions. _(2025-10-14: Added `src/schema/providers/codex/mappings.test.ts` to exercise new mappings.)_
 - [ ] Benchmark parsing performance on large logs and record baseline metrics. _(Deferred: lightweight benchmarking approach TBD after settling on toolchain.)_
+- [x] Fix Cursor workspace matching to handle case differences across resource paths. _(2025-10-31: Normalised provider paths and added regression tests covering mixed-case URIs.)_
+- [x] Fix Cursor session detail loading by deriving the accurate provider root from snapshot files. _(2025-10-31: Detail API resolves snapshot IDs via `normalizeProviderRoot`, reloads sessions, and surfaces debug telemetry for ingestion.)_
+- [x] Repair build regression from Cursor debug helpers by aligning provider error typing and chat-store persistence migration. _(2025-10-31: `ProviderImportError` now imports from `@/types/providers` and `chat-store` migration returns a typed object to satisfy `pnpm run build`.)_
 
 ### A4. Structured Tool Call UI
 
@@ -72,10 +75,14 @@ Goal: Robust local import via server routes and in‑browser import with clear e
 - [x] Server-side auto-detect defaults for provider roots across OS (HOME-based + Docker path). _(2025-10-20: `loadSessionsOnServer` probes common paths for Claude/Codex; Gemini placeholder.)_
 - [x] Add Gemini adapter parity once sample logs are ready. _(2025-10-22: Implemented `src/lib/providers/gemini.ts`, API wiring, tests, and default path detection.)_
 - [x] Surface Cursor provider directory alongside others in config/state so settings/localisation include it. _(2025-10-30: Added `cursor` entries across provider paths, store, and settings UI.)_
-- [ ] Research Cursor log format and collect anonymised fixtures; capture schema differences.
-- [ ] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events. _(Placeholder loader stubbed; awaiting schema fixtures.)_
+- [x] Research Cursor log format and collect anonymised fixtures; capture schema differences. _(2025-10-30: Added `fixtures/cursor`, documented state.vscdb + history layout.)_
+- [x] Extend schema normaliser + adapters to support Cursor provider (`CURSOR_ROOT`) with tests covering tool/run events. _(2025-10-30: Loader now surfaces prompts + history artifacts; schema-backed normaliser still pending.)_ _(2025-10-30: Added Cursor schema mapping, normaliser integration, and Vitest coverage for chat/tool flows.)_
 - [x] Auto-detect default Cursor workspace path (macOS `~/Library/Application Support/Cursor`, Windows roaming profile) and expose override in settings. _(2025-10-30: Server candidates & normaliser now cover Cursor for macOS/Linux/Windows.)_
-- [ ] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration.
+- [x] Update docs (`docs/data-sources.md`, README) and UI copy to reference Cursor ingestion and configuration. _(2025-10-30: README variants + data-sources notes updated with storage paths.)_
+- [x] Parse Cursor `aiService.generations` / `workbench.panel.aichat` chat data to hydrate prompt + assistant transcripts, falling back to history snapshots when responses are absent. _(2025-10-30: Loader resolves prompt/assistant text from chatdata with history fallback.)_
+- [x] Document the Cursor transcript extraction pipeline and add verification steps ensuring Cursor sessions appear in list/detail views. _(2025-10-30: Revised `docs/cursor-storage.md` with chatdata/generation mapping + sqlite checklist.)_
+- [x] Capture multi-turn Cursor fixtures with tool metadata to exercise schema normaliser. _(2025-10-30: Expanded sample workspace/history with chatdata threads and tool invocation artifacts.)_
+- [ ] Source anonymised Cursor exports covering images and multiple tool invocations to harden schema mappings (pending access to real transcripts).
 
 ### 1.D – Quality Gates, Hooks, Testing
 

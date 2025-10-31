@@ -111,7 +111,7 @@ async function pathExists(dir: string): Promise<boolean> {
   }
 }
 
-async function resolveDefaultProviderRoot(
+export async function resolveDefaultProviderRoot(
   provider: ProviderId,
 ): Promise<string | undefined> {
   const candidates = getDefaultProviderCandidates(provider);

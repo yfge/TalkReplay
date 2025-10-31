@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -184,11 +184,23 @@ export function runCli(
   require(paths.serverPath);
 }
 
-const invokedDirectly =
-  typeof process.argv[1] === "string" &&
-  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+export function isInvokedDirectly(
+  argv = process.argv,
+  moduleUrl = import.meta.url,
+  realpath = realpathSync,
+) {
+  if (!Array.isArray(argv) || typeof argv[1] !== "string") {
+    return false;
+  }
+  try {
+    const resolvedArg = realpath(argv[1]);
+    return fileURLToPath(moduleUrl) === resolvedArg;
+  } catch {
+    return false;
+  }
+}
 
-if (invokedDirectly) {
+if (isInvokedDirectly()) {
   try {
     runCli();
   } catch (error) {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { ensureBuildArtifacts, parseCliArgs } from "../../bin/talk-replay.mjs";
+import {
+  ensureBuildArtifacts,
+  isInvokedDirectly,
+  parseCliArgs,
+} from "../../bin/talk-replay.mjs";
 
 describe("parseCliArgs", () => {
   it("returns defaults when no args or env overrides are provided", () => {
@@ -100,5 +104,42 @@ describe("ensureBuildArtifacts", () => {
         exists: (p) => p !== paths.staticDir,
       }),
     ).toThrow(/static/);
+  });
+});
+
+describe("isInvokedDirectly", () => {
+  it("returns true when module url and argv resolve to the same path", () => {
+    expect(
+      isInvokedDirectly(
+        ["/usr/bin/node", "/tmp/cli.mjs"],
+        "file:///tmp/cli.mjs",
+        (value) => value,
+      ),
+    ).toBe(true);
+  });
+
+  it("resolves symlinks via provided realpath function", () => {
+    expect(
+      isInvokedDirectly(
+        ["/usr/bin/node", "/usr/local/bin/talk-replay"],
+        "file:///opt/pkg/bin/talk-replay.mjs",
+        (value) =>
+          value === "/usr/local/bin/talk-replay"
+            ? "/opt/pkg/bin/talk-replay.mjs"
+            : value,
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when realpath throws", () => {
+    expect(
+      isInvokedDirectly(
+        ["/usr/bin/node", "/missing/script"],
+        "file:///opt/pkg/bin/talk-replay.mjs",
+        () => {
+          throw new Error("ENOENT");
+        },
+      ),
+    ).toBe(false);
   });
 });

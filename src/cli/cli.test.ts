@@ -1,7 +1,9 @@
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   ensureBuildArtifacts,
+  ensureStaticBridge,
   isInvokedDirectly,
   parseCliArgs,
 } from "../../bin/talk-replay.mjs";
@@ -104,6 +106,62 @@ describe("ensureBuildArtifacts", () => {
         exists: (p) => p !== paths.staticDir,
       }),
     ).toThrow(/static/);
+  });
+});
+
+describe("ensureStaticBridge", () => {
+  const paths = {
+    packageRoot: "/tmp/project",
+    standaloneDir: "/tmp/project/.next/standalone",
+    serverPath: "/tmp/project/.next/standalone/server.js",
+    staticDir: "/tmp/project/.next/static",
+  };
+
+  it("creates the standalone .next directory when missing", () => {
+    const mkdirCalls: string[] = [];
+    ensureStaticBridge(paths, {
+      exists: (p) => p === paths.staticDir,
+      mkdir: (p) => mkdirCalls.push(p),
+      symlink: () => {
+        throw Object.assign(new Error("no symlink"), { code: "EPERM" });
+      },
+      copy: () => undefined,
+    });
+    expect(mkdirCalls).toContain(path.join(paths.standaloneDir, ".next"));
+  });
+
+  it("attempts to create a symlink before copying", () => {
+    const calls = { symlink: 0, copy: 0 };
+    ensureStaticBridge(paths, {
+      exists: (p) => p === paths.staticDir,
+      mkdir: () => undefined,
+      symlink: () => {
+        calls.symlink += 1;
+        throw Object.assign(new Error("fail"), { code: "EPERM" });
+      },
+      copy: () => {
+        calls.copy += 1;
+      },
+    });
+    expect(calls.symlink).toBe(1);
+    expect(calls.copy).toBe(1);
+  });
+
+  it("skips work when static bridge already exists", () => {
+    const called = { symlink: 0, copy: 0 };
+    const existingBridge = `${paths.standaloneDir}/.next/static`;
+    ensureStaticBridge(paths, {
+      exists: (p) => p === existingBridge || p === paths.staticDir,
+      mkdir: () => undefined,
+      symlink: () => {
+        called.symlink += 1;
+      },
+      copy: () => {
+        called.copy += 1;
+      },
+    });
+    expect(called.symlink).toBe(0);
+    expect(called.copy).toBe(0);
   });
 });
 

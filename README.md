@@ -58,7 +58,7 @@ Key scripts:
 - `pnpm build` – Next.js production build
 - `pnpm format:fix` – Prettier write mode
 
-On first run, open Settings to configure provider directories (Claude/Codex/Cursor/Gemini). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+On first run, a provider setup wizard appears and auto-detects common Claude/Codex/Cursor/Gemini directories; confirm or tweak the suggestions to start importing. You can revisit Settings at any point. Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
 
 ## One-command Preview (npx)
 

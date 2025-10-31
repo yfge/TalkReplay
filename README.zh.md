@@ -55,7 +55,7 @@ pnpm dev -- --port 3002
 - `pnpm build`：Next.js 生产构建
 - `pnpm format:fix`：Prettier 自动排版
 
-首次启动会弹出目录配置向导，可直接填写 Claude/Codex/Cursor/Gemini 日志目录，或通过环境变量自动填充（见下）。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
+首次启动会弹出目录向导，应用会尝试自动检测 Claude/Codex/Cursor/Gemini 的常见日志路径，你可以确认或手动修改后继续；任何时候都能在设置页再次调整。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
 
 ## 一键体验（npx）
 

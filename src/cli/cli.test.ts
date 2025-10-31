@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ensureBuildArtifacts,
+  ensurePublicBridge,
   ensureStaticBridge,
   isInvokedDirectly,
   parseCliArgs,
@@ -199,5 +200,60 @@ describe("isInvokedDirectly", () => {
         },
       ),
     ).toBe(false);
+  });
+});
+
+describe("ensurePublicBridge", () => {
+  const paths = {
+    packageRoot: "/tmp/project",
+    standaloneDir: "/tmp/project/.next/standalone",
+  };
+
+  it("skips when source public directory is missing", () => {
+    ensurePublicBridge(paths, {
+      exists: (p) => p === "/tmp/project/.next/standalone/public",
+      mkdir: () => undefined,
+      symlink: () => {
+        throw new Error("should not call");
+      },
+      copy: () => {
+        throw new Error("should not call");
+      },
+    });
+  });
+
+  it("creates symlink to public directory", () => {
+    const calls: string[] = [];
+    ensurePublicBridge(paths, {
+      exists: (p) => p === "/tmp/project/public",
+      mkdir: () => undefined,
+      symlink: (from, to) => {
+        calls.push(`${String(from)}->${String(to)}`);
+      },
+      copy: () => {
+        throw new Error("copy should not execute");
+      },
+    });
+    expect(calls).toContain(
+      "/tmp/project/public->/tmp/project/.next/standalone/public",
+    );
+  });
+
+  it("falls back to copy when symlink fails", () => {
+    let copied = false;
+    ensurePublicBridge(paths, {
+      exists: (p) => p === "/tmp/project/public",
+      mkdir: () => undefined,
+      symlink: () => {
+        const error = new Error("no symlink");
+        // @ts-expect-error – augment error with code
+        error.code = "EPERM";
+        throw error;
+      },
+      copy: () => {
+        copied = true;
+      },
+    });
+    expect(copied).toBe(true);
   });
 });

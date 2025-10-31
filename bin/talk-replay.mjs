@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-import { existsSync, realpathSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  realpathSync,
+  symlinkSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -121,6 +127,48 @@ export function ensureBuildArtifacts(paths, options = { exists: existsSync }) {
   }
 }
 
+export function ensureStaticBridge(
+  paths,
+  options = {
+    exists: existsSync,
+    mkdir: mkdirSync,
+    symlink: symlinkSync,
+    copy: cpSync,
+  },
+) {
+  const {
+    exists = existsSync,
+    mkdir = mkdirSync,
+    symlink = symlinkSync,
+    copy = cpSync,
+  } = options;
+
+  const standaloneNextDir = path.join(paths.standaloneDir, ".next");
+  const standaloneStaticDir = path.join(standaloneNextDir, "static");
+
+  if (!exists(standaloneNextDir)) {
+    mkdir(standaloneNextDir, { recursive: true });
+  }
+
+  if (exists(standaloneStaticDir)) {
+    return;
+  }
+
+  try {
+    symlink(paths.staticDir, standaloneStaticDir, "junction");
+    return;
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "EEXIST") {
+      return;
+    }
+    if (error && typeof error === "object" && error.code === "EISDIR") {
+      return;
+    }
+  }
+
+  copy(paths.staticDir, standaloneStaticDir, { recursive: true });
+}
+
 export function printHelp(logger = console.log) {
   const lines = [
     "TalkReplay CLI",
@@ -167,6 +215,7 @@ export function runCli(
 
   const paths = resolveStandalonePaths(options.packageRoot);
   ensureBuildArtifacts(paths, { exists });
+  ensureStaticBridge(paths);
 
   env.PORT = String(parsed.port);
   env.HOSTNAME = parsed.hostname;

@@ -46,7 +46,18 @@
     "skip": "Skip for now",
     "notice": "You can update these paths later from the header.",
     "validation": "Provide at least one directory or continue without importing.",
-    "validationInvalid": "Enter a valid directory path (avoid characters like * ? < > |)."
+    "validationInvalid": "Enter a valid directory path (avoid characters like * ? < > |).",
+    "firstRun": {
+      "title": "Let\u2019s get your providers set up",
+      "description": "We\u2019ll attempt to detect common transcript directories. Confirm or adjust the paths before importing.",
+      "loading": "Detecting directories\u2026",
+      "error": "Could not verify directories automatically. Enter paths manually or adjust them later in Settings.",
+      "useSuggestion": "Use detected path",
+      "notDetected": "Not detected",
+      "detected": "Detected path: {{path}}",
+      "continue": "Continue",
+      "openSettings": "Open settings"
+    }
   },
   "chats": {
     "emptyTitle": "No conversations yet",

@@ -107,6 +107,25 @@ Goal: Multi-stage Docker targeting <200MB; clear runbooks for macOS/Windows/Dock
 - [ ] Measure image size in CI; document size and optimise if >200MB (alpine libc, prune locales, strip dev deps from standalone if needed).
 - [ ] Optional NGINX/alpine scratch serving of static assets, document trade-offs.
 
+### 1.F – npx CLI Distribution
+
+Goal: Ship a one-command `npx talk-replay` experience with automated packaging, CI, and documentation.
+
+- [x] Prepare npm publishing config (un-set `private`, add `bin` entry, `files`, `publishConfig`, `prepack` build/test guard). _(2025-11-01: `package.json` now exposes the CLI bin, packaging files, and prepack verification.)_
+- [x] Implement CLI runner that exposes `--port`/`--hostname` flags and starts the prebuilt Next server. _(2025-11-01: Added `bin/talk-replay.mjs` using Next standalone output with env/flag parsing.)_
+- [x] Add automated tests covering CLI option parsing and failure messaging when build assets are missing. _(2025-11-01: `src/cli/cli.test.ts` exercises flag parsing and artifact validation.)_
+- [x] Extend GitHub Actions to pack the npm artifact and ensure CLI smoke tests run on pushes/PRs. _(2025-11-01: CI packs tarball + help smoke test; new `npm-publish` workflow publishes on release.)_
+- [x] Document npx usage, release workflow, and troubleshooting in `README.md` + `docs/`. _(2025-11-01: README (EN/中文) covers `npx talk-replay`; release doc updated with npm steps.)_
+- [x] Provide release checklist in `agents_chat` template to capture publish context (new subsection or linked doc). _(2025-11-01: Added guidance in `docs/release-process.md` for agents_chat release sections.)_
+
+### 1.G – First-run Provider Onboarding
+
+Goal: Guide users through provider directory selection with OS-aware auto-detection.
+
+- [x] Restore a first-run provider setup dialog backed by persisted preferences, auto-opening until completion. _(2025-11-01: Added `ProviderSetupDialog` with skip/continue flows and store gating.)_
+- [x] Surface OS-aware default paths through `/api/providers/defaults` with client fallbacks for offline contexts. _(2025-11-01: New API route leveraging `resolveDefaultProviderRoot`, dialog fetch with graceful fallback.)_
+- [x] Update UI copy and docs to mention automated detection on first launch (EN/中文). _(2025-11-01: README variants and locale strings refreshed for the onboarding wizard.)_
+
 ## Milestone 2 – Collaborative Server Platform
 
 Goal: Introduce a backend service that aggregates shared directories from team members, enabling collaborative browsing while preserving the frontend UX.

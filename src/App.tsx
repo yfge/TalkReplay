@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ChatList } from "@/components/chats/chat-list";
 import { AppShell } from "@/components/layout/app-shell";
+import { ProviderSetupDialog } from "@/components/preferences/provider-setup-dialog";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { Button } from "@/components/ui/button";
 import { fetchSessionSummaries } from "@/lib/session-loader/client";
@@ -21,6 +22,7 @@ export function App() {
   const hydrateProviderPaths = usePreferencesStore(
     (state) => state.hydrateProviderPaths,
   );
+  const isSetupComplete = usePreferencesStore((state) => state.isSetupComplete);
   const [isRefreshing, setIsRefreshing] = useState(false);
   // Inline detail state removed; details now open on /chats/[id]
 
@@ -59,7 +61,11 @@ export function App() {
     }
   }, [sessionSummaries.length, refreshSessions]);
 
-  // Initial setup is now handled in Settings page; no modal dialog.
+  const [showSetupDialog, setShowSetupDialog] = useState(!isSetupComplete);
+
+  useEffect(() => {
+    setShowSetupDialog(!isSetupComplete);
+  }, [isSetupComplete]);
 
   // No inline detail fetching effect — navigation handles full-page detail view.
 
@@ -118,6 +124,15 @@ export function App() {
           {/* Intentionally left blank: detail now opens on /chats/[id] */}
         </div>
       </AppShell>
+      <ProviderSetupDialog
+        open={showSetupDialog}
+        onClose={() => {
+          setShowSetupDialog(false);
+        }}
+        onCompleted={() => {
+          void refreshSessions();
+        }}
+      />
     </>
   );
 }

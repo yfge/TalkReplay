@@ -57,6 +57,30 @@ pnpm dev -- --port 3002
 
 首次启动会弹出目录配置向导，可直接填写 Claude/Codex/Cursor/Gemini 日志目录，或通过环境变量自动填充（见下）。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
 
+## 一键体验（npx）
+
+请确保本地 Node.js 版本在 18 及以上，然后即可一条命令启动预构建的服务：
+
+```bash
+npx talk-replay --port 4000
+```
+
+常用参数：
+
+- `--port` / `-p`：监听端口（默认 `3000`，也可使用 `$PORT` 环境变量）。
+- `--hostname` / `-H`：绑定主机地址（默认 `0.0.0.0` 方便局域网访问）。
+- `--help`：查看命令帮助而不实际启动服务。
+
+npx 包含 Next.js standalone 构建产物，无需额外编译即可运行。如果在源码仓库内直接执行 `bin/talk-replay.mjs`，请先运行 `pnpm build` 生成 `.next/standalone`。
+
+需要覆盖日志目录时，可在命令前设置环境变量：
+
+```bash
+NEXT_PUBLIC_CLAUDE_ROOT=$HOME/.claude/projects \
+NEXT_PUBLIC_CODEX_ROOT=$HOME/.codex/sessions \
+npx talk-replay --port 4500
+```
+
 ## 提供者目录配置
 
 默认路径（按操作系统）
@@ -260,6 +284,15 @@ node .next/standalone/server.js
 根据实际存储位置调整路径。通过环境变量保持与 Docker 配置一致，避免在代码里写死宿主机专用路径。
 若直接在宿主机运行，也可以不设置环境变量，启动后通过「提供者目录」对话框手动指定任意
 可读目录；环境变量仅提供默认值，便于与 Docker 场景对齐。
+
+## 发布自动化
+
+GitHub Actions 负责守护发布流程：
+
+- `.github/workflows/ci.yml`：在每次 push/PR 上执行 lint、测试、构建，同时调用 CLI 帮助命令并打包 npm 文件以供检查。
+- `.github/workflows/npm-publish.yml`：在发布 GitHub Release（或手动触发）时，将 `talk-replay` 包推送到 npm。启用前需配置具有发布权限的 `NPM_TOKEN` 仓库密钥。
+
+详细的操作步骤与 `agents_chat` 记录建议，见 `docs/release-process.md`。
 
 ## 测试与质量
 

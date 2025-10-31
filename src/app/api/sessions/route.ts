@@ -57,10 +57,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    const payloadDebugFlag = (payload as unknown as { __debug?: unknown })
+      .__debug;
     const includeDebug =
-      typeof (payload as Record<string, unknown>).__debug === "boolean"
-        ? Boolean((payload as Record<string, unknown>).__debug)
-        : false;
+      typeof payloadDebugFlag === "boolean" ? payloadDebugFlag : false;
     const result = await loadSessionsOnServer(
       payload.paths,
       payload.previousSignatures,

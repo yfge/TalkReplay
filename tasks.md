@@ -33,6 +33,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 - [ ] Benchmark parsing performance on large logs and record baseline metrics. _(Deferred: lightweight benchmarking approach TBD after settling on toolchain.)_
 - [x] Fix Cursor workspace matching to handle case differences across resource paths. _(2025-10-31: Normalised provider paths and added regression tests covering mixed-case URIs.)_
 - [x] Fix Cursor session detail loading by deriving the accurate provider root from snapshot files. _(2025-10-31: Detail API resolves snapshot IDs via `normalizeProviderRoot`, reloads sessions, and surfaces debug telemetry for ingestion.)_
+- [x] Repair build regression from Cursor debug helpers by aligning provider error typing and chat-store persistence migration. _(2025-10-31: `ProviderImportError` now imports from `@/types/providers` and `chat-store` migration returns a typed object to satisfy `pnpm run build`.)_
 
 ### A4. Structured Tool Call UI
 

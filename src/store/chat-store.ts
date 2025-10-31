@@ -146,10 +146,11 @@ const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
     starred: Array.from(state.starred),
   }),
   migrate: (persisted, version) => {
-    if (!persisted) {
-      return persisted;
+    if (!persisted || typeof persisted !== "object") {
+      return {};
     }
-    const next: ChatPersistedState = { ...persisted };
+    const typedPersisted = persisted as ChatPersistedState;
+    const next: ChatPersistedState = { ...typedPersisted };
     if (next.filters) {
       const sanitized = sanitizeSources(next.filters.sources);
       const adjusted =

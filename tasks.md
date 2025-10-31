@@ -31,6 +31,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 - [x] Wire Claude adapter to the same pipeline (`tool_use`/`tool_result`/`text`) while preserving raw payloads for audit. _(2025-10-14: Adapter emits schema-derived messages when `NEXT_PUBLIC_SCHEMA_NORMALISER=1`, with legacy fallback.)_
 - [x] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions. _(2025-10-14: Added `src/schema/providers/codex/mappings.test.ts` to exercise new mappings.)_
 - [ ] Benchmark parsing performance on large logs and record baseline metrics. _(Deferred: lightweight benchmarking approach TBD after settling on toolchain.)_
+- [x] Fix Cursor workspace matching to handle case differences across resource paths. _(2025-10-31: Normalised provider paths and added regression tests covering mixed-case URIs.)_
 
 ### A4. Structured Tool Call UI
 

@@ -665,6 +665,27 @@ function decodeFileUri(uri: string | undefined): string | undefined {
   }
 }
 
+function normalizeCursorPath(value: string | undefined): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  let normalized = value.trim();
+  if (normalized.length === 0) {
+    return undefined;
+  }
+  normalized = normalized.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+  if (/^\/[A-Za-z]:/.test(normalized)) {
+    normalized = normalized.slice(1);
+  }
+  if (/^[A-Za-z]:/.test(normalized)) {
+    normalized = normalized.toLowerCase();
+  }
+  if (normalized.length > 1 && normalized.endsWith("/")) {
+    normalized = normalized.slice(0, -1);
+  }
+  return normalized;
+}
+
 async function readWorkspaceStateFromSqlite(
   statePath: string,
 ): Promise<CursorWorkspaceState | null> {
@@ -1138,14 +1159,32 @@ function matchArtifactsToWorkspace(
   artifacts: CursorArtifact[],
   workspace: CursorWorkspace,
 ): CursorArtifact[] {
-  if (!workspace.folderPath) {
+  const workspacePath = normalizeCursorPath(workspace.folderPath);
+  if (!workspacePath) {
     return [];
   }
-  const normalized = workspace.folderPath;
+  const workspacePrefix =
+    workspacePath === "/"
+      ? "/"
+      : workspacePath.endsWith("/")
+        ? workspacePath
+        : `${workspacePath}/`;
+  const workspacePathLower = workspacePath.toLowerCase();
+  const workspacePrefixLower = workspacePrefix.toLowerCase();
   return artifacts.filter((artifact) => {
+    const candidate =
+      normalizeCursorPath(artifact.resourcePath) ??
+      normalizeCursorPath(decodeFileUri(artifact.resourceUri));
+    if (!candidate) {
+      return false;
+    }
+    if (candidate === workspacePath || candidate.startsWith(workspacePrefix)) {
+      return true;
+    }
+    const candidateLower = candidate.toLowerCase();
     return (
-      typeof artifact.resourcePath === "string" &&
-      artifact.resourcePath.startsWith(normalized)
+      candidateLower === workspacePathLower ||
+      candidateLower.startsWith(workspacePrefixLower)
     );
   });
 }

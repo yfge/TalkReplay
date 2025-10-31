@@ -1,3 +1,4 @@
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -75,5 +76,52 @@ describe("cursor provider", () => {
         )
         .some(Boolean),
     ).toBe(true);
+  });
+
+  it("returns sessions when previous signatures are reused", async () => {
+    const initial = await loadCursorSessions(cursorFixturesRoot, {}, new Map());
+    expect(initial.sessions.length).toBeGreaterThan(0);
+
+    const subsequent = await loadCursorSessions(
+      cursorFixturesRoot,
+      { ...initial.signatures },
+      new Map(),
+    );
+
+    expect(subsequent.sessions.length).toBeGreaterThan(0);
+  });
+
+  it("matches artifacts when workspace casing differs from resource paths", async () => {
+    const workspaceJsonPath = path.join(
+      cursorFixturesRoot,
+      "User",
+      "workspaceStorage",
+      "sample-workspace",
+      "workspace.json",
+    );
+    const original = await readFile(workspaceJsonPath, "utf8");
+    try {
+      const workspace = JSON.parse(original) as { folder?: string };
+      if (workspace.folder) {
+        workspace.folder = workspace.folder.replace(
+          "file:///Users",
+          "file:///USERS",
+        );
+        await writeFile(
+          workspaceJsonPath,
+          `${JSON.stringify(workspace, null, 2)}\n`,
+          "utf8",
+        );
+      }
+
+      const result = await loadCursorSessions(
+        cursorFixturesRoot,
+        {},
+        new Map(),
+      );
+      expect(result.sessions.length).toBeGreaterThan(0);
+    } finally {
+      await writeFile(workspaceJsonPath, original, "utf8");
+    }
   });
 });

@@ -1,7 +1,6 @@
 import { promises as fs } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
-import initSqlJs from "sql.js";
 
 import type { ProviderLoadResult } from "@/lib/providers/types";
 import { encodeSessionId } from "@/lib/session-loader/ids";
@@ -594,6 +593,18 @@ function ensureAbsolutePath(p: string): string {
   if (p.startsWith("/node_modules/")) {
     return path.join(process.cwd(), p.slice(1));
   }
+  const rscSegment = `${path.sep}(rsc)${path.sep}node_modules${path.sep}`;
+  if (p.includes(rscSegment)) {
+    const [, remainder] = p.split(rscSegment);
+    if (remainder) {
+      return path.join(process.cwd(), "node_modules", remainder);
+    }
+  } else if (p.includes("/(rsc)/node_modules/")) {
+    const remainder = p.split("/(rsc)/node_modules/")[1];
+    if (remainder) {
+      return path.join(process.cwd(), "node_modules", remainder);
+    }
+  }
   if (path.isAbsolute(p)) {
     return p;
   }
@@ -601,6 +612,15 @@ function ensureAbsolutePath(p: string): string {
 }
 
 async function resolveWasmPath(): Promise<string> {
+  if (
+    wasmPathCache &&
+    (wasmPathCache.includes("/(rsc)/node_modules/") ||
+      wasmPathCache.includes(
+        `${path.sep}(rsc)${path.sep}node_modules${path.sep}`,
+      ))
+  ) {
+    wasmPathCache = null;
+  }
   if (wasmPathCache) {
     return wasmPathCache;
   }
@@ -620,18 +640,46 @@ async function resolveWasmPath(): Promise<string> {
     }
   }
   const pkgPath = ensureAbsolutePath(require.resolve("sql.js/package.json"));
-  const wasmPath = path.join(path.dirname(pkgPath), "dist/sql-wasm.wasm");
+  let wasmPath = path.join(path.dirname(pkgPath), "dist/sql-wasm.wasm");
+  if (wasmPath.includes("/(rsc)/node_modules/")) {
+    const remainder = wasmPath.split("/(rsc)/node_modules/")[1];
+    if (remainder) {
+      const candidate = path.join(process.cwd(), "node_modules", remainder);
+      try {
+        await fs.access(candidate);
+        wasmPath = candidate;
+      } catch {
+        // ignore if mapped path not accessible
+      }
+    }
+  } else if (
+    wasmPath.includes(`${path.sep}(rsc)${path.sep}node_modules${path.sep}`)
+  ) {
+    const remainder = wasmPath.split(
+      `${path.sep}(rsc)${path.sep}node_modules${path.sep}`,
+    )[1];
+    if (remainder) {
+      const candidate = path.join(process.cwd(), "node_modules", remainder);
+      try {
+        await fs.access(candidate);
+        wasmPath = candidate;
+      } catch {
+        // ignore
+      }
+    }
+  }
   wasmPathCache = wasmPath;
   return wasmPath;
 }
 
 async function getSqlModule(): Promise<SqlJsModule> {
   if (!sqlModulePromise) {
+    const initSqlJs = require("sql.js") as unknown as (
+      config?: SqlJsConfig,
+    ) => Promise<SqlJsModule>;
     const wasmPath = await resolveWasmPath();
     const wasmDir = isUrl(wasmPath) ? undefined : path.dirname(wasmPath);
-    sqlModulePromise = (
-      initSqlJs as unknown as (config?: SqlJsConfig) => Promise<SqlJsModule>
-    )({
+    sqlModulePromise = initSqlJs({
       locateFile: (file: string) => {
         if (isUrl(wasmPath)) {
           return wasmPath;
@@ -740,7 +788,16 @@ async function readWorkspaceStateFromSqlite(
       return null;
     }
     return state;
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV !== "production") {
+      const globalWithDebug = globalThis as typeof globalThis & {
+        __cursorDebugSqlErrors?: string[];
+      };
+      const previous = globalWithDebug.__cursorDebugSqlErrors ?? [];
+      const message =
+        error instanceof Error ? error.message : "Unknown sql.js error";
+      globalWithDebug.__cursorDebugSqlErrors = [...previous, message];
+    }
     return null;
   }
 }
@@ -1389,8 +1446,7 @@ export async function loadCursorSessions(
 
 function inferCursorRootFromSnapshot(filePath: string): string | undefined {
   const historyDir = path.dirname(path.dirname(path.dirname(filePath)));
-  const userDir = path.dirname(historyDir);
-  const rootDir = path.dirname(userDir);
+  const rootDir = path.dirname(historyDir);
   return rootDir;
 }
 

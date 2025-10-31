@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 const nextConfig = {
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ["sql.js"],
   },
   output: "standalone",
   webpack: (config) => {

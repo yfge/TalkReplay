@@ -32,6 +32,7 @@ Goal: Drive Claude & Codex parsing from JSON Schemas so tool calls/results land 
 - [x] Add unit/snapshot tests that validate + normalise fixtures through the schema layer and guard regressions. _(2025-10-14: Added `src/schema/providers/codex/mappings.test.ts` to exercise new mappings.)_
 - [ ] Benchmark parsing performance on large logs and record baseline metrics. _(Deferred: lightweight benchmarking approach TBD after settling on toolchain.)_
 - [x] Fix Cursor workspace matching to handle case differences across resource paths. _(2025-10-31: Normalised provider paths and added regression tests covering mixed-case URIs.)_
+- [x] Fix Cursor session detail loading by deriving the accurate provider root from snapshot files. _(2025-10-31: Detail API resolves snapshot IDs via `normalizeProviderRoot`, reloads sessions, and surfaces debug telemetry for ingestion.)_
 
 ### A4. Structured Tool Call UI
 

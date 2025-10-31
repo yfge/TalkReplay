@@ -103,6 +103,15 @@ WSL2 注意：从 WSL 里启动 Docker 时，使用 `/mnt/c/Users/<你>/.claude/
 
 后端同样支持 `CLAUDE_ROOT`、`CODEX_ROOT`、`CURSOR_ROOT`、`GEMINI_ROOT` 环境变量；归一化逻辑位于 `src/config/providerPaths.ts`。
 
+快速验证：使用以下命令检查 Cursor 会话是否能被解析
+
+```bash
+pnpm dlx tsx scripts/check-cursor.ts \
+  "/Users/<你>/Library/Application Support/Cursor"
+```
+
+（若省略参数将读取 `CURSOR_ROOT` 或自动探测的默认路径。）
+
 ### 会话管线
 
 - Provider 适配器存放在 `src/lib/providers/`，共享的会话模型定义在 `src/types/chat.ts`。

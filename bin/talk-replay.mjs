@@ -169,6 +169,48 @@ export function ensureStaticBridge(
   copy(paths.staticDir, standaloneStaticDir, { recursive: true });
 }
 
+export function ensurePublicBridge(
+  paths,
+  options = {
+    exists: existsSync,
+    mkdir: mkdirSync,
+    symlink: symlinkSync,
+    copy: cpSync,
+  },
+) {
+  const {
+    exists = existsSync,
+    mkdir = mkdirSync,
+    symlink = symlinkSync,
+    copy = cpSync,
+  } = options;
+
+  const sourcePublicDir = path.join(paths.packageRoot, "public");
+  if (!exists(sourcePublicDir)) {
+    return;
+  }
+
+  const targetPublicDir = path.join(paths.standaloneDir, "public");
+
+  if (exists(targetPublicDir)) {
+    return;
+  }
+
+  try {
+    mkdir(path.dirname(targetPublicDir), { recursive: true });
+    symlink(sourcePublicDir, targetPublicDir, "junction");
+    return;
+  } catch (error) {
+    if (error && typeof error === "object" && error.code === "EEXIST") {
+      return;
+    }
+    if (error && typeof error === "object" && error.code === "EISDIR") {
+      return;
+    }
+  }
+
+  copy(sourcePublicDir, targetPublicDir, { recursive: true });
+}
 export function printHelp(logger = console.log) {
   const lines = [
     "TalkReplay CLI",
@@ -216,6 +258,7 @@ export function runCli(
   const paths = resolveStandalonePaths(options.packageRoot);
   ensureBuildArtifacts(paths, { exists });
   ensureStaticBridge(paths);
+  ensurePublicBridge(paths);
 
   env.PORT = String(parsed.port);
   env.HOSTNAME = parsed.hostname;

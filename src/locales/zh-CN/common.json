@@ -46,7 +46,18 @@
     "skip": "暂时跳过",
     "notice": "稍后可以在顶部工具栏再次修改。",
     "validation": "请至少提供一个目录，或选择跳过后再导入。",
-    "validationInvalid": "请输入有效的目录路径（避免包含 * ? < > | 等字符）。"
+    "validationInvalid": "请输入有效的目录路径（避免包含 * ? < > | 等字符）。",
+    "firstRun": {
+      "title": "先配置一下各助手的目录",
+      "description": "我们会尝试自动检测常见的日志目录，你可以确认或手动修改后再导入。",
+      "loading": "正在检测目录…",
+      "error": "暂时无法自动检测目录，请手动填写或稍后在设置中调整。",
+      "useSuggestion": "使用检测到的路径",
+      "notDetected": "未检测到",
+      "detected": "检测到的路径：{{path}}",
+      "continue": "继续",
+      "openSettings": "前往设置"
+    }
   },
   "chats": {
     "emptyTitle": "暂无会话",

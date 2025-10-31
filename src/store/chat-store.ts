@@ -138,7 +138,7 @@ function ensureSource(
 
 const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
   name: "agents-chat-state",
-  version: 5,
+  version: 6,
   storage: createJSONStorage(() => safeStateStorage),
   partialize: (state) => ({
     filters: state.filters,
@@ -152,17 +152,14 @@ const chatStorePersistOptions: PersistOptions<ChatState, ChatPersistedState> = {
     const next: ChatPersistedState = { ...persisted };
     if (next.filters) {
       const sanitized = sanitizeSources(next.filters.sources);
-      if (version < 5 && SUPPORTED_SOURCES.includes("cursor")) {
-        next.filters = {
-          ...next.filters,
-          sources: ensureSource(sanitized, "cursor"),
-        };
-      } else {
-        next.filters = {
-          ...next.filters,
-          sources: sanitized,
-        };
-      }
+      const adjusted =
+        version < 6 && SUPPORTED_SOURCES.includes("cursor")
+          ? ensureSource(sanitized, "cursor")
+          : sanitized;
+      next.filters = {
+        ...next.filters,
+        sources: adjusted,
+      };
     }
     return next;
   },

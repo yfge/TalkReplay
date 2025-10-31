@@ -60,6 +60,30 @@ Key scripts:
 
 On first run, open Settings to configure provider directories (Claude/Codex/Cursor/Gemini). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
 
+## One-command Preview (npx)
+
+Install Node.js 18 or newer, then launch the prebuilt bundle directly from npm:
+
+```bash
+npx talk-replay --port 4000
+```
+
+Flags:
+
+- `--port` / `-p` sets the listening port (defaults to `3000` or `$PORT`).
+- `--hostname` / `-H` controls the bind address (`0.0.0.0` by default for LAN access).
+- `--help` prints usage details without starting the server.
+
+The CLI ships with the Next.js standalone output, so no extra build step is needed when running via `npx`. When executing the CLI from a git checkout instead of npm, run `pnpm build` first to generate `.next/standalone`.
+
+Provider paths follow the same precedence as the web app (in-app settings → env vars → auto-detection). Supply overrides with environment variables when invoking `npx`:
+
+```bash
+NEXT_PUBLIC_CLAUDE_ROOT=$HOME/.claude/projects \
+NEXT_PUBLIC_CODEX_ROOT=$HOME/.codex/sessions \
+npx talk-replay --port 4500
+```
+
 ## Provider Roots & Configuration
 
 Environment variables drive autodiscovery (defaults by OS):
@@ -285,6 +309,15 @@ node .next/standalone/server.js
 Adjust the paths if you store transcripts elsewhere. When running directly on the host, you can also
 skip the environment variables and use the Settings page to point to any readable directory on demand;
 the env vars simply provide sensible defaults that mirror the Docker layout.
+
+## Release Automation
+
+Two GitHub Actions keep packaging and releases reproducible:
+
+- `.github/workflows/ci.yml` runs linting, tests, builds the Next.js bundle, exercises the CLI help command, and creates an npm tarball for inspection on every push/PR.
+- `.github/workflows/npm-publish.yml` publishes the `talk-replay` package to npm when a GitHub release is published (or when the workflow is triggered manually). Configure an `NPM_TOKEN` secret with publish rights before enabling it.
+
+See `docs/release-process.md` for the end-to-end checklist, including how to capture release notes in `agents_chat`.
 
 ## Testing & Quality Gates
 

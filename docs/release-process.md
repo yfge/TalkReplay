@@ -1,11 +1,13 @@
 # Release Process
 
-This project ships through two GitHub Actions workflows:
+This project ships through three GitHub Actions workflows:
 
 1. **Prepare Release Draft** (`.github/workflows/prepare-release.yml`)  
    Creates a version bump PR, generates release notes under `docs/releases/`, and opens a draft GitHub release.
 2. **Build and Push Docker on Release** (`.github/workflows/build-on-release.yml`)  
    Builds multi-arch Docker images for both GitHub Container Registry and Docker Hub (optional) when a release is published.
+3. **Publish Package** (`.github/workflows/npm-publish.yml`)  
+   Publishes the `talk-replay` package to npm when a release is published (or the workflow is triggered manually).
 
 ## Prerequisites
 
@@ -14,6 +16,7 @@ This project ships through two GitHub Actions workflows:
   - `DOCKERHUB_USER`, `DOCKERHUB_TOKEN`
   - `IMAGE_NAME` (repository variable, defaults to `talk-replay`)
 - GitHub Container Registry publishing uses the built-in `GITHUB_TOKEN`.
+- Configure an `NPM_TOKEN` repository secret with publish rights for the npm workflow.
 
 ## Step-by-step
 
@@ -37,15 +40,34 @@ This project ships through two GitHub Actions workflows:
    - Publishing triggers the Docker build workflow which pushes:
      - `ghcr.io/<org>/talkreplay:<tag>` and `:latest`;
      - `DOCKERHUB_USER/IMAGE_NAME:<tag>` and `:latest` when credentials are present.
+   - The npm workflow runs in parallel and publishes `talk-replay@<tag>` to the npm registry.
 
 4. **Verify artefacts**
    - Check the “Build and Push Docker on Release” workflow summary for image locations.
-   - Pull and smoke test the published images as needed.
+   - Confirm the “Publish Package” workflow succeeded and `npm view talk-replay version` reports the new tag.
+   - Pull and smoke test the published Docker images as needed.
 
 ## First release checklist
 
 - [ ] Run `Prepare Release Draft` with target version `v0.1.0`.
 - [ ] Review the generated PR and ensure `docs/releases/v0.1.0.md` captures highlights.
 - [ ] Merge the PR, publish the draft release, and confirm Docker images were pushed.
+- [ ] Verify the npm package lists the new version via `npm view talk-replay version`.
+
+## agents_chat release snippet
+
+When capturing a release in `agents_chat`, add a `## Release checklist` section that includes:
+
+- version/tag published (`v0.1.0`);
+- links to the three workflows with run IDs;
+- verification commands, e.g.
+
+```bash
+npm view talk-replay version
+docker pull ghcr.io/<org>/talkreplay:v0.1.0
+node -e "console.log('CLI ok')"
+```
+
+Record any follow-up tasks (e.g., docs to refresh, rollout notes) directly under the checklist for quick traceability.
 
 Document the outcome in the latest `agents_chat` record together with any follow-up tasks.

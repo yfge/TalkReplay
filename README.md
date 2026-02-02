@@ -1,5 +1,6 @@
 # TalkReplay
-**  The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI **
+**The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI**
+
 TalkReplay is a vibe coding companion that turns your Claude and Codex transcripts into an interactive replay. It helps you revisit pairing sessions, capture insights, and share polished summaries with teammates.
 
 - **Languages:** [English](README.md) · [中文说明](README.zh.md)

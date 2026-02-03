@@ -1,12 +1,22 @@
 # TalkReplay 简介
 
-TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 Claude、Codex、Cursor 等聊天记录转化为可浏览、可搜索、可分享的会话时间线，帮助你整理灵感、总结经验并回放协作过程。
+> **唯一一个同时支持 Claude、Codex、Cursor、Gemini 的 AI 对话回放工具。**
+
+不同于只能导出静态 HTML 的 CLI 工具，TalkReplay 提供实时可搜索的界面，让你轻松回放 AI 编程会话、收藏重要对话、按日期/关键词过滤，并与团队分享。
+
+[![npm](https://img.shields.io/npm/v/talk-replay)](https://www.npmjs.com/package/talk-replay)
+[![GitHub stars](https://img.shields.io/github/stars/yfge/TalkReplay)](https://github.com/yfge/TalkReplay/stargazers)
+
+```bash
+npx talk-replay
+```
+
+---
 
 - **语言切换：** [English](README.md) · [中文说明](README.zh.md)
-- **技术栈：** Next.js 14（App Router）、React、TypeScript、Tailwind CSS、shadcn/ui、Zustand、React Query
-- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`）、Cursor（macOS：`~/Library/Application Support/Cursor`，Linux：`~/.config/Cursor`，Windows：`C:\Users\<你>\AppData\Roaming\Cursor`）、Gemini（`~/.gemini/logs`）
-- **部署环境：** macOS、Windows、本地浏览器导入、Docker
-- **协作方式：** 按 vibe coding 最佳实践组织，配套 `agents_chat/` 日志、`tasks.md` 任务板以及 Husky 强制检查
+- **支持来源：** Claude、Codex、Cursor、Gemini — 全部整合在一起
+- **技术栈：** Next.js 14 · TypeScript · Tailwind CSS · Zustand
+- **部署方式：** macOS、Windows、Linux、Docker 或直接 `npx`
 
 ## 核心能力
 

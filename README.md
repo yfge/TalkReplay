@@ -1,13 +1,23 @@
 # TalkReplay
 **The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI**
 
-TalkReplay is a vibe coding companion that turns your Claude and Codex transcripts into an interactive replay. It helps you revisit pairing sessions, capture insights, and share polished summaries with teammates.
+> **The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI.**
+
+Unlike CLI tools that export static HTML, TalkReplay gives you a live, searchable interface to revisit AI pairing sessions, star important conversations, filter by date/keyword, and share insights with your team.
+
+[![npm](https://img.shields.io/npm/v/talk-replay)](https://www.npmjs.com/package/talk-replay)
+[![GitHub stars](https://img.shields.io/github/stars/yfge/TalkReplay)](https://github.com/yfge/TalkReplay/stargazers)
+
+```bash
+npx talk-replay
+```
+
+---
 
 - **Languages:** [English](README.md) · [中文说明](README.zh.md)
-- **Tech stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · Zustand · React Query
-- **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`), Cursor (`~/Library/Application Support/Cursor` on macOS), Gemini (`~/.gemini/logs`)
-- **Deployment targets:** macOS, Windows, Docker, optional browser-only imports
-- **Workflow:** Opinionated vibe-coding blueprint featuring timestamped `agents_chat/` logs, `tasks.md` milestones, and Husky-enforced quality gates
+- **Providers:** Claude, Codex, Cursor, Gemini — all in one place
+- **Tech stack:** Next.js 14 · TypeScript · Tailwind CSS · Zustand
+- **Deploy anywhere:** macOS, Windows, Linux, Docker, or `npx`
 
 ## Why TalkReplay?
 

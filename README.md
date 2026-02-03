@@ -1,5 +1,4 @@
 # TalkReplay
-**The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI**
 
 > **The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI.**
 

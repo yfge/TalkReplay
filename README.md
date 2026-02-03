@@ -77,6 +77,52 @@ Flags:
 
 The CLI ships with the Next.js standalone output, so no extra build step is needed when running via `npx`. When executing the CLI from a git checkout instead of npm, run `pnpm build` first to generate `.next/standalone`.
 
+## Service Installation (Auto-start)
+
+Install TalkReplay as a system service to auto-start on login:
+
+```bash
+# Install and start the service
+npx talk-replay install --port 3000
+
+# Check status
+npx talk-replay status
+
+# Stop, start, restart
+npx talk-replay stop
+npx talk-replay start
+npx talk-replay restart
+
+# Remove the service
+npx talk-replay uninstall
+```
+
+Install options:
+
+- `--port <number>` – Port to listen on (default 3000)
+- `--hostname <value>` – Hostname binding (default 0.0.0.0)
+- `--name <string>` – Service name (default talk-replay)
+
+### Platform Details
+
+**macOS (launchd)**
+
+- Plist location: `~/Library/LaunchAgents/com.talkreplay.plist`
+- Logs: `~/Library/Logs/talk-replay.log`
+- The service starts automatically on login
+
+**Linux (systemd user service)**
+
+- Unit file: `~/.config/systemd/user/talk-replay.service`
+- View logs: `journalctl --user -u talk-replay -f`
+- Requires systemd with user services enabled
+
+**Windows**
+
+- Requires `node-windows` package (optional dependency)
+- Install it first: `npm install -g node-windows && npm link node-windows`
+- Manage via Windows Services (`services.msc`)
+
 Provider paths follow the same precedence as the web app (in-app settings → env vars → auto-detection). Supply overrides with environment variables when invoking `npx`:
 
 ```bash

@@ -13,6 +13,16 @@ import { fileURLToPath } from "node:url";
 
 const DEFAULT_PORT = 3000;
 const DEFAULT_HOSTNAME = "0.0.0.0";
+const DEFAULT_SERVICE_NAME = "talk-replay";
+
+const SERVICE_COMMANDS = [
+  "install",
+  "uninstall",
+  "start",
+  "stop",
+  "restart",
+  "status",
+];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,8 +48,15 @@ export function parseCliArgs(args, env = process.env) {
   let portValue = env.TALK_REPLAY_PORT ?? env.PORT ?? DEFAULT_PORT;
   let hostnameValue =
     env.TALK_REPLAY_HOSTNAME ?? env.HOSTNAME ?? DEFAULT_HOSTNAME;
+  let serviceNameValue = DEFAULT_SERVICE_NAME;
   let showHelp = false;
   let showVersion = false;
+  let command = null;
+
+  // Check for service command as first argument
+  if (tokens.length > 0 && SERVICE_COMMANDS.includes(tokens[0])) {
+    command = tokens.shift();
+  }
 
   while (tokens.length > 0) {
     const token = tokens.shift();
@@ -78,6 +95,18 @@ export function parseCliArgs(args, env = process.env) {
       hostnameValue = token.split("=", 2)[1];
       continue;
     }
+    if (token === "-n" || token === "--name") {
+      const next = tokens.shift();
+      if (next === undefined) {
+        throw new Error("Missing value for --name.");
+      }
+      serviceNameValue = next;
+      continue;
+    }
+    if (token.startsWith("--name=")) {
+      serviceNameValue = token.split("=", 2)[1];
+      continue;
+    }
     throw new Error(`Unknown argument "${token}". Use --help to view options.`);
   }
 
@@ -86,10 +115,16 @@ export function parseCliArgs(args, env = process.env) {
     typeof hostnameValue === "string" && hostnameValue.length > 0
       ? hostnameValue
       : DEFAULT_HOSTNAME;
+  const serviceName =
+    typeof serviceNameValue === "string" && serviceNameValue.length > 0
+      ? serviceNameValue
+      : DEFAULT_SERVICE_NAME;
 
   return {
+    command,
     port,
     hostname,
+    serviceName,
     help: showHelp,
     version: showVersion,
   };
@@ -216,19 +251,68 @@ export function printHelp(logger = console.log) {
     "TalkReplay CLI",
     "",
     "Usage:",
-    "  talk-replay [options]",
+    "  talk-replay [options]              Start the server",
+    "  talk-replay <command> [options]    Run a service command",
+    "",
+    "Commands:",
+    "  install     Install as a system service (auto-start on login)",
+    "  uninstall   Remove the system service",
+    "  start       Start the service",
+    "  stop        Stop the service",
+    "  restart     Restart the service",
+    "  status      Show service status",
     "",
     "Options:",
     "  -p, --port <number>       Port to listen on (default 3000 or $PORT).",
     "  -H, --hostname <value>    Hostname binding (default 0.0.0.0 or $HOSTNAME).",
+    "  -n, --name <string>       Service name (default talk-replay).",
     "  -h, --help                Show this help message.",
     "  -v, --version             Print the current package version.",
     "",
     "Examples:",
     "  npx talk-replay --port 4000",
     "  talk-replay -p 4100 -H 127.0.0.1",
+    "",
+    "  # Install as system service",
+    "  talk-replay install --port 3000",
+    "  talk-replay status",
+    "  talk-replay uninstall",
   ];
   lines.forEach((line) => logger(line));
+}
+
+export async function runServiceCommand(command, options) {
+  const service = await import("./service/index.mjs");
+  const { port, hostname, serviceName, packageRoot } = options;
+
+  const paths = resolveStandalonePaths(packageRoot);
+  const scriptPath = service.getScriptPath(paths.packageRoot);
+  const nodePath = process.execPath;
+
+  const serviceOptions = {
+    serviceName,
+    port,
+    hostname,
+    nodePath,
+    scriptPath,
+  };
+
+  switch (command) {
+    case "install":
+      return service.install(serviceOptions);
+    case "uninstall":
+      return service.uninstall(serviceOptions);
+    case "start":
+      return service.start(serviceOptions);
+    case "stop":
+      return service.stop(serviceOptions);
+    case "restart":
+      return service.restart(serviceOptions);
+    case "status":
+      return service.status(serviceOptions);
+    default:
+      throw new Error(`Unknown service command: ${command}`);
+  }
 }
 
 export function runCli(
@@ -253,6 +337,16 @@ export function runCli(
     const pkg = require("../package.json");
     log(`talk-replay v${pkg.version}`);
     return;
+  }
+
+  // Handle service commands
+  if (parsed.command) {
+    return runServiceCommand(parsed.command, {
+      port: parsed.port,
+      hostname: parsed.hostname,
+      serviceName: parsed.serviceName,
+      packageRoot: options.packageRoot,
+    });
   }
 
   const paths = resolveStandalonePaths(options.packageRoot);
@@ -293,12 +387,14 @@ export function isInvokedDirectly(
 }
 
 if (isInvokedDirectly()) {
-  try {
-    runCli();
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : JSON.stringify(error);
-    console.error(message);
-    process.exit(1);
-  }
+  (async () => {
+    try {
+      await runCli();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : JSON.stringify(error);
+      console.error(message);
+      process.exit(1);
+    }
+  })();
 }

@@ -66,8 +66,7 @@ export const usePreferencesStore = create<PreferencesState>()(
           }
           return {
             providerPaths: next,
-            isSetupComplete:
-              state.isSetupComplete || Object.values(next).some(Boolean),
+            isSetupComplete: state.isSetupComplete,
           };
         }),
     }),

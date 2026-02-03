@@ -1,13 +1,22 @@
 # TalkReplay
-**The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI**
 
-TalkReplay is a vibe coding companion that turns your Claude and Codex transcripts into an interactive replay. It helps you revisit pairing sessions, capture insights, and share polished summaries with teammates.
+> **The only tool that replays Claude, Codex, Cursor, AND Gemini sessions in one unified UI.**
+
+Unlike CLI tools that export static HTML, TalkReplay gives you a live, searchable interface to revisit AI pairing sessions, star important conversations, filter by date/keyword, and share insights with your team.
+
+[![npm](https://img.shields.io/npm/v/talk-replay)](https://www.npmjs.com/package/talk-replay)
+[![GitHub stars](https://img.shields.io/github/stars/yfge/TalkReplay)](https://github.com/yfge/TalkReplay/stargazers)
+
+```bash
+npx talk-replay
+```
+
+---
 
 - **Languages:** [English](README.md) · [中文说明](README.zh.md)
-- **Tech stack:** Next.js 14 (App Router) · React · TypeScript · Tailwind CSS · shadcn/ui · Zustand · React Query
-- **Providers:** Claude (`~/.claude/projects`), Codex (`~/.codex/sessions`), Cursor (`~/Library/Application Support/Cursor` on macOS), Gemini (`~/.gemini/logs`)
-- **Deployment targets:** macOS, Windows, Docker, optional browser-only imports
-- **Workflow:** Opinionated vibe-coding blueprint featuring timestamped `agents_chat/` logs, `tasks.md` milestones, and Husky-enforced quality gates
+- **Providers:** Claude, Codex, Cursor, Gemini — all in one place
+- **Tech stack:** Next.js 14 · TypeScript · Tailwind CSS · Zustand
+- **Deploy anywhere:** macOS, Windows, Linux, Docker, or `npx`
 
 ## Why TalkReplay?
 
@@ -59,7 +68,77 @@ Key scripts:
 - `pnpm build` – Next.js production build
 - `pnpm format:fix` – Prettier write mode
 
-On first run, open Settings to configure provider directories (Claude/Codex/Cursor/Gemini). If you skip this, the app uses environment variables or automatic defaults (see below). Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+On first run, a provider setup wizard appears and auto-detects common Claude/Codex/Cursor/Gemini directories; confirm or tweak the suggestions to start importing. You can revisit Settings at any point. Preferences persist via a safe localStorage wrapper that falls back to an in-memory store when quotas are exceeded.
+
+## One-command Preview (npx)
+
+Install Node.js 18 or newer, then launch the prebuilt bundle directly from npm:
+
+```bash
+npx talk-replay --port 4000
+```
+
+Flags:
+
+- `--port` / `-p` sets the listening port (defaults to `3000` or `$PORT`).
+- `--hostname` / `-H` controls the bind address (`0.0.0.0` by default for LAN access).
+- `--help` prints usage details without starting the server.
+
+The CLI ships with the Next.js standalone output, so no extra build step is needed when running via `npx`. When executing the CLI from a git checkout instead of npm, run `pnpm build` first to generate `.next/standalone`.
+
+## Service Installation (Auto-start)
+
+Install TalkReplay as a system service to auto-start on login:
+
+```bash
+# Install and start the service
+npx talk-replay install --port 3000
+
+# Check status
+npx talk-replay status
+
+# Stop, start, restart
+npx talk-replay stop
+npx talk-replay start
+npx talk-replay restart
+
+# Remove the service
+npx talk-replay uninstall
+```
+
+Install options:
+
+- `--port <number>` – Port to listen on (default 3000)
+- `--hostname <value>` – Hostname binding (default 0.0.0.0)
+- `--name <string>` – Service name (default talk-replay)
+
+### Platform Details
+
+**macOS (launchd)**
+
+- Plist location: `~/Library/LaunchAgents/com.talkreplay.plist`
+- Logs: `~/Library/Logs/talk-replay.log`
+- The service starts automatically on login
+
+**Linux (systemd user service)**
+
+- Unit file: `~/.config/systemd/user/talk-replay.service`
+- View logs: `journalctl --user -u talk-replay -f`
+- Requires systemd with user services enabled
+
+**Windows**
+
+- Requires `node-windows` package (optional dependency)
+- Install it first: `npm install -g node-windows && npm link node-windows`
+- Manage via Windows Services (`services.msc`)
+
+Provider paths follow the same precedence as the web app (in-app settings → env vars → auto-detection). Supply overrides with environment variables when invoking `npx`:
+
+```bash
+NEXT_PUBLIC_CLAUDE_ROOT=$HOME/.claude/projects \
+NEXT_PUBLIC_CODEX_ROOT=$HOME/.codex/sessions \
+npx talk-replay --port 4500
+```
 
 ## Provider Roots & Configuration
 
@@ -286,6 +365,15 @@ node .next/standalone/server.js
 Adjust the paths if you store transcripts elsewhere. When running directly on the host, you can also
 skip the environment variables and use the Settings page to point to any readable directory on demand;
 the env vars simply provide sensible defaults that mirror the Docker layout.
+
+## Release Automation
+
+Two GitHub Actions keep packaging and releases reproducible:
+
+- `.github/workflows/ci.yml` runs linting, tests, builds the Next.js bundle, exercises the CLI help command, and creates an npm tarball for inspection on every push/PR.
+- `.github/workflows/npm-publish.yml` publishes the `talk-replay` package to npm when a GitHub release is published (or when the workflow is triggered manually). Configure an `NPM_TOKEN` secret with publish rights before enabling it.
+
+See `docs/release-process.md` for the end-to-end checklist, including how to capture release notes in `agents_chat`.
 
 ## Testing & Quality Gates
 

@@ -1,12 +1,22 @@
 # TalkReplay 简介
 
-TalkReplay 是一个面向 vibe coding 场景的对话复盘工具，可以把 Claude、Codex、Cursor 等聊天记录转化为可浏览、可搜索、可分享的会话时间线，帮助你整理灵感、总结经验并回放协作过程。
+> **唯一一个同时支持 Claude、Codex、Cursor、Gemini 的 AI 对话回放工具。**
+
+不同于只能导出静态 HTML 的 CLI 工具，TalkReplay 提供实时可搜索的界面，让你轻松回放 AI 编程会话、收藏重要对话、按日期/关键词过滤，并与团队分享。
+
+[![npm](https://img.shields.io/npm/v/talk-replay)](https://www.npmjs.com/package/talk-replay)
+[![GitHub stars](https://img.shields.io/github/stars/yfge/TalkReplay)](https://github.com/yfge/TalkReplay/stargazers)
+
+```bash
+npx talk-replay
+```
+
+---
 
 - **语言切换：** [English](README.md) · [中文说明](README.zh.md)
-- **技术栈：** Next.js 14（App Router）、React、TypeScript、Tailwind CSS、shadcn/ui、Zustand、React Query
-- **支持来源：** Claude（`~/.claude/projects`）、Codex（`~/.codex/sessions`）、Cursor（macOS：`~/Library/Application Support/Cursor`，Linux：`~/.config/Cursor`，Windows：`C:\Users\<你>\AppData\Roaming\Cursor`）、Gemini（`~/.gemini/logs`）
-- **部署环境：** macOS、Windows、本地浏览器导入、Docker
-- **协作方式：** 按 vibe coding 最佳实践组织，配套 `agents_chat/` 日志、`tasks.md` 任务板以及 Husky 强制检查
+- **支持来源：** Claude、Codex、Cursor、Gemini — 全部整合在一起
+- **技术栈：** Next.js 14 · TypeScript · Tailwind CSS · Zustand
+- **部署方式：** macOS、Windows、Linux、Docker 或直接 `npx`
 
 ## 核心能力
 
@@ -55,7 +65,31 @@ pnpm dev -- --port 3002
 - `pnpm build`：Next.js 生产构建
 - `pnpm format:fix`：Prettier 自动排版
 
-首次启动会弹出目录配置向导，可直接填写 Claude/Codex/Cursor/Gemini 日志目录，或通过环境变量自动填充（见下）。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
+首次启动会弹出目录向导，应用会尝试自动检测 Claude/Codex/Cursor/Gemini 的常见日志路径，你可以确认或手动修改后继续；任何时候都能在设置页再次调整。配置通过安全的 localStorage 包装器持久化，并在超额时回退到内存存储。
+
+## 一键体验（npx）
+
+请确保本地 Node.js 版本在 18 及以上，然后即可一条命令启动预构建的服务：
+
+```bash
+npx talk-replay --port 4000
+```
+
+常用参数：
+
+- `--port` / `-p`：监听端口（默认 `3000`，也可使用 `$PORT` 环境变量）。
+- `--hostname` / `-H`：绑定主机地址（默认 `0.0.0.0` 方便局域网访问）。
+- `--help`：查看命令帮助而不实际启动服务。
+
+npx 包含 Next.js standalone 构建产物，无需额外编译即可运行。如果在源码仓库内直接执行 `bin/talk-replay.mjs`，请先运行 `pnpm build` 生成 `.next/standalone`。
+
+需要覆盖日志目录时，可在命令前设置环境变量：
+
+```bash
+NEXT_PUBLIC_CLAUDE_ROOT=$HOME/.claude/projects \
+NEXT_PUBLIC_CODEX_ROOT=$HOME/.codex/sessions \
+npx talk-replay --port 4500
+```
 
 ## 提供者目录配置
 
@@ -260,6 +294,15 @@ node .next/standalone/server.js
 根据实际存储位置调整路径。通过环境变量保持与 Docker 配置一致，避免在代码里写死宿主机专用路径。
 若直接在宿主机运行，也可以不设置环境变量，启动后通过「提供者目录」对话框手动指定任意
 可读目录；环境变量仅提供默认值，便于与 Docker 场景对齐。
+
+## 发布自动化
+
+GitHub Actions 负责守护发布流程：
+
+- `.github/workflows/ci.yml`：在每次 push/PR 上执行 lint、测试、构建，同时调用 CLI 帮助命令并打包 npm 文件以供检查。
+- `.github/workflows/npm-publish.yml`：在发布 GitHub Release（或手动触发）时，将 `talk-replay` 包推送到 npm。启用前需配置具有发布权限的 `NPM_TOKEN` 仓库密钥。
+
+详细的操作步骤与 `agents_chat` 记录建议，见 `docs/release-process.md`。
 
 ## 测试与质量
 
